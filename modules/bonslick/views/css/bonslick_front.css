@@ -1,0 +1,175 @@
+@import url('https://fonts.googleapis.com/css?family=Roboto');
+
+.bonslick-caption {
+  -moz-transform: translate(0, -50%);
+  -ms-transform: translate(0, -50%);
+  -o-transform: translate(0, -50%);
+  -webkit-transform: translate(0, -50%);
+  transform: translate(0, -50%);
+  padding-left: 30px;
+}
+
+#bonslick {
+  position: relative;
+}
+
+#bonslick .box-bonslick {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 100%;
+}
+
+#bonslick .slick-prev:before, #bonslick .slick-next:before {
+  color: #333;
+}
+#bonslick .slick-prev.slick-disabled:before, #bonslick .slick-next.slick-disabled:before {
+  opacity: 1;
+}
+
+#bonslick .slick-slide img {
+  width: 100%;
+}
+
+#bonslick li {
+  margin-bottom: 30px;
+}
+
+#bonslick .link-bonslick {
+  display: block;
+  position: relative;
+  overflow: hidden;
+}
+
+.box-bonslick h1 {
+  font-size: 52px;
+  font-weight: bold;
+  line-height: 58px;
+  margin-bottom: 20px;
+  transform: translateX(20%);
+  transition: all 1s ease-in-out 0.7s;
+  opacity: 0;
+  font-family: 'Roboto', sans-serif;
+  color: #363636;
+}
+
+.box-bonslick h3 {
+  color: #666;
+  font-size: 22px;
+  font-weight: 400;
+  letter-spacing: 1px;
+  line-height: normal;
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  transform: translateX(20%);
+  transition: all 1s ease-in-out 0.5s;
+  opacity: 0;
+  font-family: 'Roboto', sans-serif;
+}
+
+.slick-slide.slick-active .box-bonslick h1,
+.slick-slide.slick-active .box-bonslick h3,
+.slick-slide.slick-active .box-bonslick span,
+.slick-slide.slick-active .box-bonslick p{
+  transform: translateX(0%);
+  opacity: 1;
+}
+
+
+.box-bonslick p {
+  font-size: 15px;
+  margin-bottom: 5px;
+  transform: translateX(20%);
+  transition: all 1s ease-in-out 0.9s;
+  opacity: 0;
+  font-family: 'Roboto', sans-serif;
+  line-height: 26px;
+  color: #666;
+  font-weight: normal;
+  margin-bottom: 40px;
+}
+
+
+.box-bonslick span {
+  display: inline-block;
+  padding: 8px 40px;
+  border: 2px solid #222;
+  color: #222;
+  text-transform: uppercase;
+  font-size: 15px;
+  background-color: transparent;
+  line-height: 26px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  font-family: 'Roboto', sans-serif;
+  font-weight: 400;
+  transform: translateX(20%);
+  transition: all 0.3s ease 0s;
+  opacity: 0;
+}
+
+.box-bonslick span:hover {
+  background-color: #222;
+  border: 2px solid #222;
+  color: #fff;
+}
+
+
+
+
+
+@media (max-width: 1199px) {
+  .box-bonslick h1 {
+    font-size: 40px;
+    line-height: 45px;
+  }
+  .box-bonslick h3 {
+    font-size: 25px;
+    line-height: 30px;
+  }
+  .box-bonslick p {
+    font-size: 13px;
+    line-height: 22px;
+    margin-bottom: 30px;
+  }
+  .box-bonslick span {
+    padding: 11px 40px;
+    font-size: 14px;
+    line-height: 22px;
+  }
+}
+
+@media (max-width: 991px) {
+  .box-bonslick h1 {
+    font-size: 30px;
+    line-height: 35px;
+  }
+  .box-bonslick h3 {
+    font-size: 20px;
+    line-height: 25px;
+  }
+  .box-bonslick p {
+    font-size: 13px;
+    line-height: 22px;
+    margin-bottom: 20px;
+  }
+  .box-bonslick span {
+    padding: 10px 30px;
+    font-size: 13px;
+    line-height: 22px;
+  }
+}
+
+@media (max-width: 768px) {
+  .box-bonslick p {
+    display: none;
+  }
+  .box-bonslick h1 {
+    font-size: 20px;
+    line-height: 25px;
+  }
+  .box-bonslick h3 {
+    font-size: 15px;
+    line-height: 20px;
+  }
+}

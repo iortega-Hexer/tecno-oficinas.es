@@ -1,0 +1,4 @@
+Ciao {reporter}
+Hai segnalato con successo un commento su {post_title} come abusato.
+{comment}
+Grazie per il tuo contributo al nostro sito web.

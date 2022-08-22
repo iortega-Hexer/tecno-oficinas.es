@@ -1,0 +1,248 @@
+/**
+ *
+ *	@module     	Advanced search (AmbJoliSearch)
+ *	@file 			jolisearch-common.css
+ *	@subject		style de la liste de suggestions (en haut de page)
+ *	@copyright  	Copyright (c) 2013-2019 Ambris Informatique SARL (http://www.ambris.com/)
+ *	@author     	Richard Stefan (@RicoStefan)
+ *	@license    	Commercial license
+ *	Support by mail: support@ambris.com
+ *
+ *	suggest (autocomplete) list style
+ */
+/**
+ *
+ *  @module       Advanced search (AmbJoliSearch)
+ *  @file       jolisearch-mixins.scss
+ *  @subject    style de la liste de suggestions (en haut de page)
+ *  @copyright    Copyright (c) 2013-2019 Ambris Informatique SARL (http://www.ambris.com/)
+ *  @author       Richard Stefan (@RicoStefan)
+ *  @license      Commercial license
+ *  Support by mail: support@ambris.com
+ *
+ *  suggest (autocomplete) list style
+ */
+.ui-jolisearch .col-xs-1-12 {
+  width: 8.33333%; }
+.ui-jolisearch .col-xs-offset-1-12 {
+  margin-left: 8.33333%; }
+.ui-jolisearch .col-xs-2-12 {
+  width: 16.66667%; }
+.ui-jolisearch .col-xs-offset-2-12 {
+  margin-left: 16.66667%; }
+.ui-jolisearch .col-xs-3-12 {
+  width: 25%; }
+.ui-jolisearch .col-xs-offset-3-12 {
+  margin-left: 25%; }
+.ui-jolisearch .col-xs-4-12 {
+  width: 33.33333%; }
+.ui-jolisearch .col-xs-offset-4-12 {
+  margin-left: 33.33333%; }
+.ui-jolisearch .col-xs-5-12 {
+  width: 41.66667%; }
+.ui-jolisearch .col-xs-offset-5-12 {
+  margin-left: 41.66667%; }
+.ui-jolisearch .col-xs-6-12 {
+  width: 50%; }
+.ui-jolisearch .col-xs-offset-6-12 {
+  margin-left: 50%; }
+.ui-jolisearch .col-xs-7-12 {
+  width: 58.33333%; }
+.ui-jolisearch .col-xs-offset-7-12 {
+  margin-left: 58.33333%; }
+.ui-jolisearch .col-xs-8-12 {
+  width: 66.66667%; }
+.ui-jolisearch .col-xs-offset-8-12 {
+  margin-left: 66.66667%; }
+.ui-jolisearch .col-xs-9-12 {
+  width: 75%; }
+.ui-jolisearch .col-xs-offset-9-12 {
+  margin-left: 75%; }
+.ui-jolisearch .col-xs-10-12 {
+  width: 83.33333%; }
+.ui-jolisearch .col-xs-offset-10-12 {
+  margin-left: 83.33333%; }
+.ui-jolisearch .col-xs-11-12 {
+  width: 91.66667%; }
+.ui-jolisearch .col-xs-offset-11-12 {
+  margin-left: 91.66667%; }
+.ui-jolisearch .col-xs-12-12 {
+  width: 100%; }
+.ui-jolisearch .col-xs-offset-12-12 {
+  margin-left: 100%; }
+.ui-jolisearch [class*="col-"] {
+  float: left; }
+@media (min-width: 768px) {
+  .ui-jolisearch .col-sm-1-12 {
+    width: 8.33333%; }
+  .ui-jolisearch .col-sm-offset-1-12 {
+    margin-left: 8.33333%; }
+  .ui-jolisearch .col-sm-2-12 {
+    width: 16.66667%; }
+  .ui-jolisearch .col-sm-offset-2-12 {
+    margin-left: 16.66667%; }
+  .ui-jolisearch .col-sm-3-12 {
+    width: 25%; }
+  .ui-jolisearch .col-sm-offset-3-12 {
+    margin-left: 25%; }
+  .ui-jolisearch .col-sm-4-12 {
+    width: 33.33333%; }
+  .ui-jolisearch .col-sm-offset-4-12 {
+    margin-left: 33.33333%; }
+  .ui-jolisearch .col-sm-5-12 {
+    width: 41.66667%; }
+  .ui-jolisearch .col-sm-offset-5-12 {
+    margin-left: 41.66667%; }
+  .ui-jolisearch .col-sm-6-12 {
+    width: 50%; }
+  .ui-jolisearch .col-sm-offset-6-12 {
+    margin-left: 50%; }
+  .ui-jolisearch .col-sm-7-12 {
+    width: 58.33333%; }
+  .ui-jolisearch .col-sm-offset-7-12 {
+    margin-left: 58.33333%; }
+  .ui-jolisearch .col-sm-8-12 {
+    width: 66.66667%; }
+  .ui-jolisearch .col-sm-offset-8-12 {
+    margin-left: 66.66667%; }
+  .ui-jolisearch .col-sm-9-12 {
+    width: 75%; }
+  .ui-jolisearch .col-sm-offset-9-12 {
+    margin-left: 75%; }
+  .ui-jolisearch .col-sm-10-12 {
+    width: 83.33333%; }
+  .ui-jolisearch .col-sm-offset-10-12 {
+    margin-left: 83.33333%; }
+  .ui-jolisearch .col-sm-11-12 {
+    width: 91.66667%; }
+  .ui-jolisearch .col-sm-offset-11-12 {
+    margin-left: 91.66667%; }
+  .ui-jolisearch .col-sm-12-12 {
+    width: 100%; }
+  .ui-jolisearch .col-sm-offset-12-12 {
+    margin-left: 100%; } }
+@media (min-width: 992px) {
+  .ui-jolisearch .col-md-1-12 {
+    width: 8.33333%; }
+  .ui-jolisearch .col-md-offset-1-12 {
+    margin-left: 8.33333%; }
+  .ui-jolisearch .col-md-2-12 {
+    width: 16.66667%; }
+  .ui-jolisearch .col-md-offset-2-12 {
+    margin-left: 16.66667%; }
+  .ui-jolisearch .col-md-3-12 {
+    width: 25%; }
+  .ui-jolisearch .col-md-offset-3-12 {
+    margin-left: 25%; }
+  .ui-jolisearch .col-md-4-12 {
+    width: 33.33333%; }
+  .ui-jolisearch .col-md-offset-4-12 {
+    margin-left: 33.33333%; }
+  .ui-jolisearch .col-md-5-12 {
+    width: 41.66667%; }
+  .ui-jolisearch .col-md-offset-5-12 {
+    margin-left: 41.66667%; }
+  .ui-jolisearch .col-md-6-12 {
+    width: 50%; }
+  .ui-jolisearch .col-md-offset-6-12 {
+    margin-left: 50%; }
+  .ui-jolisearch .col-md-7-12 {
+    width: 58.33333%; }
+  .ui-jolisearch .col-md-offset-7-12 {
+    margin-left: 58.33333%; }
+  .ui-jolisearch .col-md-8-12 {
+    width: 66.66667%; }
+  .ui-jolisearch .col-md-offset-8-12 {
+    margin-left: 66.66667%; }
+  .ui-jolisearch .col-md-9-12 {
+    width: 75%; }
+  .ui-jolisearch .col-md-offset-9-12 {
+    margin-left: 75%; }
+  .ui-jolisearch .col-md-10-12 {
+    width: 83.33333%; }
+  .ui-jolisearch .col-md-offset-10-12 {
+    margin-left: 83.33333%; }
+  .ui-jolisearch .col-md-11-12 {
+    width: 91.66667%; }
+  .ui-jolisearch .col-md-offset-11-12 {
+    margin-left: 91.66667%; }
+  .ui-jolisearch .col-md-12-12 {
+    width: 100%; }
+  .ui-jolisearch .col-md-offset-12-12 {
+    margin-left: 100%; } }
+@media (min-width: 1200px) {
+  .ui-jolisearch .col-lg-1-12 {
+    width: 8.33333%; }
+  .ui-jolisearch .col-lg-offset-1-12 {
+    margin-left: 8.33333%; }
+  .ui-jolisearch .col-lg-2-12 {
+    width: 16.66667%; }
+  .ui-jolisearch .col-lg-offset-2-12 {
+    margin-left: 16.66667%; }
+  .ui-jolisearch .col-lg-3-12 {
+    width: 25%; }
+  .ui-jolisearch .col-lg-offset-3-12 {
+    margin-left: 25%; }
+  .ui-jolisearch .col-lg-4-12 {
+    width: 33.33333%; }
+  .ui-jolisearch .col-lg-offset-4-12 {
+    margin-left: 33.33333%; }
+  .ui-jolisearch .col-lg-5-12 {
+    width: 41.66667%; }
+  .ui-jolisearch .col-lg-offset-5-12 {
+    margin-left: 41.66667%; }
+  .ui-jolisearch .col-lg-6-12 {
+    width: 50%; }
+  .ui-jolisearch .col-lg-offset-6-12 {
+    margin-left: 50%; }
+  .ui-jolisearch .col-lg-7-12 {
+    width: 58.33333%; }
+  .ui-jolisearch .col-lg-offset-7-12 {
+    margin-left: 58.33333%; }
+  .ui-jolisearch .col-lg-8-12 {
+    width: 66.66667%; }
+  .ui-jolisearch .col-lg-offset-8-12 {
+    margin-left: 66.66667%; }
+  .ui-jolisearch .col-lg-9-12 {
+    width: 75%; }
+  .ui-jolisearch .col-lg-offset-9-12 {
+    margin-left: 75%; }
+  .ui-jolisearch .col-lg-10-12 {
+    width: 83.33333%; }
+  .ui-jolisearch .col-lg-offset-10-12 {
+    margin-left: 83.33333%; }
+  .ui-jolisearch .col-lg-11-12 {
+    width: 91.66667%; }
+  .ui-jolisearch .col-lg-offset-11-12 {
+    margin-left: 91.66667%; }
+  .ui-jolisearch .col-lg-12-12 {
+    width: 100%; }
+  .ui-jolisearch .col-lg-offset-12-12 {
+    margin-left: 100%; } }
+.ui-jolisearch [class*="col-"] {
+  padding-left: 15px;
+  padding-right: 15px; }
+.ui-jolisearch * {
+  box-sizing: border-box; }
+.ui-jolisearch.centered-list {
+  left: 50% !important;
+  transform: translateX(-50%);
+  max-width: 98vw; }
+@media (max-width: 576px) {
+  .ui-jolisearch {
+    left: 50% !important;
+    transform: translateX(-50%);
+    max-width: 98vw; } }
+
+.ui-autocomplete-input {
+  /* loading results */ }
+  .ui-autocomplete-input.ui-autocomplete-loading {
+    background-image: url("../img/indicator.gif") !important;
+    background-repeat: no-repeat !important;
+    background-position: 80% center !important;
+    padding-right: 5px; }
+  @media screen and (-webkit-min-device-pixel-ratio: 0) {
+    .ui-autocomplete-input {
+      font-size: 16px; } }
+
+/*# sourceMappingURL=jolisearch-common.css.map */

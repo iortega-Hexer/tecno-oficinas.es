@@ -1,0 +1,5 @@
+Ciao {customer_name}
+Grazie per il tuo feedback sul nostro post sul blog: {post_title}
+Questa email è per confermare che abbiamo ricevuto il tuo feedback di valore.
+Tuo feedback: {feedback}
+Il post è stato utile: {polls_helpful}

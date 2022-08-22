@@ -1,0 +1,236 @@
+.page_home .title_blog, .page_home_gallery .title_blog {
+  background-color: transparent;
+  border: medium none;
+  color: #414141;
+  font-size: 21px;
+  margin-bottom: 30px;
+  margin-top: 0;
+  padding: 0;
+}
+.ybc_block_rss .title_blog.title_block > a i {
+  float: right;
+  margin-right: 10px;
+}
+.ybc_block_rss .title_blog.title_block > a {
+  display: block;
+  margin-bottom: 0;
+}
+.ybc_blog_layout_list.ybc-blog-wrapper-form-managament {
+  font-size: 14px;
+}
+#left_column .block,
+#left-column .block,
+#right_column .block,
+#right-column .block{
+    
+    clear: both;
+}
+#module-ybc_blog-managementcomments .wapper-management-blog-form {
+    padding-left: 0;
+    padding-right: 0;
+    padding-top: 0;
+    padding-bottom:0;
+}
+#module-ybc_blog-managementcomments ul.footer_links,
+#module-ybc_blog-managementmyinfo ul.footer_links{
+    float:left;
+    width:100%;
+}
+.ybc-blog-wrapper .title_blog.title_block {
+    background-color: transparent;
+    border-top: none;
+    padding-left: 0;
+    padding-right: 0;
+    padding-top: 0;
+}
+.ybc-blog-wrapper .page-heading {
+    margin-top: 10px;
+    font-weight: bold;
+    color: #414141;
+}
+
+.ybc_blog_layout_list.ybc-blog-wrapper-form-managament {
+    flex-wrap: wrap;
+    -webkit-flex-wrap: wrap;
+}
+.ybc_blog_layout_list .bootstrap {
+    width: 100%;
+}
+#module-ybc_blog-blog .breadcrumb a,
+#module-ybc_blog-gallery .breadcrumb a {
+  margin-left: -2px;
+}
+#module-ybc_blog-blog .navigation-pipe,
+#module-ybc_blog-gallery .navigation-pipe {
+  display: none;
+}
+.ybc-blog-panel .panel-heading{
+    padding: 10px 0;
+}
+.page_home.ybc_block_default, .page_home_gallery.ybc_block_default {
+  margin-bottom: 20px;
+  padding: 0;
+}
+.page_home_gallery .title_blog a {
+  color: #414141;
+  font-size: 21px;
+}
+.page_home, .page_home_gallery {
+  background-color: transparent;
+  margin-bottom: 30px;
+  padding: 0;
+  margin-top: 20px;
+}
+
+#left_column .block.ybc_block_slider .owl-controls, 
+#left_column .block.ybc_blog_related_posts_type_carousel .owl-controls, 
+#left_column .block.ybc_related_products_type_carousel .owl-controls,
+#right_column .block.ybc_block_slider .owl-controls, 
+#right_column .block.ybc_blog_related_posts_type_carousel .owl-controls, 
+#right_column .block.ybc_related_products_type_carousel .owl-controls {
+  margin-bottom: 35px;
+  right: 20px;
+}
+.block.ybc_block_slider .owl-controls, 
+.block.ybc_blog_related_posts_type_carousel .owl-controls, 
+.block.ybc_related_products_type_carousel .owl-controls {
+  margin-bottom: 30px;
+  right: 14px;
+}
+
+#left-column .ybc_block_gallery ul, #right-column .ybc_block_gallery ul, 
+#left_column .ybc_block_slider ul, #right_column .ybc_block_slider ul {
+  margin: 0 -15px!important;
+}
+#left_column .ybc_block_gallery ul, #right_column .ybc_block_gallery ul{
+    padding: 0 5px;
+}
+.ybc-blog-wrapper-detail {
+  background-color: #fff;
+  float: left;
+  margin: 0 0 30px;
+  padding: 0;
+  width: 100%;
+}
+.ybc-blog-wrapper-content .page-heading {
+  margin: 0;
+  padding: 0;
+}
+.title_blog, .title_blog a {
+  font: 600 18px/22px "Open Sans",sans-serif;
+}
+#module-ybc_blog-blog .ajax_block_product .left-block {
+  text-align: center;
+}
+#index .page_home.block .title_block::after, 
+#index .page_home.block h4::after,
+#index .page_home_gallery.block h4::after{
+    display: none;
+}
+#left_column .ybc_block_categories a, 
+#right_column .ybc_block_categories a {
+  display: block;
+  font-size: 14px;
+  padding: 10px 15px 10px 20px;
+  width: 100%;
+}
+.ybc_block_rss h4.title_blog.title_block:after {
+    display: none;
+}
+.ybc_block_author.page_author h4.title_blog.title_block:after {
+    display: none;
+}
+.ybc_block_featured.page_blog.ybc_block_default li {
+    padding: 0;
+}
+@media (max-width: 767px){
+    #left-column .ybc_block_gallery ul, 
+    #right-column .ybc_block_gallery ul, 
+    #left_column .ybc_block_gallery ul, 
+    #right_column .ybc_block_gallery ul {
+      margin: 0 0 40px;
+    }
+    .center_column {
+      clear: left;
+    }
+    #left_column .block {
+        display: block;
+        clear: both;
+    }
+    .page_home, .page_home_gallery {
+      margin-bottom: 30px;
+    }
+    #left_column .block.ybc_block_slider ul, 
+    #right_column .block.ybc_block_slider ul {
+      margin: 0 0 20px;
+    }
+    #left_column .block.ybc_block_slider, #right_column .block.ybc_block_slider {
+      padding: 0;
+    }
+    .blog_rating_wrapper {
+      float: none;
+    }
+    #left_column .block.ybc_block_slider .owl-controls, 
+    #left_column .block.ybc_blog_related_posts_type_carousel .owl-controls, 
+    #left_column .block.ybc_related_products_type_carousel .owl-controls, 
+    #right_column .block.ybc_block_slider .owl-controls, 
+    #right_column .block.ybc_blog_related_posts_type_carousel .owl-controls, 
+    #right_column .block.ybc_related_products_type_carousel .owl-controls {
+      bottom: auto;
+      float: left;
+      left: 50%;
+      margin-bottom: 0;
+      margin-top: 15px;
+      position: relative;
+      right: 10px;
+      top: auto;
+      transform: translateX(-50%);
+      -webkit-transform: translateX(-50%);
+      -moz-transform: translateX(-50%);
+      -ms-transform: translateX(-50%);
+      -o-transform: translateX(-50%);
+    }
+    #left_column .block_content,
+    #right_column .block_content {
+      clear: left;
+      float: left;
+      width: 100%;
+    }
+    #module-ybc_blog-blog #left_column .ybc_block_categories, 
+    #module-ybc_blog-blog #left_column .ybc_block_search, 
+    #module-ybc_blog-blog #left_column .page_blog, 
+    #module-ybc_blog-blog #left_column .ybc_block_gallery, 
+    #module-ybc_blog-blog #left_column .ybc_block_tag {
+      clear: left;
+      display: block;
+      width: 100%;
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*RTL*/
+
+.ybc_blog_rtl #left_column .ybc_block_slider .owl-controls, 
+.ybc_blog_rtl #left_column .ybc_blog_related_posts_type_carousel .owl-controls, 
+.ybc_blog_rtl #left_column .ybc_related_products_type_carousel .owl-controls,
+.ybc_blog_rtl #right_column .ybc_block_slider .owl-controls, 
+.ybc_blog_rtl #right_column .ybc_blog_related_posts_type_carousel .owl-controls, 
+.ybc_blog_rtl #right_column .ybc_related_products_type_carousel .owl-controls {
+  left: 5px;
+}
+
+
+

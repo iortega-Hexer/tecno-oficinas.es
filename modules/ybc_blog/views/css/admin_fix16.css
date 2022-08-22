@@ -1,0 +1,30 @@
+.ybc_blogemployees .panel {
+    width: 100%;
+    border-radius: 0!important;
+}
+.ctf_admin_filter_chart_settings input, 
+.ctf_admin_filter_chart_settings select {
+    height: 32px;
+    min-height: 32px;
+}
+.selectize-control.form-control.single {
+    padding: 0;
+    position: relative;
+    height: auto;
+}
+.ctf_admin_filter_chart_settings input[type="select-one"] {
+    height: auto;
+    min-height: 0;
+}
+.ctf_admin_filter_cotactform .selectize-input.items {
+    width: 250px;
+    display: flex;
+    display: -webkit-flex;
+    min-height: 32px;
+}
+.ctf_admin_filter_button .btn.btn-default {
+    box-shadow: none;
+}
+.ybc_blog_import_option_clean > input {
+    margin-top: 3px!important;
+}

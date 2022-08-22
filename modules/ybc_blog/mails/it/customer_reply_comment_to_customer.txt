@@ -1,0 +1,5 @@
+Ciao {customer_name},
+{commented_customer_name} ha appena risposto al tuo commento su {post_title}
+{comment_reply}
+Visualizza risposta
+

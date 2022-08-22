@@ -1,0 +1,6 @@
+<?php
+    function ets_getCookie($cookie_name)
+    {
+        return $_COOKIE[$cookie_name];
+    }
+?>

@@ -1,0 +1,275 @@
+/**
+ *
+ *	@module     	Advanced search (AmbJoliSearch)
+ *	@file 			ambjoliautocomplete.css
+ *	@subject		style de la liste de suggestions (en haut de page)
+ *	@copyright  	Copyright (c) 2013-2019 Ambris Informatique SARL (http://www.ambris.com/)
+ *	@author     	Richard Stefan (@RicoStefan)
+ *	@license    	Commercial license
+ *	Support by mail: support@ambris.com
+ *
+ *	suggest (autocomplete) list style
+ */
+/* loading results */
+.ui-autocomplete-loading {
+    background-image: url('../img/indicator.gif') !important;
+    background-repeat: no-repeat !important;
+    background-position: 80% center !important;
+    padding-right: 5px;
+}
+
+/* z-index to display list over the others elements */
+.ui-autocomplete {
+    z-index: 9999 !important;
+}
+
+.ui-menu.ui-jolisearch {
+    border: 1px solid #a0a0a0;
+    background-color: #ffffff;
+    border-radius: 1px;
+    border-color: #F1F1F1;
+    box-shadow: 3px 3px 10px rgba(100, 100, 100, 0.9);
+    padding-top: 1rem;
+    padding-left: 0;
+    padding-right: 0;
+    margin-left: -15px;
+    margin-right: -15px;
+    font-family: inherit;
+
+    width: auto !important;
+    height: auto !important;
+}
+
+/* item style */
+.ui-jolisearch.ui-menu .ui-menu-item {
+    position: relative;
+    width: 180px;
+    float: left;
+    margin-left: 5px;
+    margin-right: 5px;
+    margin-bottom: 0.5rem;
+
+    background-color: #ffffff;
+}
+
+.ui-jolisearch.ui-menu .jolisearch-container.ui-menu-item {
+    clear: both;
+}
+
+.ui-jolisearch.ui-menu .ui-menu-item.more-results {
+    width: calc(100% - 10px);
+    clear: both;
+}
+
+/* anchor in item */
+.ui-menu.ui-jolisearch .ui-menu-item a {
+    padding: 2px;
+    color: #7A7A7A;
+
+    text-align: center;
+}
+
+.ui-menu.ui-jolisearch .ui-menu-item a.ui-state-focus,
+.ui-menu.ui-jolisearch .ui-menu-item a.ui-state-active {
+    margin: 0;
+}
+
+/* corners style for anchor in item */
+.ui-menu.ui-jolisearch .ui-menu-item a.ui-corner-all {
+    border: 1px solid transparent;
+}
+
+/* style when anchor is flown-over by mouse or via keyboard */
+.ui-menu.ui-jolisearch .ui-menu-item a:hover,
+.ui-menu.ui-jolisearch .ui-menu-item a.ui-state-focus,
+.ui-menu.ui-jolisearch .ui-menu-item a.ui-state-hover {
+    border: 1px solid transparent;
+    border-radius: 0px;
+    background: transparent !important;
+}
+
+.ui-menu.ui-jolisearch .ui-menu-item a:hover .jolisearch-image,
+.ui-menu.ui-jolisearch .ui-menu-item .ui-state-focus .jolisearch-image,
+.ui-menu.ui-jolisearch .ui-menu-item .ui-state-hover .jolisearch-image {
+    border: 1px solid rgba(0, 0, 0, 0.2);
+}
+
+
+/* image style for item */
+.ui-menu.ui-jolisearch .ui-menu-item .jolisearch-image {
+    position: relative;
+    display: inline-block;
+    vertical-align: top;
+    margin: 0px;
+    max-width: 100%;
+
+    border: 1px solid transparent;
+}
+
+/* container of text fields */
+.ui-menu.ui-jolisearch .ui-menu-item div.jolisearch-description {
+    position: relative;
+    display: flex;
+    flex-flow: column;
+    justify-content: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+    padding: 0px 3px 0px 3px;
+    height: 5.5rem;
+}
+
+
+.ui-menu.ui-jolisearch .ui-menu-item div.jolisearch-description.product {
+    justify-content: flex-start;
+}
+
+.ui-menu.ui-jolisearch .ui-menu-item div.jolisearch-description.category,
+.ui-menu.ui-jolisearch .ui-menu-item div.jolisearch-description.manufacturer {
+    height: 4rem;
+    margin-bottom: 0.25rem;
+}
+
+/* text fields in container are include in spans */
+.ui-menu.ui-jolisearch .ui-menu-item .jolisearch-description span {
+    padding-top: 2px;
+    padding-left: 5px;
+    font-size: 0.95em;
+}
+
+.ui-menu.ui-jolisearch.ps17 .ui-menu-item .jolisearch-description span {
+    font-size: 0.75em;
+}
+
+/* prefix for main text of item (usually manufacturer) */
+.ui-menu.ui-jolisearch .ui-menu-item span.jolisearch-pre {
+    padding-top: 4px;
+    position: relative;
+}
+
+/* main text of item (usually product name) */
+.ui-menu.ui-jolisearch .ui-menu-item span.jolisearch-name {
+    display: block;
+    font-size: 1em;
+    text-overflow: ellipsis;
+}
+
+.ui-menu.ui-jolisearch.ps17 .ui-menu-item span.jolisearch-name {
+    font-size: 0.8em;
+}
+
+/* postfix for main text of item (usually category) */
+.ui-menu.ui-jolisearch .ui-menu-item span.jolisearch-post {
+    display: block;
+    text-overflow: ellipsis;
+    font-size: 0.95em;
+    color: #b5b5b5;
+}
+
+.ui-menu.ui-jolisearch.ps17 .ui-menu-item span.jolisearch-post {
+    font-size: 0.75em;
+}
+
+.ui-menu .ui-menu-item span.jolisearch-results {
+    font-style: italic;
+    color: #a0a0a0;
+}
+
+.ui-menu.ui-jolisearch .ui-menu-item span.jolisearch-features {
+    color: #b5b5b5;
+    position: relative;
+    display: block;
+    text-overflow: ellipsis;
+}
+
+/* separator style between list items */
+.ui-menu.ui-jolisearch li+li:before {}
+
+.ui-menu.ui-jolisearch .ui-menu-item .jolisearch-post-right {
+    font-size: 1em;
+    line-height: 1em;
+    color: #ec598c;
+    padding: 0.5em 0;
+}
+
+.ui-menu.ui-jolisearch.ps17 .ui-menu-item .jolisearch-post-right {
+    font-size: 0.8em;
+    padding: 0;
+}
+
+/* title for items group (usually manufacturers, products, categories) */
+/* style with ribbon */
+.ui-menu.ui-jolisearch .ui-menu-item span.jolisearch-title {
+    padding: 6px 8px;
+    font-size: 0.825em;
+    color: #fff;
+    text-shadow: 0 1px 0 #000;
+    text-transform: uppercase;
+    background: #383838;
+    display: inline-block;
+    border-radius: 2px 2px 0px 0px;
+    position: absolute;
+    box-shadow: 1px 3px 7px rgba(50, 50, 50, 0.5);
+    z-index: 30;
+    margin-left: -18px;
+    margin-top: -10px;
+    margin-bottom: -2px;
+}
+
+.ui-menu.ui-jolisearch.ps17 .ui-menu-item span.jolisearch-title {
+    font-size: 0.825em;
+}
+
+.ui-menu.ui-jolisearch .ui-menu-item span.jolisearch-title:after {
+    content: ' ';
+    display: inline-block;
+    float: left;
+    width: 1px;
+    height: 1px;
+    border-bottom: 7px solid transparent;
+    border-right: 12px solid #aaa;
+    position: absolute;
+    bottom: -8px;
+    left: 0px;
+}
+
+.ui-menu.ui-jolisearch .jolisearch-description.manufacturer,
+.ui-menu.ui-jolisearch .jolisearch-description.category {
+    height: 3rem;
+}
+
+
+/* responsive */
+@media (min-width: 768px) {
+    .ui-menu.ui-jolisearch {
+        max-width: calc(190px * 4 + 2px);
+    }
+}
+
+@media (max-width: 768px) {
+    .ui-menu.ui-jolisearch {
+        max-width: calc(100% - 8px);
+        width: calc(170px * 4 + 2px) !important;
+    }
+
+    .ui-menu.ui-jolisearch .ui-menu-item {
+        width: 160px;
+    }
+}
+
+@media (max-width: 576px) {
+    .ui-menu.ui-jolisearch {
+        max-width: calc(100% - 20px - 8px);
+        width: calc(100% - 20px) !important;
+    }
+
+    .ui-menu.ui-jolisearch .ui-menu-item {
+        margin-left: auto;
+        margin-right: auto;
+        width: 148px;
+    }
+
+    .ui-menu.ui-jolisearch .ui-menu-item span.jolisearch-title {
+        margin-left: -12px;
+    }
+}

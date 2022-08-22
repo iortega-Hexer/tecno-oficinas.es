@@ -1,0 +1,4 @@
+Ciao {author_name}
+{replier} ha appena risposto a un commento su {post_title} ed è stato approvato automaticamente
+{comment_reply}
+Visualizza risposta

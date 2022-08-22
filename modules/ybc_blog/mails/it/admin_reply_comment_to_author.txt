@@ -1,0 +1,5 @@
+Ciao {author_name},
+L'amministratore di {shop_name} ha appena risposto a un commento sul tuo articolo {post_title}.
+Commento precedente del cliente:{comment}
+Ecco la risposta dell'amministratore:
+{comment_reply}

@@ -1,0 +1,3 @@
+Ciao {atuhor_name}
+Un nuovo commento è stato pubblicato su {post_title} e sta aspettando la tua approvazione
+Visualizza il commento

@@ -1,0 +1,6 @@
+/config.xml
+/config_fr.xml
+/nbproject/*
+\.idea/
+/cache
+/vendor/.htaccess

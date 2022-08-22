@@ -1,0 +1,5 @@
+Hi {atuhor_name}
+A new comment has been posted on {post_title} and approved automatically
+View comment
+
+

@@ -1,0 +1,4 @@
+Ciao {customer_name}
+Il tuo commento è stato inviato con successo su {post_title} ed è in attesa di approvazione
+Controlla il post
+

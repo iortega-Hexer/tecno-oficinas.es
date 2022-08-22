@@ -1,0 +1,3 @@
+Ciao {customer_name},
+Il tuo post {post_title} è stato inviato con successo a {shop_name} ed è in attesa di approvazione
+Rivedere questo post

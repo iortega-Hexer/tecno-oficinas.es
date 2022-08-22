@@ -1,0 +1,5 @@
+Ciao {atuhor_name}
+Un nuovo commento è stato pubblicato su {post_title} ed è stato approvato automaticamente
+Visualizza il commento
+
+

@@ -1,0 +1,183 @@
+#subtab-AdminYbcBlogPost i,
+#subtab-AdminYbcBlogCategory i,
+#subtab-AdminYbcBlogComment i,
+#subtab-AdminYbcBlogSlider i,
+#subtab-AdminYbcBlogAuthor i,
+#subtab-AdminYbcBlogSocials i,
+#subtab-AdminYbcBlogExport i,
+#subtab-AdminYbcBlogRSS i,
+#subtab-AdminYbcBlogSeo i,
+#subtab-AdminYbcBlogSetting i,
+#subtab-AdminYbcBlogSidebar i,
+#subtab-AdminYbcBlogSitemap i,
+#subtab-AdminYbcBlogEmail i,
+#subtab-AdminYbcBlogHomepage i,
+#subtab-AdminYbcBlogStatistics i,
+#subtab-AdminYbcBlogImage i,
+#subtab-AdminYbcBlogCategorypage i,
+#subtab-AdminYbcBlogPolls i,
+#subtab-AdminYbcBlogProductpage i,
+#subtab-AdminYbcBlogGallery i{
+    font-size: 0;
+    position: relative;
+    width: 16px;
+}
+#subtab-AdminYbcBlogPolls i.icon-polls:before{
+    content: "\f087";
+    font-family: Fontawesome;
+        font-size: 16px;
+}
+.icon-AdminYbcBlog:before{
+    content: "\f044";
+}
+#subtab-AdminYbcBlogComment .count_messages {
+  background-color: red;
+  border-radius: 50%;
+  color: #fff;
+  display: inline-block;
+  font-size: 9px;
+  height: 18px;
+  line-height: 18px;
+  margin-left: 3px;
+  padding: 0 !important;
+  text-align: center;
+  vertical-align: middle;
+  width: 18px;
+}
+#subtab-AdminYbcBlogCategorypage i.icon-categorypage:before {
+    content: "\f009";
+    color: #fff;
+    font-size: 16px;
+    font-family: FontAwesome;
+}
+#subtab-AdminYbcBlogProductpage .icon-productpage:before {
+    content: "\f2d0";
+    color: #fff;
+    font-size: 16px;
+    font-family: FontAwesome;
+}
+
+#subtab-AdminYbcBlogStatistics i:before{
+    content:"\f201";
+    color: #fff;
+    font-size: 16px;
+    font-family: FontAwesome;
+}
+#subtab-AdminYbcBlogSidebar i:before{
+    content:"\f233";
+    color: #fff;
+    font-size: 16px;
+    font-family: FontAwesome;
+}
+#subtab-AdminYbcBlogEmail i:before{
+    content:"\f0e0";
+    color: #fff;
+    font-size: 16px;
+    font-family: FontAwesome;
+}
+#subtab-AdminYbcBlogImage i:before{
+    content:"\f03e";
+    color: #fff;
+    font-size: 16px;
+    font-family: FontAwesome;
+}
+#subtab-AdminYbcBlogHomepage i:before{
+    content:"\f015";
+    color: #fff;
+    font-size: 16px;
+    font-family: FontAwesome;
+}
+#subtab-AdminYbcBlogSitemap i:before{
+    content:"\f0e8";
+    color: #fff;
+    font-size: 16px;
+    font-family: FontAwesome;
+}
+#subtab-AdminYbcBlogPost i:before{
+    content:"\f02c";
+    color: #fff;
+    font-size: 16px;
+    font-family: FontAwesome;
+}
+#subtab-AdminYbcBlogCategory i:before{
+    content:"\f02d";
+    color: #fff;
+    font-size: 16px;
+    font-family: FontAwesome;
+}
+#subtab-AdminYbcBlogComment i:before{
+    content:"\f086";
+    color: #fff;
+    font-size: 16px;
+    font-family: FontAwesome;
+}
+#subtab-AdminYbcBlogSlider i:before{
+    content:"\f1c5";
+    color: #fff;
+    font-size: 16px;
+    font-family: FontAwesome;
+}
+#subtab-AdminYbcBlogGallery i:before{
+    content:"\f0e4";
+    color: #fff;
+    font-size: 16px;
+    font-family: FontAwesome;
+}
+.ybc-left-panel .icon-AdminParentModules:before{
+    content:"\f1c5";
+    font-family: FontAwesome;
+}
+#subtab-AdminYbcBlogRSS i:before{
+    content:"\f09e";
+    color: #fff;
+    font-size: 16px;
+    font-family: FontAwesome;
+}
+#subtab-AdminYbcBlogSeo i:before{
+    content: "\f002";
+    color: #fff;
+    font-family: FontAwesome;
+    font-size: 16px;
+}
+#subtab-AdminYbcBlogSeo i:after{
+    background-color: #363a41;
+    border-radius: 6px;
+    color: #fff;
+    content: "SEO";
+    font-family: inherit;
+    font-size: 7px;
+    font-weight: 600;
+    left: -8px;
+    line-height: 7px;
+    padding: 0 1px 1px;
+    position: absolute;
+    top: 3px;
+    z-index: 1;
+}
+#subtab-AdminYbcBlogSocials i:before{
+    content:"\f0c0";
+    color: #fff;
+    font-size: 16px;
+    font-family: FontAwesome;
+}
+#subtab-AdminYbcBlogExport i:before{
+    content:"\f0ec";
+    color: #fff;
+    font-size: 16px;
+    font-family: FontAwesome;
+}
+#subtab-AdminYbcBlogAuthor i:before{
+    content:"\f007";
+    color: #fff;
+    font-size: 16px;
+    font-family: FontAwesome;
+}
+#subtab-AdminYbcBlogSetting i:before{
+    content:"\f013";
+    color: #fff;
+    font-size: 16px;
+    font-family: FontAwesome;
+}
+#subtab-AdminYbcBlogComment .hide{
+    display:none;
+}

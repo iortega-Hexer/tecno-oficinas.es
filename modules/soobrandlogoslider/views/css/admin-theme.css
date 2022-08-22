@@ -1,0 +1,12 @@
+.sooprettyurl_logo { text-align: center; padding:30px 0px}
+.sooprettyurl_logo img{ height:100px; width:100px}
+#soobackendtab a {clear:both;height:50px;line-height:30px; text-indent:20px; text-align: left}
+#soobackendtab a.active { background-color:#10b0e4; font-weight:bold!important; color:#fff; outline-style: none}
+.sootab-content fieldset legend { padding:5px 35px; font-size:1.2em; border-bottom:2px solid #999;}
+#soobackendtab a#soopretty_config {
+-webkit-border-top-left-radius: 5px;
+-webkit-border-top-right-radius: 5px;
+-moz-border-radius-topleft: 5px;
+-moz-border-radius-topright: 5px;
+border-top-left-radius: 5px;
+border-top-right-radius: 5px;}

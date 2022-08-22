@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<module>
+    <name>ambjolisearch</name>
+    <displayName><![CDATA[Jolisearch : B&uacute;squeda optimizada]]></displayName>
+    <version><![CDATA[4.3.6]]></version>
+    <description><![CDATA[Mejora la visualizaci&oacute;n de la b&uacute;squeda instant&aacute;nea y gestiona las b&uacute;squedas aproximativas ]]></description>
+    <author><![CDATA[Ambris Informatique]]></author>
+    <tab><![CDATA[search_filter]]></tab>
+	<confirmUninstall><![CDATA[¿Realmente quiere desinstalar este módulo?]]></confirmUninstall>
+    <is_configurable>1</is_configurable>
+    <need_instance>0</need_instance>
+	<limited_countries></limited_countries>
+</module>

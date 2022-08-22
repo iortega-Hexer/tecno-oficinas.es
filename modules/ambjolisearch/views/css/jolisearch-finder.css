@@ -1,0 +1,128 @@
+/**
+ *
+ *	@module     	Advanced search (AmbJoliSearch)
+ *	@file 			jolisearch-finder.css
+ *	@subject		style de la liste de suggestions (en haut de page)
+ *	@copyright  	Copyright (c) 2013-2019 Ambris Informatique SARL (http://www.ambris.com/)
+ *	@author     	Richard Stefan (@RicoStefan)
+ *	@license    	Commercial license
+ *	Support by mail: support@ambris.com
+ *
+ *	suggest (autocomplete) list style
+ */
+.ui-menu.ui-jolisearch {
+  background-color: #fff;
+  z-index: 9999;
+  border: 1px solid #aaa;
+  border-radius: 2px;
+  font-family: inherit; }
+  .ui-menu.ui-jolisearch .jolisearch-body {
+    margin-left: auto;
+    margin-right: auto;
+    width: auto;
+    overflow: hidden; }
+    @media (min-width: 576px) and (max-width: 767px) {
+      .ui-menu.ui-jolisearch .jolisearch-body {
+        width: 502px; } }
+    @media (min-width: 768px) and (max-width: 991px) {
+      .ui-menu.ui-jolisearch .jolisearch-body {
+        width: 682px; } }
+    @media (min-width: 992px) and (max-width: 1199px) {
+      .ui-menu.ui-jolisearch .jolisearch-body {
+        width: 922px; } }
+    @media (min-width: 1200px) {
+      .ui-menu.ui-jolisearch .jolisearch-body {
+        width: 1102px; } }
+    .ui-menu.ui-jolisearch .jolisearch-body aside[role="complementary"] > div {
+      padding-bottom: 9999px;
+      margin-bottom: -9999px; }
+    .ui-menu.ui-jolisearch .jolisearch-body aside[role="complementary"] > div + div {
+      margin-top: 1.5rem; }
+    .ui-menu.ui-jolisearch .jolisearch-body aside[role="complementary"] a {
+      display: inline;
+      padding: 0;
+      line-height: 1.5em;
+      font-weight: normal; }
+      .ps17.ui-menu.ui-jolisearch .jolisearch-body aside[role="complementary"] a {
+        font-size: 0.85em;
+        line-height: 1em; }
+    .ui-menu.ui-jolisearch .jolisearch-body aside[role="complementary"] .items-count {
+      color: #bbb;
+      line-height: 1.5em;
+      font-weight: normal; }
+      .ps17.ui-menu.ui-jolisearch .jolisearch-body aside[role="complementary"] .items-count {
+        font-size: 0.85em;
+        line-height: 1em; }
+    .ui-menu.ui-jolisearch .jolisearch-body aside[role="complementary"] li {
+      background-color: #fff;
+      border: 1px solid transparent;
+      border-radius: 2px;
+      padding: 0.5rem; }
+      .ui-menu.ui-jolisearch .jolisearch-body aside[role="complementary"] li:hover {
+        background-color: #efefef;
+        border: 1px solid #dfdfdf; }
+    .ui-menu.ui-jolisearch .jolisearch-body section[role="main"] .items-count {
+      color: white;
+      background-color: #ccc;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 0.8em;
+      font-weight: normal;
+      display: inline-block;
+      vertical-align: bottom; }
+    .ui-menu.ui-jolisearch .jolisearch-body section[role="main"] .product {
+      background-color: #fff;
+      border: 1px solid transparent;
+      border-radius: 2px;
+      padding: 0.5rem; }
+      .ui-menu.ui-jolisearch .jolisearch-body section[role="main"] .product:hover {
+        background-color: #efefef;
+        border: 1px solid #dfdfdf; }
+      .ui-menu.ui-jolisearch .jolisearch-body section[role="main"] .product .jolisearch-product {
+        position: relative;
+        display: flex;
+        flex-flow: column;
+        justify-content: center;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        text-align: center;
+        padding: 0 0.3rem 0 0.3rem;
+        margin-left: -0.4rem;
+        margin-right: -0.4rem;
+        margin-bottom: 0.5rem;
+        height: 100px; }
+        .ui-menu.ui-jolisearch .jolisearch-body section[role="main"] .product .jolisearch-product span {
+          font-size: 14px;
+          line-height: 18px; }
+        .ui-menu.ui-jolisearch .jolisearch-body section[role="main"] .product .jolisearch-product .product-manufacturer,
+        .ui-menu.ui-jolisearch .jolisearch-body section[role="main"] .product .jolisearch-product .product-category,
+        .ui-menu.ui-jolisearch .jolisearch-body section[role="main"] .product .jolisearch-product .product-features {
+          color: #bbb; }
+      .ui-menu.ui-jolisearch .jolisearch-body section[role="main"] .product img {
+        max-width: 100%;
+        margin-left: auto;
+        margin-right: auto;
+        display: block;
+        margin-bottom: 0.5rem; }
+    .ui-menu.ui-jolisearch .jolisearch-body section[role="main"] .more-results {
+      text-overflow: ellipsis;
+      text-align: center;
+      font-size: 0.95em;
+      color: #b5b5b5;
+      padding: 0.5rem; }
+      .ui-menu.ui-jolisearch .jolisearch-body section[role="main"] .more-results a {
+        border: 1px solid transparent; }
+        .ui-menu.ui-jolisearch .jolisearch-body section[role="main"] .more-results a:hover {
+          background-color: #efefef;
+          border: 1px solid #dfdfdf; }
+      .ps17.ui-menu.ui-jolisearch .jolisearch-body section[role="main"] .more-results {
+        font-size: 0.75em; }
+    .ui-menu.ui-jolisearch .jolisearch-body h4 {
+      border-bottom: 1px solid #efefef;
+      margin-bottom: 1rem;
+      padding-bottom: 0.5rem;
+      font-weight: bold; }
+      .ps17.ui-menu.ui-jolisearch .jolisearch-body h4 {
+        font-weight: normal; }
+
+/*# sourceMappingURL=jolisearch-finder.css.map */

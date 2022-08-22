@@ -1,0 +1,80 @@
+/*1.7 style*/
+.product-tab-17{
+    padding: 10px;
+}
+.extratab17 .media-product-pack {
+    border: solid 2px #eee;
+    padding: 4px;
+    overflow: hidden;
+    position: relative;
+    margin-bottom: 10px;
+    margin-right: 10px;
+    -webkit-border-radius: 4px;
+    border-radius: 4px;
+    float: left;
+}
+
+.extratab17 .media-product-pack .media-product-pack-img {
+    width: 100%;
+    padding-bottom: 5px;
+    border-bottom: 1px solid #ccc;
+    margin-bottom: 5px;
+}
+.extratab17 .media-product-pack .media-product-pack-title {
+    width: 100%;
+    padding: 0 5px;
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.extratab17 .media-product-pack .media-product-pack-ref {
+    color: #aaa;
+    width: 100%;
+    padding: 0 5px;
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.extratab17 .media-product-pack .media-product-pack-action {
+    position: absolute;
+    top: 7px;
+    border: solid 1px #ccc;
+    text-align: center;
+    right: 7px;
+    border-radius: 4px;
+    padding: 6px 2px;
+}
+
+/*1.5 Style*/
+.product-tab-15 .col-lg-2,
+.product-tab-15 .col-lg-6,
+.product-tab-15 .col-lg-9{
+    float: left;
+}
+.product-tab-15 #add-upsell-product-extra{
+    margin-left: 10px;
+}
+.extratab15 .listOfPack {
+    margin-top: 30px;
+}
+.extratab15 .listOfPack ul li {
+     display: inline-block; 
+    width: 125px;
+    height: 190px;
+    margin-left: 6px;
+    text-align: center;
+    border: solid 1px #AAA;
+    box-shadow: 1px 1px 2px #AAA;
+    overflow: hidden;
+    position: relative;
+    margin-bottom: 10px;
+    margin-right: 10px;
+    -webkit-border-radius: 4px;
+    border-radius: 4px;
+}
+.extratab15 .listOfPack li span{
+    display: block;
+    margin: 5px 0px;
+}

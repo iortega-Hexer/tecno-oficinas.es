@@ -1,0 +1,5 @@
+Ciao {author_name}
+{reporter} ha appena segnalato un commento su {post_title} come abusato.
+{comment}
+Visualizza il commento
+

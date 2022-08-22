@@ -1,0 +1,7 @@
+Il commento del cliente è stato aggiornato:
+Cliente: {customer}
+Email: {email}
+Oggetto: {subject}
+Commento: {comment}
+Valutazione: {rating}
+Visualizza il post: {post_link}

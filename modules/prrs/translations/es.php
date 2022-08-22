@@ -1,0 +1,37 @@
+<?php
+
+global $_MODULE;
+$_MODULE = array();
+$_MODULE['<{prrs}prestashop>prrs_06aa82159155d080bb4fbff69a49d6ec'] = 'Comentarios del producto - revisa fragmentos enriquecidos';
+$_MODULE['<{prrs}prestashop>prrs_c52c4e57b093701f8f70d15606178c03'] = 'El módulo crea fragmentos enriquecidos de reseñas, dedicado al módulo gratuito: Comentarios del producto';
+$_MODULE['<{prrs}prestashop>prrs_96d4dadd096605d5813d2c6bdf82e82c'] = 'Se guardó la configuración.';
+$_MODULE['<{prrs}prestashop>prrs_254f642527b45bc260048e30704edb39'] = 'Configuración';
+$_MODULE['<{prrs}prestashop>prrs_c9741ad6dcc62657a52cf534e2916e06'] = 'Habilitar fragmentos enriquecidos de reseñas';
+$_MODULE['<{prrs}prestashop>prrs_00d23a76e43b46dae9ec7aa9dcbebb32'] = 'Habilitado';
+$_MODULE['<{prrs}prestashop>prrs_b9f5c797ebbf55adccdd8539a65a0241'] = 'Discapacitado';
+$_MODULE['<{prrs}prestashop>prrs_fc86253d4f30f18b6711aaf2c2db4db9'] = 'Crear datos estructurados básicos del producto.';
+$_MODULE['<{prrs}prestashop>prrs_7160cc833f6e584418c7b2e13dfc1139'] = 'Use esta opción si la página de su producto no tiene datos estructurados del producto';
+$_MODULE['<{prrs}prestashop>prrs_b3e38e4c93fd62ee16730b6ea015559a'] = 'Mostrar número de comentarios';
+$_MODULE['<{prrs}prestashop>prrs_b6e7c58bf344209fb0a68af81fa33ade'] = 'El módulo mostrará la cantidad de reseñas cerca de las estrellas con una calificación promedio';
+$_MODULE['<{prrs}prestashop>prrs_a3fdfa9965134aa0b847cc36bfedf20f'] = 'No ocultar bloque cuando el producto no tiene comentarios';
+$_MODULE['<{prrs}prestashop>prrs_af0f13f12d01803a6e679558e4720b5e'] = 'Mostrar en displayProductFooter';
+$_MODULE['<{prrs}prestashop>prrs_0198a1a3f3e114057defc1c459837a60'] = 'Mostrar en displayProductAdditionalInfo	';
+$_MODULE['<{prrs}prestashop>prrs_2babbfd71850f7a733d66df2e8d275f3'] = 'Mostrar el botón \"agregar revisión\"';
+$_MODULE['<{prrs}prestashop>prrs_f9580e2eb270bf357267bdbd65c6ba05'] = 'Mostrar el botón \"Agregar revisión\" solo para clientes registrados';
+$_MODULE['<{prrs}prestashop>prrs_c9cc8cce247e49bae79f15173ce97354'] = 'Salvar';
+$_MODULE['<{prrs}prestashop>prrs_57206dc27305060c5c29150d3ad00401'] = 'Actualizaciones de MyPresta';
+$_MODULE['<{prrs}prestashop>prrs_d7d90723c19e43735e731a36a2739c8b'] = 'Revisa actualizaciones';
+$_MODULE['<{prrs}prestashop>prrs_2c872e677f8b5831f20a66c65e7f8966'] = 'Revisalo ahora';
+$_MODULE['<{prrs}prestashop>prrs_722eb8a4b2d0b1c305d6361bcc7564e7'] = 'Actualiza notificaciones';
+$_MODULE['<{prrs}prestashop>prrs_633703a658469b7fab7f42e04e59d27a'] = '- seleccionar -';
+$_MODULE['<{prrs}prestashop>prrs_2faec1f9f8cc7f8f40d521c4dd574f49'] = 'Habilitar';
+$_MODULE['<{prrs}prestashop>prrs_bcfaccebf745acfd5e75351095a5394a'] = 'Inhabilitar';
+$_MODULE['<{prrs}prestashop>prrs_cc6fc347e9fd233bddcb7895e307e9a9'] = 'Active esta opción si desea comprobar MyPresta.eu para actualizaciones de módulos automáticamente. Esta opción mostrará notificación sobre las nuevas versiones de este complemento.';
+$_MODULE['<{prrs}prestashop>prrs_0d24168598880003b80f9e85b8e1d62a'] = 'Página del módulo';
+$_MODULE['<{prrs}prestashop>prrs_07ac9eab57de962a9518a7545fd475fe'] = 'Este es un enlace directo a la página de addon oficial, donde puede leer sobre los cambios en el módulo (changelog)';
+$_MODULE['<{prrs}prestashop>prrs_4c73ce9e52a25c69cf0dce126d548f98'] = 'Nueva versión disponible, consulte http://MyPresta.eu para obtener más información';
+$_MODULE['<{prrs}prestashop>prrs_af02b06496e83946e73e69d774782654'] = '¡Nueva versión disponible!';
+$_MODULE['<{prrs}prestashop>prrs_358a5fcb448d507b41d7c0a83485973a'] = 'El módulo está al día!';
+$_MODULE['<{prrs}prestashop>prrs_34e80a799d144cfe4af46815e103f017'] = 'Valoración';
+$_MODULE['<{prrs}prestashop>prrs_7032b42abe68c5dd09ee032a9232de71'] = 'Agregar una opinión';
+$_MODULE['<{prrs}prestashop>prrs_7861ddbc5b96ca036c0726ccf4fff4b6'] = 'No hay comentarios por el momento';

@@ -1,0 +1,85 @@
+/*
+  (c) 2013-2019 Ambris Informatique
+
+  @module       Advanced search (AmbJoliSearch)
+  * @file   ambjolisearch16.css
+  * @author    Ambris Informatique
+  * @copyright Copyright (c) 2013 Ambris Informatique SARL
+  * @license   Commercial license
+  * Support by mail: support@ambris.com
+  */
+
+/* search block */
+
+#search_block_top {
+    padding-top: 50px;
+}
+
+#search_block_top #searchbox {
+    float: left;
+    width: 100%;
+}
+
+#search_block_top .btn.button-search {
+    background: #333333;
+    display: block;
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    border: none;
+    color: white;
+    width: 50px;
+    text-align: center;
+    padding: 10px 0 11px 0;
+}
+
+#search_block_top .btn.button-search span {
+    display: none;
+}
+
+#search_block_top .btn.button-search:before {
+    content: "\f002";
+    display: block;
+    font-family: "FontAwesome";
+    font-size: 17px;
+    width: 100%;
+    text-align: center;
+}
+
+#search_block_top .btn.button-search:hover {
+    color: #6f6f6f;
+}
+
+#search_block_top #search_query_top {
+    display: inline;
+    padding: 0 13px;
+    height: 45px;
+    line-height: 45px;
+    background: #fbfbfb;
+    margin-right: 1px;
+}
+
+form#searchbox {
+    position: relative;
+}
+
+form#searchbox label {
+    color: #333333;
+}
+
+form#searchbox input#search_query_block {
+    margin-right: 10px;
+    max-width: 222px;
+    margin-bottom: 10px;
+    display: inline-block;
+    float: left;
+}
+
+form#searchbox .button.button-small {
+    float: left;
+}
+
+form#searchbox .button.button-small i {
+    margin-right: 0;
+}

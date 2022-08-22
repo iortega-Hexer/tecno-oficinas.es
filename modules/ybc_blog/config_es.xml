@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<module>
+    <name>ybc_blog</name>
+    <displayName><![CDATA[BLOG]]></displayName>
+    <version><![CDATA[3.1.8]]></version>
+    <description><![CDATA[El m&oacute;dulo de blog m&aacute;s potente, flexible y rico en funciones para Prestashop. BLOG proporciona todo lo que necesita para crear un &aacute;rea de blog profesional para su sitio web.]]></description>
+    <author><![CDATA[ETS-Soft]]></author>
+    <tab><![CDATA[front_office_features]]></tab>
+    <is_configurable>1</is_configurable>
+    <need_instance>0</need_instance>
+	<limited_countries></limited_countries>
+</module>
