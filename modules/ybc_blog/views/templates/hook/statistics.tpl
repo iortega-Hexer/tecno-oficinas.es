@@ -1,5 +1,5 @@
 {*
-* 2007-2019 ETS-Soft
+* 2007-2022 ETS-Soft
 *
 * NOTICE OF LICENSE
 *
@@ -14,7 +14,7 @@
 * needs please, contact us for extra customization service at an affordable price
 *
 *  @author ETS-Soft <etssoft.jsc@gmail.com>
-*  @copyright  2007-2019 ETS-Soft
+*  @copyright  2007-2022 ETS-Soft
 *  @license    Valid for 1 website (or project) for each purchase of license
 *  International Registered Trademark & Property of ETS-Soft
 *}
@@ -51,7 +51,7 @@
                                         </div>
                                     </div>
                                     <div class="ctf_admin_filter">
-                                        <form id="ctf_admin_filter_chart" class="defaultForm form-horizontal" action="{$action|escape:'quotes'}" enctype="multipart/form-data" method="POST">
+                                        <form id="ctf_admin_filter_chart" class="defaultForm form-horizontal" action="{$action|escape:'html':'UTF-8'}" enctype="multipart/form-data" method="POST">
                                             <div class="ctf_admin_filter_chart_settings">
                                                     <div class="ctf_admin_filter_cotactform">
                                                         <label for="id_post_serach">{l s='Post' mod='ybc_blog'}</label>
@@ -92,7 +92,7 @@
                                                     <div class="ctf_admin_filter_button">
                                                         <button name="submitFilterChart" class="btn btn-default" type="submit">{l s='Filter' mod='ybc_blog'}</button>
                                                         {if $show_reset}
-                                                            <a href="{$action|escape:'quotes'}" class="btn btn-default">{l s='Reset' mod='ybc_blog'}</a>
+                                                            <a href="{$action|escape:'html':'UTF-8'}" class="btn btn-default">{l s='Reset' mod='ybc_blog'}</a>
                                                         {/if}
                                                     </div>
                                             </div>
@@ -132,7 +132,7 @@
                                         <div class="ybc_paggination" style="margin-top: 10px;">
                                         {$pagination_text_view nofilter}
                                         </div>
-                                        <form action="{$action|escape:'quotes'}" enctype="multipart/form-data" method="POST">
+                                        <form action="{$action|escape:'html':'UTF-8'}" enctype="multipart/form-data" method="POST">
                                             <input type="hidden" value="1" name="clearviewLogSubmit"/>
                                             <button class="clear-log btn btn-default" type="submit" name="clearviewLogSubmit" onclick="return confirm('{l s='Do you want to clear log?' mod='ybc_blog'}');">{l s='Clear' mod='ybc_blog'}</button>
                                         </form>
@@ -176,7 +176,7 @@
                                             <div class="ybc_paggination" style="margin-top: 10px;">
                                             {$pagination_text_like nofilter}
                                             </div>
-                                            <form action="{$action|escape:'quotes'}" enctype="multipart/form-data" method="POST">
+                                            <form action="{$action|escape:'html':'UTF-8'}" enctype="multipart/form-data" method="POST">
                                                 <input type="hidden" value="1" name="clearlikeLogSubmit"/>
                                                 <button class="clear-log btn btn-default" type="submit" name="clearlikeLogSubmit" onclick="return confirm('{l s='Do you want to clear log?' mod='ybc_blog'}');">{l s='Clear' mod='ybc_blog'}</button>
                                             </form>

@@ -1,5 +1,5 @@
 {*
-* 2007-2019 ETS-Soft
+* 2007-2022 ETS-Soft
 *
 * NOTICE OF LICENSE
 *
@@ -14,7 +14,7 @@
 * needs, please contact us for extra customization service at an affordable price
 *
 *  @author ETS-Soft <etssoft.jsc@gmail.com>
-*  @copyright  2007-2019 ETS-Soft
+*  @copyright  2007-2022 ETS-Soft
 *  @license    Valid for 1 website (or project) for each purchase of license
 *  International Registered Trademark & Property of ETS-Soft
 *}
@@ -52,7 +52,7 @@
             <label class="col-md-3 form-control-label" for="category">{l s='Categories' mod='ybc_blog'}<span class="required">*</span></label>
             <div class="col-md-9">
                 <ul style="float: left; padding: 0; margin-top: 5px;">
-                    {$html_content nofilter}
+                    {$html_content_category_block nofilter}
                 </ul>
             </div>
         </div>
@@ -66,7 +66,7 @@
 				    </span>
                     <input class="form-control" type="file" value="" name="thumb" id="thumb" />
         		</div>
-                <p class="help-block">{l s='Recommended size:' mod='ybc_blog'}&nbsp;{Configuration::get('YBC_BLOG_IMAGE_BLOG_THUMB_WIDTH',null,null,null,260)|intval}x{Configuration::get('YBC_BLOG_IMAGE_BLOG_THUMB_HEIGHT',null,null,null,180)|intval}</p>
+                <p class="help-block">{l s='Accepted formats: jpg, jpeg, png, gif. Limit: ' mod='ybc_blog'}{Configuration::get('PS_ATTACHMENT_MAXIMUM_SIZE')|intval}Mb. {l s='Recommended size:' mod='ybc_blog'}&nbsp;{Configuration::get('YBC_BLOG_IMAGE_BLOG_THUMB_WIDTH',null,null,null,260)|intval}x{Configuration::get('YBC_BLOG_IMAGE_BLOG_THUMB_HEIGHT',null,null,null,180)|intval}</p>
                 {if $ybc_post->id && $ybc_post->thumb}
                     <div class="thumb_post">
                         <img style="max-width: 200px;display: inline-block;" src="{$dir_img|escape:'html':'UTF-8'}post/thumb/{$ybc_post->thumb|escape:'html':'UTF-8'}" title="{$ybc_post->title|escape:'html':'UTF-8'}" alt="{$ybc_post->title|escape:'html':'UTF-8'}" />
@@ -89,7 +89,7 @@
 				    </span>
                     <input class="form-control" type="file" value="" name="image" id="post_image" />
         		</div>
-                <p class="help-block">{l s='Recommended size: ' mod='ybc_blog'}&nbsp;{Configuration::get('YBC_BLOG_IMAGE_BLOG_WIDTH',null,null,null,1920)|intval}x{Configuration::get('YBC_BLOG_IMAGE_BLOG_HEIGHT',null,null,null,750)|intval}</p>
+                <p class="help-block">{l s='Accepted formats: jpg, jpeg, png, gif. Limit: ' mod='ybc_blog'}{Configuration::get('PS_ATTACHMENT_MAXIMUM_SIZE')|intval}Mb. {l s='Recommended size: ' mod='ybc_blog'}&nbsp;{Configuration::get('YBC_BLOG_IMAGE_BLOG_WIDTH',null,null,null,1920)|intval}x{Configuration::get('YBC_BLOG_IMAGE_BLOG_HEIGHT',null,null,null,750)|intval}</p>
                 {if $ybc_post->id && $ybc_post->image}
                     <div class="thumb_post">
                         <img style="max-width: 200px;" src="{$dir_img|escape:'html':'UTF-8'}post/{$ybc_post->image|escape:'html':'UTF-8'}" title="{$ybc_post->title|escape:'html':'UTF-8'}" alt="{$ybc_post->title|escape:'html':'UTF-8'}" />

@@ -1,6 +1,6 @@
 <?php
 /**
- * 2007-2019 ETS-Soft
+ * 2007-2022 ETS-Soft
  *
  * NOTICE OF LICENSE
  *
@@ -15,7 +15,7 @@
  * needs please contact us for extra customization service at an affordable price
  *
  *  @author ETS-Soft <etssoft.jsc@gmail.com>
- *  @copyright  2007-2019 ETS-Soft
+ *  @copyright  2007-2022 ETS-Soft
  *  @license    Valid for 1 website (or project) for each purchase of license
  *  International Registered Trademark & Property of ETS-Soft
  */
@@ -41,7 +41,7 @@ class Ybc_blogLikeModuleFrontController extends ModuleFrontController
             }
             if(!(int)Configuration::get('YBC_BLOG_GUEST_LIKE') && !$this->context->customer->id)
             {
-                $json['error'] = $this->module->l('You need to login to like the post');
+                $json['error'] = $this->module->l('You need to log in to like the post');
                 die(Tools::jsonEncode($json));
             }   
             $ip = Tools::getRemoteAddr();
@@ -62,10 +62,10 @@ class Ybc_blogLikeModuleFrontController extends ModuleFrontController
                     $this->context->cookie->liked_posts = @serialize($likedPosts);
                     $this->context->cookie->write();
                 }
-                $sql='INSERT INTO '._DB_PREFIX_.'ybc_blog_log_like(ip,id_post,browser,id_customer,datetime_added) VALUES ("'.pSQL($ip).'","'.(int)$id_post.'","'.pSQL($browser).'","'.(int)Context::getContext()->customer->id.'","'.pSQL(date('Y-m-d H:i:s')).'")';
+                $sql='INSERT INTO `'._DB_PREFIX_.'ybc_blog_log_like`(ip,id_post,browser,id_customer,datetime_added) VALUES ("'.pSQL($ip).'","'.(int)$id_post.'","'.pSQL($browser).'","'.(int)Context::getContext()->customer->id.'","'.pSQL(date('Y-m-d H:i:s')).'")';
                 Db::getInstance()->execute($sql);
-                Db::getInstance()->execute('UPDATE '._DB_PREFIX_.'ybc_blog_post SET likes= likes+1 WHERE id_post='.(int)$id_post);
-                $json['likes'] = Db::getInstance()->getValue('SELECT likes FROM '._DB_PREFIX_.'ybc_blog_post WHERE id_post='.(int)$id_post);
+                Db::getInstance()->execute('UPDATE `'._DB_PREFIX_.'ybc_blog_post` SET likes= likes+1 WHERE id_post='.(int)$id_post);
+                $json['likes'] = Db::getInstance()->getValue('SELECT likes FROM `'._DB_PREFIX_.'ybc_blog_post` WHERE id_post='.(int)$id_post);
                 $json['success'] = $this->module->l('Successfully liked the post');
                 $json['liked']=true;
                 die(Tools::jsonEncode($json));
@@ -74,7 +74,7 @@ class Ybc_blogLikeModuleFrontController extends ModuleFrontController
             {
                 if($this->context->customer->logged)
                 {
-                    Db::getInstance()->execute('DELETE FROM '._DB_PREFIX_.'ybc_blog_log_like WHERE id_customer="'.(int)$this->context->customer->id.'"');
+                    Db::getInstance()->execute('DELETE FROM `'._DB_PREFIX_.'ybc_blog_log_like` WHERE id_customer="'.(int)$this->context->customer->id.'"');
                 }
                 if($this->context->cookie->liked_posts)
                 {
@@ -87,8 +87,8 @@ class Ybc_blogLikeModuleFrontController extends ModuleFrontController
                     $this->context->cookie->liked_posts = @serialize($likedPosts);
                     $this->context->cookie->write();
                 }
-                Db::getInstance()->execute('UPDATE '._DB_PREFIX_.'ybc_blog_post SET likes= likes-1 WHERE id_post='.(int)$id_post);
-                $json['likes'] = Db::getInstance()->getValue('SELECT likes FROM '._DB_PREFIX_.'ybc_blog_post WHERE id_post='.(int)$id_post);
+                Db::getInstance()->execute('UPDATE `'._DB_PREFIX_.'ybc_blog_post` SET likes= likes-1 WHERE id_post='.(int)$id_post);
+                $json['likes'] = Db::getInstance()->getValue('SELECT likes FROM `'._DB_PREFIX_.'ybc_blog_post` WHERE id_post='.(int)$id_post);
                 $json['success'] = $this->module->l('Successfully unliked the post');
                 $json['liked']=false;
             }

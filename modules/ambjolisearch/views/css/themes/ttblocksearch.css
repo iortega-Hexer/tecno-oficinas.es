@@ -1,0 +1,41 @@
+/*
+ *
+ *	@module     	Advanced search (AmbJoliSearch)
+ *	@file 			ttblocksearch.css
+ *	@subject		Add support for Template Trip themes
+ *	@copyright  	Copyright (c) 2013-2020 Ambris Informatique SARL (http://www.ambris.com/)
+ *	@author     	Richard Stefan (@RicoStefan)
+ *	@license    	Commercial license
+ *	Support by mail: support@ambris.com
+ *
+ *	suggest (autocomplete) list style
+*/
+
+/* hide category selector, useless with Jolisearch */
+#search_block_top .select-wrapper {
+	display: none;
+}
+
+.ui-jolisearch.ui-widget.ui-widget-content {
+	width: auto !important;
+}
+
+.ui-jolisearch.ui-front.ui-menu .ui-menu-item:hover {
+	background: none;
+}
+
+@media (max-width: 543px) {
+	.ui-jolisearch.ui-widget.ui-widget-content {
+		width: 100% !important;
+		padding: 0;
+	}
+
+	.ui-jolisearch .jolisearch-body > [class*="col-"] {
+		padding-left: 0;
+		padding-right: 0;
+	}
+
+	.ui-front.ui-menu .ui-menu-item .jolisearch-body a {
+		width: auto !important;
+	}
+}

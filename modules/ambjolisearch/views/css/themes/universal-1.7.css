@@ -1,0 +1,24 @@
+/*
+ *
+ *	@module     	Advanced search (AmbJoliSearch)
+ *	@file 			universal-1.7.css
+ *	@subject		Add support for Universal theme from PrestaCrea
+ *	@copyright  	Copyright (c) 2013-2020 Ambris Informatique SARL (http://www.ambris.com/)
+ *	@author     	Richard Stefan (@RicoStefan)
+ *	@license    	Commercial license
+ *	Support by mail: support@ambris.com
+ *
+ *	suggest (autocomplete) list style
+*/
+
+.ui-autocomplete.ui-menu.ui-jolisearch {
+    border: 1px solid #aaa !important;
+    font-family: inherit !important;
+    width: inherit !important;
+    font-size: inherit !important;
+}
+
+.ui-menu.ui-jolisearch .jolisearch-body {
+    background: none;
+    background-color: #fff;
+}

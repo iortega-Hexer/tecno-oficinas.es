@@ -1,5 +1,5 @@
 {*
-* 2007-2019 ETS-Soft
+* 2007-2022 ETS-Soft
 *
 * NOTICE OF LICENSE
 *
@@ -14,27 +14,25 @@
 * needs, please contact us for extra customization service at an affordable price
 *
 *  @author ETS-Soft <etssoft.jsc@gmail.com>
-*  @copyright  2007-2019 ETS-Soft
+*  @copyright  2007-2022 ETS-Soft
 *  @license    Valid for 1 website (or project) for each purchase of license
 *  International Registered Trademark & Property of ETS-Soft
 *}
 {extends file="page.tpl"}
-    {block name="content_wrapper"}
+{block name="content"}
     <div id="content-wrapper">
         <div id="main">
             <header class="page-header">
             <h1>{l s='My blog comments' mod='ybc_blog'}</h1>
             </header>
             <section id="content">
-                  {block name="content"}
-                        <div class="ybc_blog_layout_{$blog_layout|escape:'html':'UTF-8'} ybc-blog-wrapper-form-managament">
-                            {if isset($errors_html) && $errors_html}
-                                {$errors_html nofilter}
-                            {else}
-                                {hook h='displayRightFormComments'}
-                            {/if}
-                        </div>
-                  {/block}
+                <div class="ybc_blog_layout_{$blog_layout|escape:'html':'UTF-8'} ybc-blog-wrapper-form-managament">
+                    {if isset($errors_html) && $errors_html}
+                        {$errors_html nofilter}
+                    {else}
+                        {hook h='displayRightFormComments'}
+                    {/if}
+                </div>
             </section>
             {hook h='displayFooterYourAccount'}
         </div>

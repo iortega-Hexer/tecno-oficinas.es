@@ -15,7 +15,7 @@
  * @license   Nicodème Cyril
  * @package   modules
  * @since     2014-04-15
- * @version   2.7.8
+ * @version   2.7.9
  */
 
 if (!defined('_PS_VERSION_')) {

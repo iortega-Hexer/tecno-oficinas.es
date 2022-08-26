@@ -1,6 +1,6 @@
 <?php
 /**
- * 2007-2019 ETS-Soft
+ * 2007-2022 ETS-Soft
  *
  * NOTICE OF LICENSE
  *
@@ -15,7 +15,7 @@
  * needs please contact us for extra customization service at an affordable price
  *
  *  @author ETS-Soft <etssoft.jsc@gmail.com>
- *  @copyright  2007-2019 ETS-Soft
+ *  @copyright  2007-2022 ETS-Soft
  *  @license    Valid for 1 website (or project) for each purchase of license
  *  International Registered Trademark & Property of ETS-Soft
  */
@@ -40,6 +40,21 @@ class Ybc_blogCommentModuleFrontController extends ModuleFrontController
 	{
 		parent::init();
 	}
+    public function getAlternativeLangsUrl()
+    {
+        $alternativeLangs = array();
+        $languages = Language::getLanguages(true, $this->context->shop->id);
+
+        if ($languages < 2) {
+            // No need to display alternative lang if there is only one enabled
+            return $alternativeLangs;
+        }
+
+        foreach ($languages as $lang) {
+            $alternativeLangs[$lang['language_code']] = $this->module->getLanguageLink($lang['id_lang']);
+        }
+        return $alternativeLangs;
+    }
 	public function initContent()
 	{
         parent::initContent();
@@ -50,7 +65,9 @@ class Ybc_blogCommentModuleFrontController extends ModuleFrontController
         $paggination->url = $module->getLink('comment', array('page'=>"_page_"));
         $paggination->limit = Configuration::get('YBC_BLOG_COMMENT_PER_PAGE') ? Configuration::get('YBC_BLOG_COMMENT_PER_PAGE'): 8;
         $totalPages = ceil($totalRecords / $paggination->limit);
-        $page=Tools::getValue('page',1);
+        $page = (int)Tools::getValue('page',1);
+        if(!$page<1)
+            $page = 1;
         if($page > $totalPages)
             $page = $totalPages;
         $paggination->page = $page;
@@ -64,24 +81,24 @@ class Ybc_blogCommentModuleFrontController extends ModuleFrontController
             {
                 $post['link'] = $this->module->getLink('blog',array('id_post' => $post['id_post']));
                 if($post['thumb'])
-                    $post['thumb'] = $this->module->blogDir.'views/img/post/thumb/'.$post['thumb'];
+                    $post['thumb'] = $this->context->link->getMediaLink(_PS_YBC_BLOG_IMG_.'post/thumb/'.$post['thumb']);
                 $post['comments_num'] = $this->module->countCommentsWithFilter(' AND bc.id_post='.$post['id_post'].' AND approved=1');
                 $post['liked'] = $this->module->isLikedPost($post['id_post']);
                 if($post['id_user'] && !$post['name'])
-                    $post['name']=  Db::getInstance()->getValue('SELECT CONCAT(firstname, " ", lastname) FROM '._DB_PREFIX_.'customer WHERE id_customer="'.(int)$post['id_user'].'"');
+                    $post['name']=  Db::getInstance()->getValue('SELECT CONCAT(firstname, " ", lastname) FROM `'._DB_PREFIX_.'customer` WHERE id_customer="'.(int)$post['id_user'].'"');
                 if($post['id_user'])
                 {
-                    $customerinfo = Db::getInstance()->getRow('SELECT * FROM '._DB_PREFIX_.'ybc_blog_employee WHERE id_employee="'.(int)$post['id_user'].'" AND is_customer=1');
+                    $customerinfo = Db::getInstance()->getRow('SELECT * FROM `'._DB_PREFIX_.'ybc_blog_employee` WHERE id_employee="'.(int)$post['id_user'].'" AND is_customer=1');
                     if($customerinfo && $customerinfo['avata'])
                     {
-                        $post['avata'] = $this->module->getBaseLink().'/modules/'.$this->module->name.'/views/img/avata/'.$customerinfo['avata'];
+                        $post['avata'] = $this->context->link->getMediaLink(_PS_YBC_BLOG_IMG_.'avata/'.$customerinfo['avata']);
                     }
                     else
-                       $post['avata'] = $this->module->getBaseLink().'/modules/'.$this->module->name.'/views/img/avata/'.(Configuration::get('YBC_BLOG_IMAGE_AVATA_DEFAULT')? Configuration::get('YBC_BLOG_IMAGE_AVATA_DEFAULT') :'default_customer.png'); 
+                       $post['avata'] = $this->context->link->getMediaLink(_PS_YBC_BLOG_IMG_.'avata/'.(Configuration::get('YBC_BLOG_IMAGE_AVATA_DEFAULT')? Configuration::get('YBC_BLOG_IMAGE_AVATA_DEFAULT') :'default_customer.png')); 
                 }
                 else
                 {
-                    $post['avata'] = $this->module->getBaseLink().'/modules/'.$this->module->name.'/views/img/avata/'.(Configuration::get('YBC_BLOG_IMAGE_AVATA_DEFAULT')? Configuration::get('YBC_BLOG_IMAGE_AVATA_DEFAULT') :'default_customer.png');
+                    $post['avata'] = $this->context->link->getMediaLink(_PS_YBC_BLOG_IMG_.'avata/'.(Configuration::get('YBC_BLOG_IMAGE_AVATA_DEFAULT')? Configuration::get('YBC_BLOG_IMAGE_AVATA_DEFAULT') :'default_customer.png'));
                 }
                 $post['categories'] = $this->module->getCategoriesByIdPost($post['id_post'],false,true);
             }
@@ -101,10 +118,10 @@ class Ybc_blogCommentModuleFrontController extends ModuleFrontController
                 'path' => $module->getBreadCrumb(),            
                 'breadcrumb' => $module->is17 ? $module->getBreadCrumb() : false,
                 'show_date' => (int)Configuration::get('YBC_BLOG_SHOW_POST_DATE') ? true : false,
-                'image_folder' => $module->blogDir.'views/img/avata/',
+                'image_folder' => _PS_YBC_BLOG_IMG_.'avata/',
             )
         );
-        if(Tools::isSubmit('loadajax') && Tools::getValue('loadajax'))
+        if(Tools::isSubmit('loadajax'))
         {
             $this->module->loadMoreComments($posts,$paggination);
         }

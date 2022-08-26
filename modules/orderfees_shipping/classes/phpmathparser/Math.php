@@ -50,6 +50,11 @@ class Math
     {
         $this->variables[$name] = $value;
     }
+    
+    public function registerFunction($name, $fn)
+    {
+        Expressions\HelperFunction::$fns[$name] = $fn;
+    }
 
     public function run(Stack $stack)
     {

@@ -1,0 +1,108 @@
+.accessories_table_price_content
+{
+	width: 100%;
+	margin-top: 15px;
+}
+
+.accessories_table_price_content td 
+{
+	padding-top: 4px !important;
+	padding-bottom: 4px !important;
+	padding-left: 0px;
+}
+.accessories_table_price_content .left-column,
+.accessories_table_price_content .left-column-total
+{
+	text-align: right; 
+	padding-right: 8px; 
+}
+.accessories_table_price_content .right-column{
+    vertical-align: top;
+}
+.accessories_table_price_content .right-column,
+.accessories_table_price_content .right-column-total
+{
+	text-align: right; 
+	width: 20%;
+	min-width: 80px;
+}
+
+.accessories_table_price_content .left-column-total,
+.accessories_table_price_content .right-column-total
+{
+
+	font-weight: bold;
+}
+
+.accessorygroup div.disabled span
+{
+	opacity: 0.4;
+}
+#group_accessories .dd-option-text{
+    line-height: 14px !important;
+    margin-top: 15px;
+    font-weight: normal;
+}
+#group_accessories .dd-selected .dd-option-text {
+    margin-top: 0px;
+}
+#group_accessories .dd-option{
+    border-bottom: 1px solid #ddd;
+    color: #333;
+    cursor: pointer;
+    display: block;
+    overflow: hidden;
+    padding: 5px;
+    text-decoration: none;
+    transition: all 0.25s ease-in-out 0s;
+}
+#group_accessories .dd-option-image, .dd-selected-image
+{
+    float: left;
+    margin-right: 5px;
+    max-width: 50px;
+    vertical-align: middle;
+}
+
+#group_accessories .dd-selected {
+    display: block;
+    font-weight: bold;
+    overflow: hidden;
+    padding: 10px 25px 10px 10px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+#group_accessories .dd-option-description{
+    display:none;
+}
+#group_accessories .dd-container {
+    margin-bottom: 3px;
+    position: relative;
+}
+#group_accessories .dd-select {
+    border: 1px solid #d6d4d4;
+    border-radius: 2px;
+    cursor: pointer;
+    margin-top: 2px;
+    position: relative;
+}
+
+
+#group_accessories .dd-container,#group_accessories .dd-select{
+    width: auto !important;
+}
+
+#group_accessories .dropdown-image{
+    min-width: 60px;
+    vertical-align: top;
+    width: 25%;
+    text-align: right;
+}
+
+#group_accessories .dd-options {    
+    width: 100% !important;
+}
+#group_accessories .message_error {    
+    color: #F00;
+}

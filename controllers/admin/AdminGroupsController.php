@@ -327,7 +327,7 @@ class AdminGroupsControllerCore extends AdminController
                     'label' => $this->trans('Discount', [], 'Admin.Global'),
                     'name' => 'reduction',
                     'suffix' => '%',
-                    'col' => 1,
+                    'col' => 3,
                     'hint' => $this->trans('Automatically apply this value as a discount on all products for members of this customer group.', [], 'Admin.Shopparameters.Help'),
                 ],
                 [
@@ -362,12 +362,12 @@ class AdminGroupsControllerCore extends AdminController
                         [
                             'id' => 'show_prices_on',
                             'value' => 1,
-                            'label' => $this->trans('Enabled', [], 'Admin.Global'),
+                            'label' => $this->trans('Yes', [], 'Admin.Global'),
                         ],
                         [
                             'id' => 'show_prices_off',
                             'value' => 0,
-                            'label' => $this->trans('Disabled', [], 'Admin.Global'),
+                            'label' => $this->trans('No', [], 'Admin.Global'),
                         ],
                     ],
                     'hint' => $this->trans('Customers in this group can view prices.', [], 'Admin.Shopparameters.Help'),

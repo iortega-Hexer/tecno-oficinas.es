@@ -1,6 +1,6 @@
 <?php
 /**
- * 2007-2019 ETS-Soft
+ * 2007-2022 ETS-Soft
  *
  * NOTICE OF LICENSE
  *
@@ -15,7 +15,7 @@
  * needs please contact us for extra customization service at an affordable price
  *
  *  @author ETS-Soft <etssoft.jsc@gmail.com>
- *  @copyright  2007-2019 ETS-Soft
+ *  @copyright  2007-2022 ETS-Soft
  *  @license    Valid for 1 website (or project) for each purchase of license
  *  International Registered Trademark & Property of ETS-Soft
  */
@@ -57,10 +57,12 @@ class Ybc_blog_defines extends Module
             'multi_lang' => true
         ), 
         array(
-            'name' => 'image'
+            'name' => 'image',
+            'multi_lang' => true
         ),
         array(
-            'name' => 'thumb'
+            'name' => 'thumb',
+            'multi_lang' => true
         ),
         array(
             'name' => 'enabled',
@@ -108,10 +110,12 @@ class Ybc_blog_defines extends Module
             'multi_lang'=>true,
         ), 
         array(
-            'name' => 'image'
+            'name' => 'image',
+            'multi_lang' => true,
         ),
         array(
-            'name' => 'thumb'
+            'name' => 'thumb',
+            'multi_lang' => true,
         ),
         array(
             'name' => 'enabled',
@@ -119,6 +123,9 @@ class Ybc_blog_defines extends Module
         ),
         array(
             'name' => 'datetime_active',
+        ),
+        array(
+            'name' => 'datetime_added',
         ),
         array(
             'name' => 'is_featured',
@@ -179,10 +186,12 @@ class Ybc_blog_defines extends Module
             'default' => 1
         ),
         array(
-            'name' => 'image'
+            'name' => 'image',
+            'multi_lang' => true
         ),
         array(
-            'name' => 'thumb'
+            'name' => 'thumb',
+            'multi_lang' => true
         ),
         array(
             'name' => 'enabled',
@@ -207,7 +216,8 @@ class Ybc_blog_defines extends Module
             'default' => 1
         ),
         array(
-            'name' => 'image'
+            'name' => 'image',
+            'multi_lang' => true
         ),
         array(
             'name' => 'url',
@@ -335,46 +345,55 @@ class Ybc_blog_defines extends Module
             array(
                 'class_name' => 'AdminYbcBlogPost',
                 'tab_name' => $this->l('Posts','ybc_blog_defines'),
+                'tabname' => 'Posts',
                 'icon'=>'icon icon-AdminPriceRule',
             ),
             array(
                 'class_name' => 'AdminYbcBlogCategory',
                 'tab_name' => $this->l('Categories','ybc_blog_defines'),
+                'tabname' => 'Categories',
                 'icon' => 'icon icon-AdminCatalog',
             ),
             array(
                 'class_name' => 'AdminYbcBlogComment',
                 'tab_name' => $this->l('Comments','ybc_blog_defines'),
+                'tabname' => 'Comments',
                 'icon' => 'icon icon-comments',
             ),
             array(
                 'class_name' => 'AdminYbcBlogPolls',
                 'tab_name' => $this->l('Polls','ybc_blog_defines'),
+                'tabname' => 'Polls',
                 'icon' => 'icon icon-polls',
             ),
             array(
                 'class_name' => 'AdminYbcBlogSlider',
                 'tab_name' => $this->l('Slider','ybc_blog_defines'),
+                'tabname' => 'Slider',
                 'icon' => 'icon icon-AdminParentModules',
             ),
             array(
                 'class_name' => 'AdminYbcBlogGallery',
                 'tab_name' => $this->l('Photo gallery','ybc_blog_defines'),
+                'tabname' => 'Photo gallery',
                 'icon' =>'icon icon-AdminDashboard',
             ),
             array(
                 'class_name' => 'AdminYbcBlogAuthor',
                 'tab_name' => $this->l('Authors','ybc_blog_defines'),
+                'tabname' => 'Authors',
                 'icon' => 'icon icon-user',
             ),
             array(
                 'class_name' => 'AdminYbcBlogStatistics',
                 'tab_name' => $this->l('Statistics','ybc_blog_defines'),
+                'tabname' => 'Statistics',
                 'icon' =>'icon icon-chart',
             ),
             array(
                 'class_name' => 'AdminYbcBlogSetting',
                 'tab_name' => $this->l('Global settings','ybc_blog_defines'),
+                'tabname' => 'Global settings',
                 'icon' => 'icon icon-AdminAdmin',
             ),
         );
@@ -505,6 +524,8 @@ class Ybc_blog_defines extends Module
             'YBC_BLOG_IMAGE_AVATA_DEFAULT' => array(
                 'label' => $this->l('Default avatar','ybc_blog_defines'),
                 'type' => 'file',
+                'col' => 9,
+                'desc' => sprintf($this->l('Accepted formats: jpg, jpeg, png, gif. Limit: %dMb. Recommended: 100px x 100px'),Configuration::get('PS_ATTACHMENT_MAXIMUM_SIZE')),
             ), 
         );
         $this->rss=array(
@@ -546,7 +567,7 @@ class Ybc_blog_defines extends Module
                 ),  
                 'default' => 'side_bar,custom_hook', 
                 'form_group_class' =>'rss_setting',
-                'desc' => $this->l('Insert this line <b>{hook h="blogRssSidebar"}</b> into template .tpl file where you want to display RSS icon','ybc_blog_defines'),
+                'desc' => $this->l('Insert this line {hook h="blogRssSidebar"} into template .tpl file where you want to display RSS icon','ybc_blog_defines'),
             ),
             'YBC_BLOC_RSS_TYPE'=>array(
                 'label' => $this->l('Data to feed','ybc_blog_defines'),
@@ -633,8 +654,32 @@ class Ybc_blog_defines extends Module
                 'type' => 'text',
                 'default' => 'Read more',
                 'lang'=>true,
-                'desc' => $this->l('Leave blank to hide the “Read more” link for blog posts','ybc_blog_defines'),
             ), 
+            'YBC_BLOG_ALLOW_TABLE_OF_CONTENT' => array(
+                'label' => $this->l('Allow creating a table of contents for the post','ybc_blog_defines'),
+                'type' => 'switch',
+                'default' => 1,                
+                'values' => array(
+					array(
+						'id' => 'active_on',
+						'value' => 1,
+						'label' => $this->l('Yes','ybc_blog_defines')
+					),
+					array(
+						'id' => 'active_off',
+						'value' => 0,
+						'label' => $this->l('No','ybc_blog_defines')
+					)
+				),
+            ),
+            'YBC_BLOG_LABEL_TABLE_OF_CONTENT' => array(
+                'label' => $this->l('Title for table of contents section'),
+                'type' => 'text',
+                'default' => 'Table of contents',
+                'form_group_class'=> 'table_content',
+                'lang'=>true,
+                'desc' => $this->l('If you leave this field blank, the default value "Table of contents" will be applied.','ybc_blog_defines'),
+            ),
             'YBC_BLOG_MAIN_PAGE_POST_TYPE' => array(
                 'label' => $this->l('Posts will be displayed on main blog page','ybc_blog_defines'),
                 'type' => 'select',                                     
@@ -1379,25 +1424,7 @@ class Ybc_blog_defines extends Module
                 'tab' => 'general',
                 'required' => true,
                 'desc' => $this->l('Enter your website admin directory (appeared in back office URLs). This value is used to generate correct URLs to your back office, which will be used in the email sent to admin','ybc_blog_defines')
-            ), 
-            'YBC_BLOG_DISPLAY_SNIPPET' => array(
-                'label' => $this->l('Display review snippet on blog posts','ybc_blog_defines'), 
-                'type' => 'switch',
-                'default' => 0,                 
-                'tab' => 'general',
-                'values' => array(
-					array(
-						'id' => 'active_on',
-						'value' => 1,
-						'label' => $this->l('Yes')
-					),
-					array(
-						'id' => 'active_off',
-						'value' => 0,
-						'label' => $this->l('No')
-					)
-				),
-            ),                                        
+            ),                                     
         );
         $this->configs_homepage=array(         
                 'YBC_BLOG_SHOW_LATEST_BLOCK_HOME' => array(
@@ -1422,7 +1449,7 @@ class Ybc_blog_defines extends Module
                     'label' => $this->l('Maximum number of latest posts displayed','ybc_blog_defines'),
                     'required2' => true,
                     'type' => 'text',
-                    //'width' => 200,
+                    'validate' => 'isunsignedInt', 
                     'default' => 5,                         
                 ),
                 'YBC_BLOG_SHOW_POPULAR_BLOCK_HOME' => array(
@@ -1447,7 +1474,7 @@ class Ybc_blog_defines extends Module
                     'label' => $this->l('Maximum number of popular posts displayed','ybc_blog_defines'),
                     'type' => 'text',
                     'required2' => true,
-                    //'width' => 200,
+                    'validate' => 'isunsignedInt', 
                     'default' => 5,                           
                 ),
                 'YBC_BLOG_SHOW_FEATURED_BLOCK_HOME' => array(
@@ -1472,7 +1499,7 @@ class Ybc_blog_defines extends Module
                     'label' => $this->l('Maximum number of featured posts displayed','ybc_blog_defines'),
                     'type' => 'text',
                     'required2' => true,
-                    //'width' => 200,
+                    'validate' => 'isunsignedInt', 
                     'default' => 5,                         
                 ),
                  
@@ -1500,7 +1527,8 @@ class Ybc_blog_defines extends Module
                     'label' => $this->l('Maximum number of posts displayed on Specific blog category sections','ybc_blog_defines'),
                     'type' => 'text',
                     'required2' => true,
-                    'default' => 5,                           
+                    'default' => 5,  
+                    'validate' => 'isunsignedInt',                           
                 ),
                 'YBC_BLOG_SHOW_GALLERY_BLOCK_HOME' => array(
                     'label' => $this->l('Display featured gallery images','ybc_blog_defines'),
@@ -1540,7 +1568,7 @@ class Ybc_blog_defines extends Module
                 'YBC_BLOG_GALLERY_POST_NUMBER_HOME' => array(
                     'label' => $this->l('Maximum number of images displayed on featured gallery','ybc_blog_defines'),
                     'type' => 'text',
-                    //'width' => 200,
+                    'validate' => 'isunsignedInt', 
                     'required' => true,
                     'default' => 12,
                     'required2' => true,
@@ -1688,7 +1716,7 @@ class Ybc_blog_defines extends Module
                             ),
                             array(
                                 'id_option' => 'click_number', 
-                                'name' => $this->l('Most popular','ybc_blog_defines')
+                                'name' => $this->l('Popular post','ybc_blog_defines')
                             ),
                         ),                             
                      'id' => 'id_option',
@@ -1839,7 +1867,6 @@ class Ybc_blog_defines extends Module
                 'default' => 5,  
                 'validate' => 'isunsignedInt',              
                 'class'=>'col-lg-3',
-                'required2' => true,
                 'form_group_class'=>'related_post',
                 'desc' => $this->l('Leave blank to display all','ybc_blog_defines'),
             ),
@@ -2054,7 +2081,7 @@ class Ybc_blog_defines extends Module
                 'label' => $this->l('Maximum number of related posts displayed','ybc_blog_defines'),
                 'type' => 'text',
                 'default' => 6,
-                'required2' => true,
+                'validate' => 'isunsignedInt',  
                 'desc'=> $this->l('Leave blank to display all related posts for each product category','ybc_blog_defines'),
 
             ), 
@@ -2146,7 +2173,7 @@ class Ybc_blog_defines extends Module
                 'label' => $this->l('Maximum number of related posts displayed','ybc_blog_defines'),
                 'type' => 'text',
                 'default' =>8,
-                'required2' => true,
+                'validate' => 'isunsignedInt',
                 'desc' => $this->l('Leave blank to display all related posts for each product on product page','ybc_blog_defines'),
             ), 
             'YBC_BLOG_RELATED_POST_ROW_IN_PRODUCT' => array(
@@ -2542,6 +2569,24 @@ class Ybc_blog_defines extends Module
                 ),    
                 'default' => 'left',                
             ),  
+            'YBC_BLOG_SIDEBAR_ENABLED_ON_MOBILE' => array(
+                'label' => $this->l('Enable sidebar when collapsed','ybc_blog_defines'),
+                'type' => 'switch',
+                'default' => 1,
+                'form_group_class'=>'mobile_slidebar',
+                'values' => array(
+					array(
+						'id' => 'active_on',
+						'value' => 1,
+						'label' => $this->l('Yes','ybc_blog_defines')
+					),
+					array(
+						'id' => 'active_off',
+						'value' => 0,
+						'label' => $this->l('No','ybc_blog_defines')
+					)
+				),
+            ),
             'YBC_BLOG_SIDEBAR_ON_MOBILE' => array(
                 'label' => $this->l('Expand sidebar on mobile by default','ybc_blog_defines'),
                 'type' => 'switch',
@@ -2624,253 +2669,11 @@ class Ybc_blog_defines extends Module
                      
         );
         $this->configs_email=array(
-            'YBC_BLOG_ENABLE_MAIL' => array(
-                'label' => $this->l('When a comment is posted','ybc_blog_defines'),
-                'type' => 'switch',
-                'default' => 1,
-                'values' => array(
-					array(
-						'id' => 'active_on',
-						'value' => 1,
-						'label' => $this->l('Yes','ybc_blog_defines')
-					),
-					array(
-						'id' => 'active_off',
-						'value' => 0,
-						'label' => $this->l('No','ybc_blog_defines')
-					)
-				),
-            ), 
-            'YBC_BLOG_ENABLE_MAIL_POLLS' => array(
-                'label' => $this->l('When customer votes a post','ybc_blog_defines'),
-                'type' => 'switch',
-                'default' => 1,
-                'values' => array(
-					array(
-						'id' => 'active_on',
-						'value' => 1,
-						'label' => $this->l('Yes','ybc_blog_defines')
-					),
-					array(
-						'id' => 'active_off',
-						'value' => 0,
-						'label' => $this->l('No','ybc_blog_defines')
-					)
-				),
-            ), 
-            'YBC_BLOG_ENABLE_MAIL_EDIT_COMMENT' => array(
-                'label' => $this->l('When customer modified the comment','ybc_blog_defines'),
-                'type' => 'switch',
-                'default' => 0,
-                'values' => array(
-					array(
-						'id' => 'active_on',
-						'value' => 1,
-						'label' => $this->l('Yes','ybc_blog_defines')
-					),
-					array(
-						'id' => 'active_off',
-						'value' => 0,
-						'label' => $this->l('No','ybc_blog_defines')
-					)
-				),
-            ), 
-            'YBC_BLOG_ENABLE_MAIL_REPORT' => array(
-                'label' => $this->l('When a comment is reported as abused','ybc_blog_defines'),
-                'type' => 'switch',
-                'default' => 0,
-                'values' => array(
-					array(
-						'id' => 'active_on',
-						'value' => 1,
-						'label' => $this->l('Yes','ybc_blog_defines')
-					),
-					array(
-						'id' => 'active_off',
-						'value' => 0,
-						'label' => $this->l('No','ybc_blog_defines')
-					)
-				),
-            ),
-            'YBC_BLOG_ENABLE_MAIL_REPLY' => array(
-                'label' => $this->l('When user replies to post comments','ybc_blog_defines'),
-                'type' => 'switch',
-                'default' => 1,
-                'values' => array(
-					array(
-						'id' => 'active_on',
-						'value' => 1,
-						'label' => $this->l('Yes','ybc_blog_defines')
-					),
-					array(
-						'id' => 'active_off',
-						'value' => 0,
-						'label' => $this->l('No','ybc_blog_defines')
-					)
-				),
-            ),
-            'YBC_BLOG_ADMIN_EMAIL_NEW_POST' => array(
-                'label' => $this->l('When customer (community author) adds a new post','ybc_blog_defines'),
-                'type' => 'switch',
-                'default' => 1,
-                'form_group_class' =>'setting_customer_author',
-                'values' => array(
-					array(
-						'id' => 'active_on',
-						'value' => 1,
-						'label' => $this->l('Yes','ybc_blog_defines')
-					),
-					array(
-						'id' => 'active_off',
-						'value' => 0,
-						'label' => $this->l('No','ybc_blog_defines')
-					)
-				),
-            ),
             'YBC_BLOG_ALERT_EMAILS' => array(
                 'label' => $this->l('Email address(es) to receive notifications','ybc_blog_defines'),
                 'type' => 'text',                
                 'desc' => $this->l('Emails that you want to receive notifications, separated by a comma (,)','ybc_blog_defines'),        
             ),
-            'YBC_BLOG_ENABLE_MAIL_NEW_COMMENT' => array(
-                'label' => $this->l('When submit new comment successfully','ybc_blog_defines'),
-                'type' => 'switch',
-                'default' => 1,
-                'values' => array(
-					array(
-						'id' => 'active_on',
-						'value' => 1,
-						'label' => $this->l('Yes','ybc_blog_defines')
-					),
-					array(
-						'id' => 'active_off',
-						'value' => 0,
-						'label' => $this->l('No','ybc_blog_defines')
-					)
-				),
-            ),
-            'YBC_BLOG_ENABLE_MAIL_NEW_POLLS' => array(
-                'label' => $this->l('When vote a post successfully','ybc_blog_defines'),
-                'type' => 'switch',
-                'default' => 1,
-                'values' => array(
-					array(
-						'id' => 'active_on',
-						'value' => 1,
-						'label' => $this->l('Yes','ybc_blog_defines')
-					),
-					array(
-						'id' => 'active_off',
-						'value' => 0,
-						'label' => $this->l('No','ybc_blog_defines')
-					)
-				),
-            ),
-            'YBC_BLOG_ENABLE_MAIL_APPROVED' => array(
-                'label' => $this->l('When his/her comment is approved','ybc_blog_defines'),
-                'type' => 'switch',
-                'default' => 1,
-                'values' => array(
-					array(
-						'id' => 'active_on',
-						'value' => 1,
-						'label' => $this->l('Yes','ybc_blog_defines')
-					),
-					array(
-						'id' => 'active_off',
-						'value' => 0,
-						'label' => $this->l('No','ybc_blog_defines')
-					)
-				),
-            ),
-            'YBC_BLOG_ENABLE_MAIL_EDIT_COMMENT_CUSTOMER' => array(
-                'label' => $this->l('When his/her comment updated','ybc_blog_defines'),
-                'type' => 'switch',
-                'default' => 0,
-                'values' => array(
-					array(
-						'id' => 'active_on',
-						'value' => 1,
-						'label' => $this->l('Yes','ybc_blog_defines')
-					),
-					array(
-						'id' => 'active_off',
-						'value' => 0,
-						'label' => $this->l('No','ybc_blog_defines')
-					)
-				),
-            ),
-            'YBC_BLOG_ENABLE_MAIL_REPLY_CUSTOMER' => array(
-                'label' => $this->l('When admin/other users replied to his/her comment','ybc_blog_defines'),
-                'type' => 'switch',
-                'default' => 1,
-                'values' => array(
-					array(
-						'id' => 'active_on',
-						'value' => 1,
-						'label' => $this->l('Yes','ybc_blog_defines')
-					),
-					array(
-						'id' => 'active_off',
-						'value' => 0,
-						'label' => $this->l('No','ybc_blog_defines')
-					)
-				),
-            ),
-            'YBC_BLOG_ENABLE_MAIL_REPORTED_CUSTOMER' => array(
-                'label' => $this->l('When his/her comment is reported as abused','ybc_blog_defines'),
-                'type' => 'switch',
-                'default' => 0,
-                'values' => array(
-					array(
-						'id' => 'active_on',
-						'value' => 1,
-						'label' => $this->l('Yes','ybc_blog_defines')
-					),
-					array(
-						'id' => 'active_off',
-						'value' => 0,
-						'label' => $this->l('No','ybc_blog_defines')
-					)
-				),
-            ),
-            'YBC_BLOG_CUSTOMER_EMAIL_NEW_POST' => array(
-                'label' => $this->l('When their post is successfully added','ybc_blog_defines'),
-                'type' => 'switch',
-                'default' => 1,
-                'form_group_class' =>'setting_customer_author',
-                'values' => array(
-					array(
-						'id' => 'active_on',
-						'value' => 1,
-						'label' => $this->l('Yes','ybc_blog_defines')
-					),
-					array(
-						'id' => 'active_off',
-						'value' => 0,
-						'label' => $this->l('No','ybc_blog_defines')
-					) 
-				),
-            ),
-            'YBC_BLOG_CUSTOMER_EMAIL_APPROVED_POST' => array(
-                'label' => $this->l('When their post is approved','ybc_blog_defines'),
-                'type' => 'switch',
-                'default' => 1,
-                'form_group_class' =>'setting_customer_author',
-                'values' => array(
-					array(
-						'id' => 'active_on',
-						'value' => 1,
-						'label' => $this->l('Yes','ybc_blog_defines')
-					),
-					array(
-						'id' => 'active_off',
-						'value' => 0,
-						'label' => $this->l('No','ybc_blog_defines')
-					)
-				),
-            ),
-            
         );
         $this->configs_seo=array(
         'YBC_BLOG_FRIENDLY_URL' => array(
@@ -3249,8 +3052,8 @@ class Ybc_blog_defines extends Module
      }
      public function getGroups($list_id=false)
      {
-        $sql ='SELECT g.id_group as value, gl.name as label FROM '._DB_PREFIX_.'group g
-            LEFT JOIN '._DB_PREFIX_.'group_lang gl ON (g.id_group=gl.id_group AND gl.id_lang="'.(int)$this->context->language->id.'")
+        $sql ='SELECT g.id_group as value, gl.name as label FROM `'._DB_PREFIX_.'group` g
+            LEFT JOIN `'._DB_PREFIX_.'group_lang` gl ON (g.id_group=gl.id_group AND gl.id_lang="'.(int)$this->context->language->id.'")
         WHERE g.id_group !="'.(int)Configuration::get('PS_UNIDENTIFIED_GROUP').'" AND g.id_group !="'.(int)Configuration::get('PS_GUEST_GROUP').'"
         ';
         $groups=Db::getInstance()->executeS($sql);

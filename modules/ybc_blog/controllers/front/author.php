@@ -1,6 +1,6 @@
 <?php
 /**
- * 2007-2019 ETS-Soft
+ * 2007-2022 ETS-Soft
  *
  * NOTICE OF LICENSE
  *
@@ -15,7 +15,7 @@
  * needs please contact us for extra customization service at an affordable price
  *
  *  @author ETS-Soft <etssoft.jsc@gmail.com>
- *  @copyright  2007-2019 ETS-Soft
+ *  @copyright  2007-2022 ETS-Soft
  *  @license    Valid for 1 website (or project) for each purchase of license
  *  International Registered Trademark & Property of ETS-Soft
  */
@@ -44,18 +44,35 @@ class Ybc_blogAuthorModuleFrontController extends ModuleFrontController
             Tools::redirect($this->module->getLink('author'));
         }
 	}
+    public function getAlternativeLangsUrl()
+    {
+        $alternativeLangs = array();
+        $languages = Language::getLanguages(true, $this->context->shop->id);
+
+        if ($languages < 2) {
+            // No need to display alternative lang if there is only one enabled
+            return $alternativeLangs;
+        }
+
+        foreach ($languages as $lang) {
+            $alternativeLangs[$lang['language_code']] = $this->module->getLanguageLink($lang['id_lang']);
+        }
+        return $alternativeLangs;
+    }
     public function initContent()
 	{
         parent::initContent();
         $module = new Ybc_blog();
-        $sql ='SELECT COUNT(p.id_post) as total_post, p.added_by,p.is_customer FROM '._DB_PREFIX_.'ybc_blog_post p
-                INNER JOIN '._DB_PREFIX_.'ybc_blog_post_shop ps ON (p.id_post =ps.id_post AND ps.id_shop="'.(int)$this->context->shop->id.'")
-                LEFT JOIN '._DB_PREFIX_.'employee e ON (e.id_employee=p.added_by)
-                LEFT JOIN '._DB_PREFIX_.'customer c ON (c.id_customer =p.added_by)
+        $sql ='SELECT COUNT(p.id_post) as total_post, p.added_by,p.is_customer FROM `'._DB_PREFIX_.'ybc_blog_post` p
+                INNER JOIN `'._DB_PREFIX_.'ybc_blog_post_shop` ps ON (p.id_post =ps.id_post AND ps.id_shop="'.(int)$this->context->shop->id.'")
+                LEFT JOIN `'._DB_PREFIX_.'employee` e ON (e.id_employee=p.added_by)
+                LEFT JOIN `'._DB_PREFIX_.'customer` c ON (c.id_customer =p.added_by)
                 WHERE p.enabled=1 AND ((e.id_employee!=0 AND p.is_customer=0) OR (c.id_customer!=0 AND p.is_customer=1))
                 GROUP BY p.added_by,p.is_customer ORDER BY total_post DESC';
         $authors= Db::getInstance()->executeS($sql);
-        $page = (int)Tools::getValue('page') && (int)Tools::getValue('page') > 0 ? (int)Tools::getValue('page') : 1;
+        $page = (int)Tools::getValue('page');
+        if($page<1)
+            $page =1;
         $totalRecords = (int)count($authors);
         $paggination = new Ybc_blog_paggination_class();            
         $paggination->total = $totalRecords;
@@ -68,10 +85,10 @@ class Ybc_blogAuthorModuleFrontController extends ModuleFrontController
         $start = $paggination->limit * ($page - 1);
         if($start < 0)
             $start = 0;
-        $sql ='SELECT COUNT(p.id_post) as total_post, p.added_by,p.is_customer FROM '._DB_PREFIX_.'ybc_blog_post p
-                INNER JOIN '._DB_PREFIX_.'ybc_blog_post_shop ps ON (p.id_post =ps.id_post AND ps.id_shop="'.(int)$this->context->shop->id.'")
-                LEFT JOIN '._DB_PREFIX_.'employee e ON (e.id_employee=p.added_by)
-                LEFT JOIN '._DB_PREFIX_.'customer c ON (c.id_customer =p.added_by)
+        $sql ='SELECT COUNT(p.id_post) as total_post, p.added_by,p.is_customer FROM `'._DB_PREFIX_.'ybc_blog_post` p
+                INNER JOIN `'._DB_PREFIX_.'ybc_blog_post_shop` ps ON (p.id_post =ps.id_post AND ps.id_shop="'.(int)$this->context->shop->id.'")
+                LEFT JOIN `'._DB_PREFIX_.'employee` e ON (e.id_employee=p.added_by)
+                LEFT JOIN `'._DB_PREFIX_.'customer` c ON (c.id_customer =p.added_by)
                 WHERE p.enabled=1 AND ((e.id_employee!=0 AND p.is_customer=0) OR (c.id_customer!=0 AND p.is_customer=1))
                 GROUP BY p.added_by,p.is_customer ORDER BY total_post DESC limit '.(int)$start.','.(int)$paggination->limit.'';
         
@@ -83,38 +100,38 @@ class Ybc_blogAuthorModuleFrontController extends ModuleFrontController
                 if($author['is_customer'])
                 {
                     $information = Db::getInstance()->getRow('
-                    SELECT * FROM '._DB_PREFIX_.'customer c
-                    LEFT JOIN '._DB_PREFIX_.'ybc_blog_employee be ON (be.id_employee=c.id_customer AND be.is_customer=1)
-                    LEFT JOIN '._DB_PREFIX_.'ybc_blog_employee_lang bel ON (be.id_employee_post=bel.id_employee_post AND bel.id_lang="'.(int)$this->context->language->id.'")
+                    SELECT * FROM `'._DB_PREFIX_.'customer` c
+                    LEFT JOIN `'._DB_PREFIX_.'ybc_blog_employee` be ON (be.id_employee=c.id_customer AND be.is_customer=1)
+                    LEFT JOIN `'._DB_PREFIX_.'ybc_blog_employee_lang` bel ON (be.id_employee_post=bel.id_employee_post AND bel.id_lang="'.(int)$this->context->language->id.'")
                     WHERE c.id_customer="'.(int)$author['added_by'].'"');
                     if(!$information['name'])
                         $information['name']=$information['firstname'].' '.$information['lastname'];
                     $author['information']=$information;
                     $author['link']=$this->module->getLink('blog',array('id_author'=>$author['added_by'],'is_customer'=>1,'alias'=> Tools::link_rewrite($information['name'])));
                     if($information['avata'])
-                        $author['avata'] = $this->module->getBaseLink().'modules/ybc_blog/views/img/avata/'.$information['avata'];
+                        $author['avata'] = $this->context->link->getMediaLink(_PS_YBC_BLOG_IMG_.'avata/'.$information['avata']);
                     else
-                       $author['avata']=$module->getBaseLink().'modules/ybc_blog/views/img/avata/'.(Configuration::get('YBC_BLOG_IMAGE_AVATA_DEFAULT')? Configuration::get('YBC_BLOG_IMAGE_AVATA_DEFAULT') :'default_customer.png'); 
+                       $author['avata']= $this->context->link->getMediaLink(_PS_YBC_BLOG_IMG_.'avata/'.(Configuration::get('YBC_BLOG_IMAGE_AVATA_DEFAULT')? Configuration::get('YBC_BLOG_IMAGE_AVATA_DEFAULT') :'default_customer.png')); 
                 }
                 else
                 {
                     $information = Db::getInstance()->getRow('
-                    SELECT * FROM '._DB_PREFIX_.'employee e
-                    LEFT JOIN '._DB_PREFIX_.'ybc_blog_employee be ON (be.id_employee=e.id_employee AND be.is_customer=0)
-                    LEFT JOIN '._DB_PREFIX_.'ybc_blog_employee_lang bel ON (be.id_employee_post=bel.id_employee_post AND bel.id_lang="'.(int)$this->context->language->id.'")
+                    SELECT * FROM `'._DB_PREFIX_.'employee` e
+                    LEFT JOIN `'._DB_PREFIX_.'ybc_blog_employee` be ON (be.id_employee=e.id_employee AND be.is_customer=0)
+                    LEFT JOIN `'._DB_PREFIX_.'ybc_blog_employee_lang` bel ON (be.id_employee_post=bel.id_employee_post AND bel.id_lang="'.(int)$this->context->language->id.'")
                     WHERE e.id_employee="'.(int)$author['added_by'].'"');
                     if(!$information['name'])
                         $information['name']=$information['firstname'].' '.$information['lastname'];
                     $author['information']=$information;
                     $author['link']=$this->module->getLink('blog',array('id_author'=>$author['added_by'],'is_customer'=>0,'alias'=> Tools::link_rewrite($information['name'])));
                     if($information['avata'])
-                        $author['avata'] = $this->module->getBaseLink().'modules/ybc_blog/views/img/avata/'.$information['avata'];
+                        $author['avata'] = $this->context->link->getMediaLink(_PS_YBC_BLOG_IMG_.'avata/'.$information['avata']);
                     else
-                       $author['avata']=$this->module->getBaseLink().'modules/ybc_blog/views/img/avata/'.(Configuration::get('YBC_BLOG_IMAGE_AVATA_DEFAULT')? Configuration::get('YBC_BLOG_IMAGE_AVATA_DEFAULT') :'default_customer.png'); 
+                       $author['avata']= $this->context->link->getMediaLink(_PS_YBC_BLOG_IMG_.'avata/'.(Configuration::get('YBC_BLOG_IMAGE_AVATA_DEFAULT')? Configuration::get('YBC_BLOG_IMAGE_AVATA_DEFAULT') :'default_customer.png')) ; 
                 }
-                $sql ='SELECT * FROM '._DB_PREFIX_.'ybc_blog_post p
-                INNER JOIN '._DB_PREFIX_.'ybc_blog_post_shop ps ON (p.id_post=ps.id_post AND ps.id_shop="'.(int)$this->context->shop->id.'")
-                LEFT JOIN '._DB_PREFIX_.'ybc_blog_post_lang pl ON (p.id_post=pl.id_post AND pl.id_lang="'.(int)$this->context->language->id.'")
+                $sql ='SELECT * FROM `'._DB_PREFIX_.'ybc_blog_post` p
+                INNER JOIN `'._DB_PREFIX_.'ybc_blog_post_shop` ps ON (p.id_post=ps.id_post AND ps.id_shop="'.(int)$this->context->shop->id.'")
+                LEFT JOIN `'._DB_PREFIX_.'ybc_blog_post_lang` pl ON (p.id_post=pl.id_post AND pl.id_lang="'.(int)$this->context->language->id.'")
                 WHERE p.enabled=1 AND  p.added_by ="'.(int)$author['added_by'].'" AND p.is_customer="'.(int)$author['is_customer'].'"';
                 $author['posts'] = Db::getInstance()->executeS($sql);
                 if($author['posts'])
@@ -144,7 +161,7 @@ class Ybc_blogAuthorModuleFrontController extends ModuleFrontController
                 'breadcrumb' => $this->module->is17 ? $this->module->getBreadCrumb() : false, 
             )
        );
-       if(Tools::isSubmit('loadajax') && Tools::getValue('loadajax'))
+       if(Tools::isSubmit('loadajax'))
        {
             $this->module->loadMoreAuhors($authors,$paggination->render());
        }

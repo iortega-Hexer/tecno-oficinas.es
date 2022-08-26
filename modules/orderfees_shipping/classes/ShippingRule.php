@@ -126,8 +126,8 @@ class ShippingRule extends ObjectModel
     const BASIC_SHIPPING_RULE = 64;
     const BASIC_SHIPPING_BASE = 128;
     
-    const FREE_SHIPPING_LEAST = 256;
-    const FREE_SHIPPING_ALL = 512;
+    const APPLY_IF_LEAST = 256;
+    const APPLY_IF_ALL = 512;
     
     protected static $math_parser = null;
 
@@ -716,7 +716,7 @@ class ShippingRule extends ObjectModel
                 }
             } else {
                 $cart_total = $cart->getOrderTotal($this->minimum_amount_tax, Cart::BOTH_WITHOUT_SHIPPING);
-                $cart_total -= $cart->getOrderTotal($this->minimum_amount_tax, Cart::ONLY_DISCOUNTS);
+                //$cart_total -= $cart->getOrderTotal($this->minimum_amount_tax, Cart::ONLY_DISCOUNTS);
             }
 
             if ($cart_total < $minimum_amount) {
@@ -761,7 +761,7 @@ class ShippingRule extends ObjectModel
                 return false;
             }
             
-            if (Module::isEnabled('cityselect')) {
+            if (Module::isEnabled('cityselect') && !count($this->getCityRuleGroups())) {
                 $id_of_shipping_rule = (int) Db::getInstance()->getValue(
                     'SELECT src.id_of_shipping_rule
                         FROM ' . _DB_PREFIX_ . 'of_shipping_rule_city src
@@ -1233,7 +1233,8 @@ class ShippingRule extends ObjectModel
                 'total' => $cart->getOrderTotal(false, Cart::BOTH_WITHOUT_SHIPPING),
                 'shipping' => $params['total'],
                 'total_quantity' => 0,
-                'quantity' => 0
+                'quantity' => 0,
+                'total_exclude_promo' => 0
             );
             
             $selected_products = $this->restrictionsProducts(true);
@@ -1265,6 +1266,11 @@ class ShippingRule extends ObjectModel
                     
                     $data['volume'] += ($volume * $product['cart_quantity']);
                     $data['total_quantity'] += $product['cart_quantity'];
+                    
+                    // Exclude special promo
+                    if (!$product['reduction_applies']) {
+                        $data['total_exclude_promo'] += $product['total'];
+                    }
                 }
                 
                 if ($all_products) {
@@ -1549,7 +1555,7 @@ class ShippingRule extends ObjectModel
                         break;
                     case 'attributes':
                         $cart_attributes = Db::getInstance()->executeS('
-                        SELECT cp.*
+                        SELECT cp.*, pac.`id_attribute`
                         FROM `'._DB_PREFIX_.'cart_product` cp
                         LEFT JOIN `'._DB_PREFIX_.'product_attribute_combination` pac
                             ON cp.id_product_attribute = pac.id_product_attribute

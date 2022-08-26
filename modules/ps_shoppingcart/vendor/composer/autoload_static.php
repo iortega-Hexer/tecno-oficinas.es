@@ -4,7 +4,7 @@
 
 namespace Composer\Autoload;
 
-class ComposerStaticInita103888fe872c0c4c608b52335a48fd0
+class ComposerStaticInit03a7487f2eb7bddb54d007d33baef54b
 {
     public static $classMap = array (
         'Ps_Shoppingcart' => __DIR__ . '/../..' . '/ps_shoppingcart.php',
@@ -14,7 +14,7 @@ class ComposerStaticInita103888fe872c0c4c608b52335a48fd0
     public static function getInitializer(ClassLoader $loader)
     {
         return \Closure::bind(function () use ($loader) {
-            $loader->classMap = ComposerStaticInita103888fe872c0c4c608b52335a48fd0::$classMap;
+            $loader->classMap = ComposerStaticInit03a7487f2eb7bddb54d007d33baef54b::$classMap;
 
         }, null, ClassLoader::class);
     }

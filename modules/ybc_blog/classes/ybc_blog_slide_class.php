@@ -1,6 +1,6 @@
 <?php
 /**
- * 2007-2019 ETS-Soft
+ * 2007-2022 ETS-Soft
  *
  * NOTICE OF LICENSE
  *
@@ -15,7 +15,7 @@
  * needs please contact us for extra customization service at an affordable price
  *
  *  @author ETS-Soft <etssoft.jsc@gmail.com>
- *  @copyright  2007-2019 ETS-Soft
+ *  @copyright  2007-2022 ETS-Soft
  *  @license    Valid for 1 website (or project) for each purchase of license
  *  International Registered Trademark & Property of ETS-Soft
  */
@@ -37,8 +37,9 @@ class Ybc_blog_slide_class extends ObjectModel
 		'fields' => array(
 			'enabled' => array('type' => self::TYPE_BOOL, 'validate' => 'isBool',),
             'sort_order' => array('type' => self::TYPE_INT, 'validate' => 'isunsignedInt'),
-            'image' =>	array('type' => self::TYPE_STRING, 'validate' => 'isCleanHtml', 'size' => 1000),            
+                     
             // Lang fields
+            'image' =>	array('type' => self::TYPE_STRING, 'validate' => 'isCleanHtml', 'size' => 1000,'lang'=>true),   
             'url' =>	array('type' => self::TYPE_STRING,'lang' => true, 'validate' => 'isCleanHtml', 'size' => 1000),
             'url' =>	array('type' => self::TYPE_STRING, 'validate' => 'isCleanHtml','lang'=>true, 'size' => 1000),
             'caption' =>	array('type' => self::TYPE_HTML, 'lang' => true, 'validate' => 'isCleanHtml', 'size' => 900000),            
@@ -62,13 +63,25 @@ class Ybc_blog_slide_class extends ObjectModel
     public function duplicate()
     {
         $this->id = null; 
-        $oldImage= $this->image;
+        $oldImages= $this->image;
         if($this->image)
-            $this->image = time().pathinfo($this->image, PATHINFO_BASENAME);
+        {
+            foreach($this->image as $id_lang => $image)
+            {
+                if($image)
+                    $this->image[$id_lang] = time().pathinfo($image, PATHINFO_BASENAME);
+            }
+        }
         if($this->add())
         {
             if($this->image)
-                @copy(dirname(__FILE__).'/../views/img/slide/'.$oldImage,dirname(__FILE__).'/../views/img/slide/'.$this->image);
+            {
+                foreach($this->image as $id_lang=> $image)
+                {
+                    if($image)
+                        @copy(_PS_YBC_BLOG_IMG_DIR_.'slide/'.$oldImages[$id_lang],_PS_YBC_BLOG_IMG_DIR_.'slide/'.$image);
+                }
+            }    
             return $this->id;
         }
         return false;        

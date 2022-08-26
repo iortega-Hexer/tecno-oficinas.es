@@ -1,0 +1,267 @@
+v4.5.0 (8-2-2022)
+- [Fixed] Show wrong main product combination price when opening product page.
+- [Fixed] Error 500 from Google Search Console API
+- [Fixed] Can not save accessory name if it's too long
+- [Changed] Change the label name on the module setting page
+
+v4.4.0 (3-9-2022)
+- [Fixed] Error undefined value setting_buy_together on the cart summary page
+- [Fixed] Error undefined value ajaxCart on PrestaShop 1.7.x
+- [Added] Add a new tab: Quickly fix common errors on module settings page
+- [Improvement] Make module compatible with PS 1.7.8.4
+- [Feature] Add a button to fix the error:  Missing accessory images at the front end.
+- [Feature] Add a button to fix the error: Does not show the settings block on the module settings page.
+- [Updated] Update user guide.
+
+v4.3.2 (12-5-2021)
+- [Fixed] Conflict module style with PrestaShop version 1.7.8.x
+- [Fixed] Strange character for accessory name due to wrong charset setting
+- [Improvement] Show the specific price based on the available cart rule
+- [Updated] Update user guide.
+
+v4.3.1 (9-14-2021)
+- [Fixed] Fix the error undefined the product object when importing products from file CSV.
+- [Fixed] Show wrong the product combination name in the price table.
+- [Fixed] Does not delete the main product that has customization when deleting an accessory in the cart.
+- [Added] Delete all related discounts of an accessory before adding a new cart rule for multi-products and accessory
+- [Added] Remove js file multi_accessories.js
+- [Feature] Add the button plus/minus for the accessory quantity box
+
+v4.3.0 (4-11-2021)
+- [Fixed] Wrong cart quantity (+1) when changing accessory quantity from 1 to 0 at the cart summary page.
+- [Fixed] Module does not work on Safari browser
+- [Fixed] Wrong currency format from version 1.7.6
+- [Added] Work with a theme that has not quantity input.
+- [Added] Show confirmation message before deleting all old accessories at the module setting page.
+- [Feature] Replace an accessory with another one for all products.
+- [Feature] Show Package content in the block accessories with package product.
+
+v4.2.0 (6-3-2020)
+- [Fixed] Update translation for the French language
+- [Fixed] Does not add accessories to cart on PrestaShop version 1.7
+- [Fixed] Does not show the total price in the product list when turning on the URL friendly.
+- [Fixed] Show the specific price based on the accessory combination
+- [Fixed] Break the layout in the product edit page on PrestaShop version 1.7
+- [Feature] Add discount for multi main products and an accessory.
+- [Feature] Add the setting "Buy main product & accessories" for the accessory group.
+
+v4.1.0 (2-28-2020)
+- [Fixed] Problem of refreshing the customization fields.
+- [Fixed] Does not add an accessory to cart when clicking on the icon "Add to cart" in the block accessories.
+- [Improvement] Remove hard code on the accessory thumbnail image.
+- [Improvement] Remove default image, customization for the drop-down type if none selected accessory.
+- [Improvement] Show message "Data saved" after changing product setting, assigning accessories, removing discount at the back office.
+- [Improvement] Improve performance by optimizing sql query.
+- [Improvement] Update user guide.
+- [Feature] Change accessories quantity when changing main product quantity.
+- [Feature] Copy related products (accessories) to Multi accessories module.
+
+v4.0.1 (10-5-2019)
+- [Fixed] Undefined value PriceTable.instance in the product list page (Prestashop version 1.5 & 1.6)
+
+v4.0.0 (8-20-2019)
+- [Feature] Support accessories customization.
+- [Feature] Disable button Add to cart if a product has accessory customization in the product list page (Prestashop version 1.6).
+- [Fixed] Show wrong accessory price when changing accessory quantity.
+- [Fixed] Show wrong accessory combination price when changing accessory combination.
+
+v3.2.1 (4-11-2019)
+- [Fixed] Error 500 when filter product & accessory in the setting module page.
+
+v3.2.0 (3-19-2019)
+- [Fixed] Show wrong accessory combination image
+- [Fixed] Delete accessories does not correct if multi products have the same an accessory.
+- [Fixed] Automatically enabled the button Add to cart in the case main product is out of stock and deny orders when out of stock (PS 1.7.x).
+- [Fixed] Undefined value is_available_when_out_of_stock
+- [Fixed] Does not update new accessory price if it is equal to 0.
+- [Fixed] The currency format is wrong
+
+v3.1.0 (10-27-2018)
+- [Fixed] Get wrong available accessory quantity.
+- [Added] Delete accessories when delete an accessory group.
+- [Added] Delete accessories when delete a product or product attribute.
+
+v3.0.2 (9-25-2018)
+- [Fixed][Front end] Does not add each accessory to basket on Internet Exploder browser (PrestaShop version 1.7.x).
+- [Fixed][Back office] Does not add a new accessory again after removing it (Prestashop version 1.5, 1.6)
+- [Fixed][Back office] Count wrong total accessories in the case turn off the option "Display NoWhere Visibility products at the front end".
+
+v3.0.1 (9-10-2018)
+- [Fixed] Break tabs in the edit product page on PrestaShop version 1.7.4
+- [Added] An option to Show|hide NoWhere Visibility products at the front end.
+
+v3.0.0 (7-30-2018)
+- [Fixed] Cannot sort group accessories
+- [Fixed] Break the layout of block product setting on 1.7.3.x
+- [Fixed] Show wrong total price (main product & accessories) at the product list page.
+- [Fixed] Doesn't add main product & accessories to cart when move the block accessories above the button Add to cart on PrestaShop 1.7.x
+- [Added] Change accessory name, cart rule name when change product name
+- [Added] Module footer (Copyright, documentation, rate us, need help)
+- [Added] PrestaTrust
+- [Improvement] Redesign block accessories for PrestaShop 1.7.x
+- [Improvement] Show message "Data saved" when change discount value, accessory name, quantity... at the back office
+- [Improvement] Redesign block accessories at the front end for PrestaShop 1.7.x
+- [Improvement] Move the option "Collapse/expand accessory groups" from general setting to group.
+- [Feature] Add the option: Show | hide the group accessory name at the front end.
+- [Feature] Add the option: Delete all accessories and main product when delete the main product.
+- [Feature] Add the option: Delete all accessories and main product when delete an accessory.
+- [Feature] Sort accessories in the setting page.
+- [Feature] Show image fancy box in the case display type of group is dropdown.
+
+v2.10.5 (1-10-2018)
+- [Fixed] Does not duplicate accessory discounts when duplicate a product.
+
+v2.10.4 (11-15-2017)
+- [Fixed] Count wrong accessories in the case delete accessory group.
+- [Fixed] Load js, css files based on setting.
+
+v2.10.3 (11-11-2017)
+- [Fixed] Error tableDnD is not a function.
+- [Fixed] Error is_available_when_out_of_stock undefined.
+
+v2.10.2 (10-27-2017)
+- [Improvement] Copy discount values when copying accessories from another product.
+- [Improvement] Show total price (main product price + required accessories price) instead of the main product price at the product list page.
+- [Fixed] Show the price of accessory with different customer groups
+
+v2.10.1 (9-7-2017)
+- [Added] Display accessories & combinations out of stock at the front end.
+- [Added] Show icon warning if combination of accessory is out of in the case display type of group is dropdown.
+- [Added] Show icon warning if accessory & combination is out of stock but backordering is allowed in the case display type of group is dropdown.
+- [Fixed] Error 500 when filter accessories by categories.
+
+v2.10.0 (7-22-2017)
+- [Fixed] Does not add accessories to cart in the case dropdown style (1.7.x).
+- [Fixed] Does not install module on php 5.4.
+- [Improvement] Add multi accessories for multi products (PS 1.6 & 1.7).
+- [Improvement] Delete main product & all accessories when delete an accessory in the basket
+
+v2.9.2 (5-6-2017)
+- [Fixed] Does not add accessories in the case enable SSL at the back office.
+- [Fixed] Replace all accessories image by main product's image when customer changes the product combination, quantity ...
+- [Fixed] Does not show icon warning out of stock in the case display type of group is dropdown.
+
+v2.9.1 (5-16-2017)
+- [Improvement] Make module compatible with PS 1.7.x.
+- [Fixed] Error idCombination undefined with product without combination.
+- [Add] Frontend - Collapse / Expand accessory groups
+
+v2.9.0 (12-12-2016)
+- [Feature] Add default accessory along with main product everywhere
+- [Feature] Delete all accessories when delete main product item on basket
+- [Added] An option to NOT show out-of-stock item at front-end
+- [Fixed] Does not show input quantity in case display style radio and check box when the option "Allow your customers to change item quantity" is No
+- [Fixed] Show group & accessories if the group is active
+- [Fixed] Adding wrong accessories quantity in case display style is drop down
+- [Fixed] Show message out of stock with in accessories in the cart.
+- [Fixed] Cannot sort accessories
+
+v2.8.15 (11-3-2016)
+ - [Fixed] Delete accessory & main product cart rule after deleting cart rule
+
+v2.8.14 (11-2-2016)
+ - [Fixed] Add quantity to cart does not correct in the case display style is dropdown
+
+v2.8.13 (7-25-2016)
+ - [Added] Display changelog in welcome page.
+ - [Fixed] Error when duplicate product
+
+v2.8.12 (5-27-2016)
+ - [Fixed] Cross-out line on old price is not applicable
+ - [Fixed] Can’t display right price of accessories if they don’t have combinations
+ - [Fixed] Quantity of accessories are not based on main product
+
+v2.8.11 (4-22-2016)
+ - [Fixed] Discount does not work in single shop (MS is not activated)
+ - [Fixed] Cannot access to Configuration page in PrestaShop 1.5.3.1
+ - [Changed] Accept min quantity and default quantity as 0
+
+v2.8.10 (3-31-2016)
+ - [Fixed] Add discounts to shops which are enabled Multi Accessories Pro module only
+ - [Fixed] Hook "hookActionAdminProductsFormModifier" is not supported by PS1.5
+ - [Fixed] Strange character for accessory name due to wrong charset setting
+ - [Fixed] Remove discount amount
+
+v2.8.9 (3-12-2016)
+ - [Fixed] Product's combination does not show when display style is "Dropdown" and option "Show images" is disabled
+ - [Fixed] Cannot change default option when enable Buy main product & accessories together
+ - [Fixed] Do not force visitors to buy accessory in case of radio / drop down style
+ - [Added] Display combination for selected accessories in price table
+
+v2.8.8 (2-19-2016)
+- [Fixed] Remove ui.tooltip - which is not in use and leads to js conflict.
+- [Fixed] Add amount discount for accessory with or without tax based on current configuration
+- [Fixed] Cannot copy accessories due to js error
+
+v2.8.7 (2-3-2016)
+- [Fixed] Can not sort groups if we move a group to 2nd, 3rd... position
+- [Fixed] Disable behavior that scrolling to price table when option price table is disabled
+- [Fixed] Empty accessory tab when there is no accessory products
+- [Changed] Improve performance by optimizing the way to get product images
+- [Fixed] Amount discount is not applied on PrestaShop version 1.6.0.9
+- [Changed] Improve functions of changing discounts at back office
+- [Added] Copy accessories from other products
+- [Added] Specify custom quantity by admin
+
+v2.8.6 (1-22-2016)
+- [Fixed] Improve function updating main price so that it's stable on all versions of PrestaShop
+- [Added] Support hook 'product tab' and hook 'product tab content'
+- [Fixed] Price is rounded in a wrong way on PS 1.6.0.9
+
+v2.8.5 (1-15-2016)
+- [Fixed] Duplicated image type when re-installing the module
+- [Fixed] Conflicts between hsmultiaccessoriespro and cronjob module
+- [Fixed] There is no combination at Front-end and Back-end in case product has combinations but no combination is marked as default
+
+v2.8.4
+- [Added] Allow adding discount for accessory items
+- [Fixed] Fix break price into 2 lines on price table on mobile view
+- [Fixed] If accessory has no combination, at front-end, price table always displays price is 0
+
+v2.8.3
+- [Added] Show image in drop down
+- [Changed] Auto scroll to price table when accessory list is too long
+
+v2.8.2(2015-11-16)
+- [Fixed] Get wrong accessory image
+- [Fixed] Add 2 pieces of the main item to basket - conflict with theme Transformer
+- [Fixed] Change main price when changing main product's combinations
+
+v2.8.1(2015-10-27)
+- [Fix] Make accessories sortable when add new accessories
+- [Fix] Does not update the unit price in case changing combination of main product, which has not accessory
+- [Fix] Undefined index: combination
+
+v2.8.0(2015-10-2)
+- [Feature] Make accessory groups sortable
+- [Feature] Make accessories sortable
+
+v2.7.0(2015-06-24)
+- Search accessory with multi shop
+- Redesign layout of Multi Accessories tab in product page
+- Show icon warning if accessory is out of stock but backordering is allowed
+
+v2.1.4 (2015-01-14)
+- [FE][Fix] Js error when a product does not have any combination
+
+v2.1.3 (2015-01-13)
+- [FE][Improvement] Support multi-language at frontend
+
+v2.1.2 (2015-01-08)
+- [BE][Improvement] Support a custom hook on product page
+
+v2.1.1 (2014-12-08)
+- [FE][Improvement] Do not check stock at product page
+- [BE][Improvement] Do not drop tables on uninstalling
+
+v2.1 (2014-11-11)
+- [Feature] Display table of items' price
+- [Feature] Add each item to basket separately
+
+v2.0 (2014-06-27)
+- [Feature] Show accessory images at frontend
+- [Feature] Custom block title at frontend
+- [Feature] Display accessories as checkbox or list
+
+v1.0 (2014-02-16)
+- Initialize

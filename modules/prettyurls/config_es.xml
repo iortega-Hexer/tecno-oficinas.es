@@ -2,7 +2,7 @@
 <module>
     <name>prettyurls</name>
     <displayName><![CDATA[URLs amigables]]></displayName>
-    <version><![CDATA[2.2.5]]></version>
+    <version><![CDATA[2.2.7]]></version>
     <description><![CDATA[Este m&oacute;dulo eliminar&aacute; los ID de las direcciones URL y los har&aacute; SEO friendly.]]></description>
     <author><![CDATA[FMM Modules]]></author>
     <tab><![CDATA[seo]]></tab>

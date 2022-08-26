@@ -1,6 +1,6 @@
 <?php
 /**
- * FMM PrettyURLs
+ * 2007-2018 PrestaShop
  *
  * NOTICE OF LICENSE
  *
@@ -8,13 +8,21 @@
  * that is bundled with this package in the file LICENSE.txt.
  * It is also available through the world-wide-web at this URL:
  * http://opensource.org/licenses/osl-3.0.php
+ * If you did not receive a copy of the license and are unable to
+ * obtain it through the world-wide-web, please send an email
+ * to license@prestashop.com so we can send you a copy immediately.
  *
- * @author    FMM Modules
- * @copyright Copyright 2019 © Fmemodules All right reserved
- * @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
- * @category  FMM Modules
- * @package   PrettyURLs
-*/
+ * DISCLAIMER
+ *
+ * Do not edit or add to this file if you wish to upgrade PrestaShop to newer
+ * versions in the future. If you wish to customize PrestaShop for your
+ * needs please refer to http://www.prestashop.com for more information.
+ *
+ * @author    PrestaShop SA <contact@prestashop.com>
+ * @copyright 2007-2018 PrestaShop SA
+ * @license   http://opensource.org/licenses/osl-3.0.php Open Software License (OSL 3.0)
+ * International Registered Trademark & Property of PrestaShop SA
+ */
 
 use PrestaShop\PrestaShop\Adapter\Product\PriceFormatter;
 use PrestaShop\PrestaShop\Adapter\Image\ImageRetriever;
@@ -22,13 +30,13 @@ use PrestaShop\PrestaShop\Core\Product\ProductExtraContentFinder;
 use PrestaShop\PrestaShop\Core\Product\ProductListingPresenter;
 use PrestaShop\PrestaShop\Adapter\Product\ProductColorsRetriever;
 use PrestaShop\PrestaShop\Core\Addon\Module\ModuleManagerBuilder;
+use PrestaShop\PrestaShop\Core\Product\ProductInterface;
 
 class ProductController extends ProductControllerCore
 {
 	protected $quantity_discounts;
 	public function init()
 	{
-		//Clear the cookie value of id_unique_ipa
 		$this->context->cookie->id_unique_ipa = 0;
         $this->context->cookie->write();
 		$link_rewrite = Tools::safeOutput(urldecode(Tools::getValue('product_rewrite')));
@@ -68,7 +76,6 @@ class ProductController extends ProductControllerCore
 				}
 			}
 		}
-		//Fix for accented chars URLs
 		$allow_accented_chars = (int)Configuration::get('PS_ALLOW_ACCENTED_CHARS_URL');
 		if ($allow_accented_chars > 0) {
 			$id_product = (int)Tools::getValue('id_product');
@@ -85,7 +92,6 @@ class ProductController extends ProductControllerCore
 	public function getTemplateVarProduct()
     {
         $productSettings = $this->getProductPresentationSettings();
-        // Hook displayProductExtraContent
         $extraContentFinder = new ProductExtraContentFinder();
 		$_id_ipa = (int)Context::getContext()->cookie->__get('id_unique_ipa');
 		$requestedIdProductAttribute = 0;
@@ -110,7 +116,7 @@ class ProductController extends ProductControllerCore
         $product['minimal_quantity'] = $this->getProductMinimalQuantity($product);
         $product['quantity_wanted'] = $this->getRequiredQuantity($product);
         $product['extraContent'] = $extraContentFinder->addParams(array('product' => $this->product))->present();
-
+		$product['ecotax'] = Tools::convertPrice((float) $product['ecotax'], $this->context->currency, true, $this->context);
         $product_full = Product::getProductProperties($this->context->language->id, $product, $this->context);
 
         $product_full = $this->addProductCustomizationData($product_full);
@@ -135,7 +141,14 @@ class ProductController extends ProductControllerCore
             $group_reduction = Group::getReduction((int) $this->context->cookie->id_customer) / 100;
         }
         $product_full['customer_group_discount'] = $group_reduction;
-
+		$product_full['title'] = $this->getProductPageTitle();
+		
+		// round display price (without formatting, we don't want the currency symbol here, just the raw rounded value
+        $product_full['rounded_display_price'] = Tools::ps_round(
+            $product_full['price'],
+            Context::getContext()->currency->precision
+        );
+		
         $presenter = $this->getProductPresenter();
 		Context::getContext()->cookie->__unset('id_unique_ipa');
         return $presenter->present(
@@ -143,6 +156,31 @@ class ProductController extends ProductControllerCore
             $product_full,
             $this->context->language
         );
+    }
+	
+	private function getProductPageTitle(array $meta = null)
+    {
+        $title = $this->product->name;
+        if (isset($meta['title'])) {
+            $title = $meta['title'];
+        } elseif (isset($meta['meta_title'])) {
+            $title = $meta['meta_title'];
+        }
+        if (!Configuration::get('PS_PRODUCT_ATTRIBUTES_IN_TITLE')) {
+            return $title;
+        }
+
+        $idProductAttribute = $this->getIdProductAttributeByGroupOrRequestOrDefault();
+        if ($idProductAttribute) {
+            $attributes = $this->product->getAttributeCombinationsById($idProductAttribute, $this->context->language->id);
+            if (is_array($attributes) && count($attributes) > 0) {
+                foreach ($attributes as $attribute) {
+                    $title .= ' ' . $attribute['group_name'] . ' ' . $attribute['attribute_name'];
+                }
+            }
+        }
+
+        return $title;
     }
 	
 	private function getIdProductAttribute()
@@ -234,7 +272,6 @@ class ProductController extends ProductControllerCore
         $id_group = (int) Group::getCurrent()->id;
         $id_country = $id_customer ? (int) Customer::getCurrentCountry($id_customer) : (int) Tools::getCountry();
 
-        // Tax
         $tax = (float) $this->product->getTaxesRate(new Address((int) $this->context->cart->{Configuration::get('PS_TAX_ADDRESS_TYPE')}));
         $this->context->smarty->assign('tax_rate', $tax);
 

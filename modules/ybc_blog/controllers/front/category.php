@@ -1,6 +1,6 @@
 <?php
 /**
- * 2007-2019 ETS-Soft
+ * 2007-2022 ETS-Soft
  *
  * NOTICE OF LICENSE
  *
@@ -15,7 +15,7 @@
  * needs please contact us for extra customization service at an affordable price
  *
  *  @author ETS-Soft <etssoft.jsc@gmail.com>
- *  @copyright  2007-2019 ETS-Soft
+ *  @copyright  2007-2022 ETS-Soft
  *  @license    Valid for 1 website (or project) for each purchase of license
  *  International Registered Trademark & Property of ETS-Soft
  */
@@ -40,6 +40,21 @@ class Ybc_blogCategoryModuleFrontController extends ModuleFrontController
 	{
 		parent::init();
 	}
+    public function getAlternativeLangsUrl()
+    {
+        $alternativeLangs = array();
+        $languages = Language::getLanguages(true, $this->context->shop->id);
+
+        if ($languages < 2) {
+            // No need to display alternative lang if there is only one enabled
+            return $alternativeLangs;
+        }
+
+        foreach ($languages as $lang) {
+            $alternativeLangs[$lang['language_code']] = $this->module->getLanguageLink($lang['id_lang']);
+        }
+        return $alternativeLangs;
+    }
 	public function initContent()
 	{
 		parent::initContent();
@@ -51,10 +66,10 @@ class Ybc_blogCategoryModuleFrontController extends ModuleFrontController
             {
                 $category['link']=$this->module->getLink('blog',array('id_category'=>$category['id_category'])); 
                 if($category['image'])
-                     $category['image'] = $module->blogDir.'views/img/category/'.$category['image'];  
+                     $category['image'] = $this->context->link->getMediaLink(_PS_YBC_BLOG_IMG_.'category/'.$category['image']);  
                 if($category['thumb'])
-                    $category['thumb'] = $module->blogDir.'views/img/category/thumb/'.$category['thumb'];
-                $category['count_posts'] =(int) Db::getInstance()->getValue('SELECT count(*) FROM '._DB_PREFIX_.'ybc_blog_post p, '._DB_PREFIX_.'ybc_blog_post_category pc WHERE pc.id_post=p.id_post AND pc.id_category="'.(int)$category['id_category'].'" AND p.enabled=1');
+                    $category['thumb'] = $this->context->link->getMediaLink(_PS_YBC_BLOG_IMG_.'category/thumb/'.$category['thumb']);
+                $category['count_posts'] =(int) Db::getInstance()->getValue('SELECT count(*) FROM `'._DB_PREFIX_.'ybc_blog_post` p, `'._DB_PREFIX_.'ybc_blog_post_category` pc WHERE pc.id_post=p.id_post AND pc.id_category="'.(int)$category['id_category'].'" AND p.enabled=1');
                 $category['sub_categogires'] = $this->module->getCategoriesWithFilter(' AND c.enabled=1',false,false,false,$category['id_category']);
                 if($category['sub_categogires'])
                 {
@@ -74,10 +89,10 @@ class Ybc_blogCategoryModuleFrontController extends ModuleFrontController
                 'breadcrumb' => $module->is17 ? $module->getBreadCrumb() : false,
                 'show_date' => (int)Configuration::get('YBC_BLOG_SHOW_POST_DATE') ? true : false,
                 'date_format' => trim((string)Configuration::get('YBC_BLOG_DATE_FORMAT')),
-                'image_folder' => $module->blogDir.'views/img/category/',
+                'image_folder' => _PS_YBC_BLOG_IMG_.'category/',
             )
         );
-        if(Tools::isSubmit('loadajax') && Tools::getValue('loadajax'))
+        if(Tools::isSubmit('loadajax'))
         {
             $this->module->loadMoreCategories($categoryData);
         }
@@ -92,7 +107,9 @@ class Ybc_blogCategoryModuleFrontController extends ModuleFrontController
         $sort = ' c.sort_order asc, c.id_category asc, ';
         $module = new Ybc_blog();
         
-        $page = (int)Tools::getValue('page') && (int)Tools::getValue('page') > 0 ? (int)Tools::getValue('page') : 1;
+        $page = (int)Tools::getValue('page');
+        if($page < 1)
+            $page = 1;
         $totalRecords = (int)$module->countCategoriesWithFilter($filter);
         $paggination = new Ybc_blog_paggination_class();            
         $paggination->total = $totalRecords;

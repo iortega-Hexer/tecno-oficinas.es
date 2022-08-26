@@ -1,0 +1,12 @@
+.field-text-input {
+	width: 450px !important;
+}
+.btn-link {
+    border-radius: 0;
+    color: #00aff0;
+    cursor: pointer;
+    font-weight: normal;
+}
+.btn-link:hover {
+	text-decoration: underline;
+}

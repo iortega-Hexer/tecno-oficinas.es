@@ -1,0 +1,40 @@
+#product #group_accessories .option-row select {
+	width: 54%;
+	padding: 2px 5px;
+}
+
+.hs_multi_accessories_add_to_cart span{
+	background: url("../img/cart.gif") no-repeat scroll 5px 10px rgba(0, 0, 0, 0);
+    border-radius: 3px;
+    min-width: 94px;
+    padding: 14px 1px 4px 30px;
+
+}
+#group_accessories .accessories_group_combination .product-combination {
+	width: 33% !important;
+}
+#group_accessories .accessories_group_combination select.product-combination{
+	margin-left: 0px;
+	padding: 2px 5px;
+}
+#group_accessories .accessories_group_combination
+{
+	width: 100% !important;
+	padding-right: 5px;
+}
+#group_accessories .custom_quantity select.product-combination{
+	margin-left: -3px;
+	width: 33% !important;
+}
+#product #group_accessories .option-row label.group_name{
+	width: 36% !important;
+}
+.accessories_group{
+	width: 33% !important;
+}
+span.warning_out_of_stock{
+	background: url("../img/warning.png") no-repeat scroll 5px 10px rgba(0, 0, 0, 0);
+}
+span.forbidden_ordering{
+	background: url("../img/forbidden.png") no-repeat scroll 5px 10px rgba(0, 0, 0, 0);
+}

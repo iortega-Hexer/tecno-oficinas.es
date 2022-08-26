@@ -1,4 +1,0 @@
-# Configurator
-
-## About
-

@@ -10,7 +10,7 @@
  * http://opensource.org/licenses/osl-3.0.php
  *
  * @author    FMM Modules
- * @copyright Copyright 2019 © FMM Modules All right reserved
+ * @copyright Copyright 2021 © FMM Modules All right reserved
  * @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
  * @category  FMM Modules
  * @package   PrettyURLs
@@ -33,6 +33,7 @@ class Dispatcher extends DispatcherCore
 				'rewrite' =>		array('regexp' => '[_a-zA-Z0-9-\pL]*', 'param' => 'category_rewrite'),
 				'meta_keywords' =>	array('regexp' => '[_a-zA-Z0-9-\pL]*'),
 				'meta_title' =>		array('regexp' => '[_a-zA-Z0-9-\pL]*'),
+                'categories' =>		array('regexp' => '[/_a-zA-Z0-9-\pL]*'),
 			),
 		),
 		'supplier_rule' => array(
@@ -582,7 +583,7 @@ class Dispatcher extends DispatcherCore
 					$_GET['module'] = $three_parts[1];
 				}
 			}
-			//Lets fix Friendly Module Routes
+			//FIX Friendly Module Routes
 			if (preg_match('/module/', $controller)) {
 					if (isset($_GET['category_rewrite']) && !empty($_GET['category_rewrite'])) {
 						$_mod_uri = $_GET['category_rewrite'];
@@ -968,19 +969,38 @@ class Dispatcher extends DispatcherCore
 							foreach ($modules_routes as $module_route) {
 								if (is_array($module_route) && count($module_route)) {
 									foreach ($module_route as $route => $route_details) {
-										if ($_result_pack[1] == 'update' && $route_details['rule'] == 'pack/update/{id_pack}') {
-											$_GET['module'] = $route_details['params']['module'];
-											$_GET['fc'] = $route_details['params']['fc'];
-											$controller = $route_details['controller'];
-											$this->front_controller = self::FC_MODULE;
-											$_POST['id_pack'] = (int)$_result_pack[2];
+										//FIX for newer versions of pm advancepack module
+										if (strpos($route_details['rule'], 'ap5')) {
+												if ($_result_pack[1] == 'update' && $route_details['rule'] == 'pack/update/{id_pack}/ap5') {
+												$_GET['module'] = $route_details['params']['module'];
+												$_GET['fc'] = $route_details['params']['fc'];
+												$controller = $route_details['controller'];
+												$this->front_controller = self::FC_MODULE;
+												$_POST['id_pack'] = (int)$_result_pack[2];
+											}
+											elseif ($_result_pack[1] == 'add' && $route_details['rule'] == 'pack/add/{id_pack}/ap5') {
+												$_GET['module'] = $route_details['params']['module'];
+												$_GET['fc'] = $route_details['params']['fc'];
+												$controller = $route_details['controller'];
+												$this->front_controller = self::FC_MODULE;
+												$_POST['id_pack'] = (int)$_result_pack[2];
+											}
 										}
-										elseif ($_result_pack[1] == 'add' && $route_details['rule'] == 'pack/add/{id_pack}') {
-											$_GET['module'] = $route_details['params']['module'];
-											$_GET['fc'] = $route_details['params']['fc'];
-											$controller = $route_details['controller'];
-											$this->front_controller = self::FC_MODULE;
-											$_POST['id_pack'] = (int)$_result_pack[2];
+										else {
+											if ($_result_pack[1] == 'update' && $route_details['rule'] == 'pack/update/{id_pack}') {
+												$_GET['module'] = $route_details['params']['module'];
+												$_GET['fc'] = $route_details['params']['fc'];
+												$controller = $route_details['controller'];
+												$this->front_controller = self::FC_MODULE;
+												$_POST['id_pack'] = (int)$_result_pack[2];
+											}
+											elseif ($_result_pack[1] == 'add' && $route_details['rule'] == 'pack/add/{id_pack}') {
+												$_GET['module'] = $route_details['params']['module'];
+												$_GET['fc'] = $route_details['params']['fc'];
+												$controller = $route_details['controller'];
+												$this->front_controller = self::FC_MODULE;
+												$_POST['id_pack'] = (int)$_result_pack[2];
+											}
 										}
 									}
 								}
@@ -1277,6 +1297,77 @@ class Dispatcher extends DispatcherCore
 					}
 				}
 			}
+			//FIX for onepagecheckoutps module by Presteamshop
+			if (preg_match('/checkout/', $this->request_uri) && Module::isEnabled('onepagecheckoutps')) {
+				$this->request_uri = ltrim($this->request_uri, '/');
+				$modules_routes = Hook::exec('moduleRoutes', array('id_shop' => $id_shop), null, true, false);
+				if (is_array($modules_routes) && count($modules_routes)) {
+					foreach ($modules_routes as $module_route) {
+						if (is_array($module_route) && count($module_route)) {
+							foreach ($module_route as $route => $route_details) {
+								if ($route_details['rule'] == $this->request_uri) {
+									$_GET['module'] = $route_details['params']['module'];
+									$_GET['fc'] = $route_details['params']['fc'];
+									$_GET['action'] = $route_details['params']['action'];
+
+									$controller = $route_details['controller'];
+									$this->front_controller = self::FC_MODULE;
+									unset($_GET['product_rewrite']);
+									unset($_GET['category_rewrite']);
+								}
+							}
+						}
+					}
+				}
+			}
+            //FIX for {categories} route for category URLs
+            if ($controller == 'category') {
+                    $id_category = (int)Tools::getValue('id_category');
+                    $cataegory_rule = Configuration::get('PS_ROUTE_category_rule');
+					$id_product = (int)Tools::getValue('id_product');
+                if ($id_category <= 0 && strpos($cataegory_rule, 'categories')) {
+					if (preg_match('/module/', $this->request_uri) && !isset($_GET['fc'])) {
+						if (preg_match('/\?/', $this->request_uri)) {
+							$_disperse_uri = explode('?', $this->request_uri);
+							$_disperse_uri = $_disperse_uri[0];
+						}
+						else {
+							$_disperse_uri = $this->request_uri;
+						}
+						$three_parts = array_values(array_filter(explode('/', $_disperse_uri)));
+						//THE BIG THREE PARTS --------
+						$_GET['fc'] = $three_parts[0];
+						$_GET['module'] = $three_parts[1];
+						$_GET['controller'] = $three_parts[2];
+						$controller = $three_parts[2];
+						$this->front_controller = self::FC_MODULE;
+					}
+					elseif ($id_product <= 0 && $id_category <= 0) {
+						if (preg_match('/\?/', $this->request_uri)) {
+							$_disperse_uri = explode('?', $this->request_uri);
+							$_disperse_uri = $_disperse_uri[0];
+						}
+						else {
+							$_disperse_uri = $this->request_uri;
+						}
+						$three_parts = array_values(array_filter(explode('/', $_disperse_uri)));
+						if (isset($three_parts[1]) && !empty($three_parts[1]) && !isset($three_parts[2])) {
+							$check_for_cms_404 = (int)$this->getKeyExistanceCMS($three_parts[1]);
+							if ($check_for_cms_404 > 0) {
+								$controller = 'cms';
+								$_POST['id_cms'] = $check_for_cms_404;
+							}
+						}
+						elseif (isset($three_parts[2])) {
+							$check_for_cms_404 = (int)$this->getKeyExistanceCMSCategory($three_parts[2]);
+							if ($check_for_cms_404 > 0) {
+								$controller = 'cms';
+								$_POST['id_cms_category'] = $check_for_cms_404;
+							}
+						}
+					}
+                }
+            }
 		}
 		//FIx for Iqit front editor - BETA
 		if (preg_match('/Preview/', $this->request_uri) && preg_match('/module/', $this->request_uri) && isset($_GET['id_employee']) && $controller != 'Widget') {
@@ -1354,6 +1445,17 @@ class Dispatcher extends DispatcherCore
 		AND `id_shop` = '.(int)$id_shop);
 	}
 
+	private function getKeyExistanceCMSCategory($request)
+	{
+		$id_lang = Context::getContext()->language->id;
+		$id_shop = Context::getContext()->shop->id;
+		return Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue('SELECT `id_cms_category`
+		FROM '._DB_PREFIX_.'cms_category_lang
+		WHERE `link_rewrite` = "'.pSQL($request).'"'.'
+		AND `id_lang` = '.(int)$id_lang.'
+		AND `id_shop` = '.(int)$id_shop);
+	}
+	
 	private function getKeyExistanceManuf($request)
 	{
 		return Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue('SELECT `id_manufacturer`

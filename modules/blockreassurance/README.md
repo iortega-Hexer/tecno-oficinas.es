@@ -1,6 +1,7 @@
 # Customer reassurance block
 
-[![Build Status](https://travis-ci.com/PrestaShop/blockreassurance.svg?branch=master)](https://travis-ci.com/PrestaShop/blockreassurance)
+[![PHP tests](https://github.com/PrestaShop/blockreassurance/actions/workflows/php.yml/badge.svg)](https://github.com/PrestaShop/blockreassurance/actions/workflows/php.yml)
+[![JS tests](https://github.com/PrestaShop/blockreassurance/actions/workflows/js.yml/badge.svg)](https://github.com/PrestaShop/blockreassurance/actions/workflows/js.yml)
 [![Latest Stable Version](https://poser.pugx.org/PrestaShop/blockreassurance/v)](//packagist.org/packages/PrestaShop/blockreassurance)
 [![Total Downloads](https://poser.pugx.org/PrestaShop/blockreassurance/downloads)](//packagist.org/packages/PrestaShop/blockreassurance)
 [![GitHub license](https://img.shields.io/github/license/PrestaShop/blockreassurance)](https://github.com/PrestaShop/blockreassurance/LICENSE.md)
@@ -8,14 +9,12 @@
 
 ## About
 
-Adds an information block aimed at offering helpful information to reassure customers that your store is trustworthy.
+Connect with your visitors and reassure them about secure payment, free shipping or returns.
 
 ## Multistore compatibility
 
 This module is compatible with the multistore :heavy_check_mark: <br/>
-It can be configured differently from one store to another.<br/>
-It can be configured quickly in the same way on all stores thanks to the all shops context or the group of shops.<br/>
-It can be activated on one store and deactivated on another
+The module can only specify if block reasassurance is displayed from one shop to another but the configuration is common to all shops.
 
 ## Reporting issues
 

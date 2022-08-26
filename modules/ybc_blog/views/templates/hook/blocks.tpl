@@ -1,5 +1,5 @@
 {*
-* 2007-2019 ETS-Soft
+* 2007-2022 ETS-Soft
 *
 * NOTICE OF LICENSE
 *
@@ -14,17 +14,21 @@
 * needs, please contact us for extra customization service at an affordable price
 *
 *  @author ETS-Soft <etssoft.jsc@gmail.com>
-*  @copyright  2007-2019 ETS-Soft
+*  @copyright  2007-2022 ETS-Soft
 *  @license    Valid for 1 website (or project) for each purchase of license
 *  International Registered Trademark & Property of ETS-Soft
 *}
-{if ((isset($blog_config.YBC_BLOG_SHOW_CATEGORIES_BLOCK) && $blog_config.YBC_BLOG_SHOW_CATEGORIES_BLOCK)||(isset($blog_config.YBC_BLOG_SHOW_SEARCH_BLOCK) && $blog_config.YBC_BLOG_SHOW_SEARCH_BLOCK)||(isset($blog_config.YBC_BLOG_SHOW_LATEST_NEWS_BLOCK) && $blog_config.YBC_BLOG_SHOW_LATEST_NEWS_BLOCK) ||(isset($blog_config.YBC_BLOG_SHOW_POPULAR_POST_BLOCK) && $blog_config.YBC_BLOG_SHOW_POPULAR_POST_BLOCK) || (isset($blog_config.YBC_BLOG_SHOW_FEATURED_BLOCK) && $blog_config.YBC_BLOG_SHOW_FEATURED_BLOCK)||(isset($blog_config.YBC_BLOG_SHOW_TAGS_BLOCK) && $blog_config.YBC_BLOG_SHOW_TAGS_BLOCK)||(isset($blog_config.YBC_BLOG_SHOW_GALLERY_BLOCK) && $blog_config.YBC_BLOG_SHOW_GALLERY_BLOCK)||(isset($blog_config.YBC_BLOG_SHOW_ARCHIVES_BLOCK) && $blog_config.YBC_BLOG_SHOW_ARCHIVES_BLOCK)||(isset($blog_config.YBC_BLOG_SHOW_COMMENT_BLOCK) && $blog_config.YBC_BLOG_SHOW_COMMENT_BLOCK)||(isset($blog_config.YBC_BLOG_SHOW_AUTHOR_BLOCK) && $blog_config.YBC_BLOG_SHOW_AUTHOR_BLOCK)||(isset($blog_config.YBC_BLOG_ENABLE_RSS) && $blog_config.YBC_BLOG_ENABLE_RSS && isset($blog_config.YBC_BLOC_RSS_DISPLAY) && $blog_config.YBC_BLOC_RSS_DISPLAY && in_array('side_bar',$blog_config.YBC_BLOC_RSS_DISPLAY))) && !$blog_config.YBC_BLOG_SIDEBAR_ON_MOBILE }
-<div class="ybc-navigation-blog">{if $blog_config.YBC_BLOG_NAVIGATION_TITLE}{$blog_config.YBC_BLOG_NAVIGATION_TITLE|escape:'html':'UTF-8'}{else}{l s='Blog navigation' mod='ybc_blog'}{/if}</div>
-<div class="ybc-navigation-blog-content">
-{/if}
-{foreach from=$sidebars_postion item='position'}
-    {$sidebars.$position nofilter}
-{/foreach}
-{if ((isset($blog_config.YBC_BLOG_SHOW_CATEGORIES_BLOCK) && $blog_config.YBC_BLOG_SHOW_CATEGORIES_BLOCK)||(isset($blog_config.YBC_BLOG_SHOW_SEARCH_BLOCK) && $blog_config.YBC_BLOG_SHOW_SEARCH_BLOCK)||(isset($blog_config.YBC_BLOG_SHOW_LATEST_NEWS_BLOCK) && $blog_config.YBC_BLOG_SHOW_LATEST_NEWS_BLOCK) ||(isset($blog_config.YBC_BLOG_SHOW_POPULAR_POST_BLOCK) && $blog_config.YBC_BLOG_SHOW_POPULAR_POST_BLOCK) || (isset($blog_config.YBC_BLOG_SHOW_FEATURED_BLOCK) && $blog_config.YBC_BLOG_SHOW_FEATURED_BLOCK)||(isset($blog_config.YBC_BLOG_SHOW_TAGS_BLOCK) && $blog_config.YBC_BLOG_SHOW_TAGS_BLOCK)||(isset($blog_config.YBC_BLOG_SHOW_GALLERY_BLOCK) && $blog_config.YBC_BLOG_SHOW_GALLERY_BLOCK)||(isset($blog_config.YBC_BLOG_SHOW_ARCHIVES_BLOCK) && $blog_config.YBC_BLOG_SHOW_ARCHIVES_BLOCK)||(isset($blog_config.YBC_BLOG_SHOW_COMMENT_BLOCK) && $blog_config.YBC_BLOG_SHOW_COMMENT_BLOCK)||(isset($blog_config.YBC_BLOG_SHOW_AUTHOR_BLOCK) && $blog_config.YBC_BLOG_SHOW_AUTHOR_BLOCK)||(isset($blog_config.YBC_BLOG_ENABLE_RSS) && $blog_config.YBC_BLOG_ENABLE_RSS && isset($blog_config.YBC_BLOC_RSS_DISPLAY) && $blog_config.YBC_BLOC_RSS_DISPLAY && in_array('side_bar',$blog_config.YBC_BLOC_RSS_DISPLAY))) && !$blog_config.YBC_BLOG_SIDEBAR_ON_MOBILE }
-</div>
+{if $display_slidebar}
+    <div class="ybc_blog_sidebar {if !$blog_config.YBC_BLOG_SIDEBAR_ENABLED_ON_MOBILE} hide_mobile{/if}">
+        {if !$blog_config.YBC_BLOG_SIDEBAR_ON_MOBILE }
+            <div class="ybc-navigation-blog">{if $blog_config.YBC_BLOG_NAVIGATION_TITLE}{$blog_config.YBC_BLOG_NAVIGATION_TITLE|escape:'html':'UTF-8'}{else}{l s='Blog navigation' mod='ybc_blog'}{/if}</div>
+            <div class="ybc-navigation-blog-content">
+        {/if}
+        {foreach from=$sidebars_postion item='position'}
+            {$sidebars.$position nofilter}
+        {/foreach}
+        {if !$blog_config.YBC_BLOG_SIDEBAR_ON_MOBILE }
+        </div>
+        {/if}
+    </div>
 {/if}

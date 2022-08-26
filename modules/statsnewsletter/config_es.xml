@@ -2,8 +2,8 @@
 <module>
     <name>statsnewsletter</name>
     <displayName><![CDATA[Bolet&iacute;n]]></displayName>
-    <version><![CDATA[2.0.2]]></version>
-    <description><![CDATA[A&ntilde;ade una pesta&ntilde;a con un gr&aacute;fico que muestra los &uacute;ltimos registros producidos en el bolet&iacute;n de noticias al Panel de control de Estad&iacute;sticas.]]></description>
+    <version><![CDATA[2.0.3]]></version>
+    <description><![CDATA[Enrich your stats, display a graph showing newsletter registrations.]]></description>
     <author><![CDATA[PrestaShop]]></author>
     <tab><![CDATA[analytics_stats]]></tab>
     <is_configurable>0</is_configurable>

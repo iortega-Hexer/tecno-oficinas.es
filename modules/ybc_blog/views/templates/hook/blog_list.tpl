@@ -1,5 +1,5 @@
 {*
-* 2007-2019 ETS-Soft
+* 2007-2022 ETS-Soft
 *
 * NOTICE OF LICENSE
 *
@@ -14,7 +14,7 @@
 * needs, please contact us for extra customization service at an affordable price
 *
 *  @author ETS-Soft <etssoft.jsc@gmail.com>
-*  @copyright  2007-2019 ETS-Soft
+*  @copyright  2007-2022 ETS-Soft
 *  @license    Valid for 1 website (or project) for each purchase of license
 *  International Registered Trademark & Property of ETS-Soft
 *}
@@ -82,8 +82,9 @@
                                 </span>
                         {/if} 
                         {if $allow_rating && $post.total_review}
-                             <div class="blog_rating_wrapper" itemprop="aggregateRating" itemscope itemtype="http://schema.org/AggregateRating">
-                                 <span class="total_views" itemprop="reviewCount">{$post.total_review|intval}</span>
+                             <div class="blog_rating_wrapper">
+                                 
+                                 <span class="total_views">{$post.total_review|intval}</span>
                                  <span>
                                     {if $post.total_review != 1}
                                         {l s='Comments' mod='ybc_blog'}
@@ -108,9 +109,7 @@
                                                         <div class="star"></div>
                                                     {/for}
                                                 {/if}
-                                                <meta itemprop="worstRating" content="0"/>
-                                                (<span class="ybc-blog-rating-value"  itemprop="ratingValue">{number_format((float)$everage_rating, 1, '.', '')|escape:'html':'UTF-8'}</span>)
-                                                <meta itemprop="bestRating" content="5"/>
+                                                (<span class="ybc-blog-rating-value">{number_format((float)$everage_rating, 1, '.', '')|escape:'html':'UTF-8'}</span>)
                                             </div>
                                         </div>
                                     </div>

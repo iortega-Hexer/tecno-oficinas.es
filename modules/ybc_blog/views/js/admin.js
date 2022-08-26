@@ -1,5 +1,5 @@
 /**
- * 2007-2019 ETS-Soft
+ * 2007-2022 ETS-Soft
  *
  * NOTICE OF LICENSE
  *
@@ -14,7 +14,7 @@
  * needs please contact us for extra customization service at an affordable price
  *
  *  @author ETS-Soft <etssoft.jsc@gmail.com>
- *  @copyright  2007-2019 ETS-Soft
+ *  @copyright  2007-2022 ETS-Soft
  *  @license    Valid for 1 website (or project) for each purchase of license
  *  International Registered Trademark & Property of ETS-Soft
  */
@@ -142,6 +142,8 @@ $(document).ready(function(){
         {
             $('input[id^=ybc_input_profile_employee]:not([id$=All_tabs])').closest('li').hide();
         }
+        else
+            $('input[id^=ybc_input_profile_employee]:not([id$=All_tabs])').closest('li').show();
     });
     if($('#ybc_input_profile_employee_All_tabs').is(':checked'))
     {
@@ -505,6 +507,12 @@ $(document).ready(function(){
         }
         else
            $('#datetime_active').closest('.form-group').hide(); 
+        if($('#enabled').val()==1)
+        {
+            $('#datetime_added').closest('.form-group').show();
+        }
+        else
+           $('#datetime_added').closest('.form-group').hide(); 
         $('#enabled').change(function(){
             if($('#enabled').val()==2)
             {
@@ -512,6 +520,12 @@ $(document).ready(function(){
             }
             else
                $('#datetime_active').closest('.form-group').hide(); 
+            if($('#enabled').val()==1)
+            {
+                $('#datetime_added').closest('.form-group').show();
+            }
+            else
+               $('#datetime_added').closest('.form-group').hide(); 
         });
     }
     
@@ -555,14 +569,20 @@ $(document).ready(function(){
         else
         {
             $('.form-group.mobile_slidebar').show();
-            if($('input[name="YBC_BLOG_SIDEBAR_ON_MOBILE"]:checked').val()==1)
-            {
-                $('.form-group.mobile_slidebar_off').hide();
-            }
-            else
+            if($('input[name="YBC_BLOG_SIDEBAR_ON_MOBILE"]:checked').val()==0 && $('input[name="YBC_BLOG_SIDEBAR_ENABLED_ON_MOBILE"]:checked').val()==1)
             {
                 $('.form-group.mobile_slidebar_off').show();
             }
+            else
+            {
+                $('.form-group.mobile_slidebar_off').hide();
+            }
+            if($('input[name="YBC_BLOG_SIDEBAR_ENABLED_ON_MOBILE"]:checked').val()==1)
+            {
+                $('#YBC_BLOG_SIDEBAR_ON_MOBILE_on').closest('.form-group').show();
+            }
+            else
+                $('#YBC_BLOG_SIDEBAR_ON_MOBILE_on').closest('.form-group').hide();
         }
     });
     $(document).on('change','select[name="YBC_BLOG_DISPLAY_TYPE"]',function(){
@@ -597,24 +617,36 @@ $(document).ready(function(){
     else
     {
         $('.form-group.mobile_slidebar').show();
-        if($('input[name="YBC_BLOG_SIDEBAR_ON_MOBILE"]:checked').val()==1)
-        {
-            $('.form-group.mobile_slidebar_off').hide();
-        }
-        else
+        if($('input[name="YBC_BLOG_SIDEBAR_ON_MOBILE"]:checked').val()==0 && $('input[name="YBC_BLOG_SIDEBAR_ENABLED_ON_MOBILE"]:checked').val()==1)
         {
             $('.form-group.mobile_slidebar_off').show();
         }
+        else
+        {
+            $('.form-group.mobile_slidebar_off').hide();
+        }
+        if($('input[name="YBC_BLOG_SIDEBAR_ENABLED_ON_MOBILE"]:checked').val()==1)
+        {
+            $('#YBC_BLOG_SIDEBAR_ON_MOBILE_on').closest('.form-group').show();
+        }
+        else
+            $('#YBC_BLOG_SIDEBAR_ON_MOBILE_on').closest('.form-group').hide();
     }
-    $(document).on('click','input[name="YBC_BLOG_SIDEBAR_ON_MOBILE"]',function(){
-        if($('input[name="YBC_BLOG_SIDEBAR_ON_MOBILE"]:checked').val()==1)
-        {
-            $('.form-group.mobile_slidebar_off').hide();
-        }
-        else
+    $(document).on('click','input[name="YBC_BLOG_SIDEBAR_ON_MOBILE"],input[name="YBC_BLOG_SIDEBAR_ENABLED_ON_MOBILE"]',function(){
+        if($('input[name="YBC_BLOG_SIDEBAR_ON_MOBILE"]:checked').val()==0 && $('input[name="YBC_BLOG_SIDEBAR_ENABLED_ON_MOBILE"]:checked').val()==1)
         {
             $('.form-group.mobile_slidebar_off').show();
         }
+        else
+        {
+            $('.form-group.mobile_slidebar_off').hide();
+        }
+        if($('input[name="YBC_BLOG_SIDEBAR_ENABLED_ON_MOBILE"]:checked').val()==1)
+        {
+            $('#YBC_BLOG_SIDEBAR_ON_MOBILE_on').closest('.form-group').show();
+        }
+        else
+            $('#YBC_BLOG_SIDEBAR_ON_MOBILE_on').closest('.form-group').hide();
     });
     $(document).on('change','#YBC_BLOG_ALLOW_COMMENT',function(){
         if($(this).val()!='1')
@@ -664,6 +696,16 @@ $(document).ready(function(){
         $('.confi_tab').removeClass('active');
         $(this).addClass('active');
         displayFormNext();            
+    });
+    if($('input[name="YBC_BLOG_ALLOW_TABLE_OF_CONTENT"]:checked').val()==1)
+        $('.form-group.table_content').show();
+    else
+        $('.form-group.table_content').hide();
+    $(document).on('click','input[name="YBC_BLOG_ALLOW_TABLE_OF_CONTENT"]',function(){
+       if($(this).val()==1)
+            $('.form-group.table_content').show();
+       else
+            $('.form-group.table_content').hide();
     });
     if($('.ybc_fancy').length > 0 || true)
     {
@@ -851,6 +893,7 @@ $(document).ready(function(){
     clickedObj.click(function(){
         if($(this).hasClass('submitExportBlog')|| $(this).hasClass('submitImportBlog') || $(this).hasClass('submitImportBlogWP') || $('input[name="YBC_BLOG_ALLOW_CUSTOMER_AUTHOR"]').length>0)
             return true;
+        $('.alert.alert-success').parent().remove();
         var $form=$(this).closest('#module_form');
         if(!$form.hasClass('disabled'))
         {
@@ -948,6 +991,7 @@ $(document).ready(function(){
                                 updatePreviewImage(item.name,item.url,item.delete_url);
                             }
                        });
+                       
                     }
                     if(json.itemId && json.itemKey)
                     {
@@ -964,6 +1008,14 @@ $(document).ready(function(){
                         $('.ybc-link-desc').html(json.ybc_link_desc);
                     }
                     $form.removeClass('disabled');
+                    if(json.messageType!='error')
+                    {
+                        if($('input[type="file"]').length)
+                        {
+                            $('input[type="file"]').val('');
+                            $('.dummyfile input[type="text"]').val('');
+                        }    
+                    }
                 },
                 error: function(error)
                 {
@@ -974,6 +1026,7 @@ $(document).ready(function(){
         }
         return false;
     });
+
     $('input[type="file"]').change(function(){
         if($(this).attr('name')=='blogdata')
         {
@@ -988,16 +1041,16 @@ $(document).ready(function(){
         }
         if ($.inArray($(this).val().split('.').pop().toLowerCase(), fileExtension) == -1) {
             $(this).val('');
-            if($(this).next('.dummyfile').length > 0)
+            if($(this).parents('.col-lg-9').find('.dummyfile').length > 0)
             {
-                $(this).next('.dummyfile').eq(0).find('input[type="text"]').val('');
+                $(this).parents('.col-lg-9').find('input[type="text"]').val('');
             }
             if($(this).parents('.col-lg-9').eq(0).find('.preview_img').length > 0)
                 $(this).parents('.col-lg-9').eq(0).find('.preview_img').eq(0).remove(); 
-            if($(this).parents('.col-lg-9').eq(0).next('.uploaded_image_label').length > 0)
+            if($(this).parents('.col-lg-9').eq(0).find('.uploaded_image_label').length > 0)
             {
-                $(this).parents('.col-lg-9').eq(0).next('.uploaded_image_label').removeClass('hidden');
-                $(this).parents('.col-lg-9').eq(0).next('.uploaded_image_label').next('.uploaded_img_wrapper').removeClass('hidden');
+                $(this).parents('.col-lg-9').eq(0).find('.uploaded_image_label').removeClass('hidden');
+                $(this).parents('.col-lg-9').eq(0).find('.uploaded_img_wrapper').removeClass('hidden');
             }            
             alert(ybc_blog_invalid_file);
         }
@@ -1024,6 +1077,12 @@ $(document).on('click','.del_preview',function(){
         $(this).parents('.col-lg-9').eq(0).next('.uploaded_image_label').removeClass('hidden');
         $(this).parents('.col-lg-9').eq(0).next('.uploaded_image_label').next('.uploaded_img_wrapper').removeClass('hidden');
     }
+    else
+    if($(this).parents('.col-lg-9').eq(0).find('.uploaded_image_label').length > 0)
+    {
+        $(this).parents('.col-lg-9').eq(0).find('.uploaded_image_label').removeClass('hidden');
+        $(this).parents('.col-lg-9').eq(0).find('.uploaded_img_wrapper').removeClass('hidden');
+    }
     $(this).parents('.col-lg-9').eq(0).find('.dummyfile input[type="text"]').val('');
     if($(this).parents('.col-lg-9').eq(0).find('input[type="file"]').length > 0)
     {
@@ -1046,6 +1105,10 @@ $(document).on('click','.ybc-blog-add-new',function(){
         $('#enabled option[value="1"]').attr('selected','selected');
         $('#enabled option[value="-2"]').hide();
         $('#enabled').change();
+        ybc_blog_is_updating = false;
+        $('.help-block .ybc_link_view').remove();
+        if($(this).prev('.list-toolbar-btn').length)
+          $(this).prev('.list-toolbar-btn').hide();  
         return false;  
     }
 });
@@ -1093,6 +1156,12 @@ function readURL(input) {
                 $(input).parents('.col-lg-9').eq(0).next('.uploaded_image_label').addClass('hidden'); 
                 $(input).parents('.col-lg-9').eq(0).next('.uploaded_image_label').next('.uploaded_img_wrapper').addClass('hidden');
             }
+            else
+            if($(input).parents('.col-lg-9').eq(0).find('.uploaded_image_label').length > 0)
+            {
+                $(input).parents('.col-lg-9').eq(0).find('.uploaded_image_label').addClass('hidden'); 
+                $(input).parents('.col-lg-9').eq(0).find('.uploaded_img_wrapper').addClass('hidden');
+            }
                                       
         }
         reader.readAsDataURL(input.files[0]);
@@ -1105,19 +1174,19 @@ function updatePreviewImage(name,url,delete_url)
     {
         if($('input[name="'+name+'"]').parents('.col-lg-9').eq(0).find('.preview_img').length > 0)
            $('input[name="'+name+'"]').parents('.col-lg-9').eq(0).find('.preview_img').eq(0).remove(); 
-        if($('input[name="'+name+'"]').parents('.col-lg-9').eq(0).next('.uploaded_image_label').length<=0)
+        if($('input[name="'+name+'"]').parents('.col-lg-9').eq(0).find('.uploaded_image_label').length<=0)
         {
-            $('input[name="'+name+'"]').parents('.col-lg-9').eq(0).after('<label class="control-label col-lg-3 uploaded_image_label" style="font-style: italic;">Uploaded image: </label><div class="col-lg-9 uploaded_img_wrapper"><a class="ybc_fancy" href="'+url+'"><img title="Click to see full size image" style="display: inline-block; max-width: 200px;" src="'+url+'"></a>'+(delete_url ? '<a class="delete_url" style="display: inline-block; text-decoration: none!important;" href="'+delete_url+'"><span style="color: #666"><i style="font-size: 20px;" class="process-icon-delete"></i></span></a>' : '')+'</div>');
+            $('input[name="'+name+'"]').parents('.col-lg-9').eq(0).append('<label class="control-label col-lg-3 uploaded_image_label" style="font-style: italic;">Uploaded image: </label><div class="col-lg-9 uploaded_img_wrapper"><a class="ybc_fancy" href="'+url+'"><img title="Click to see full size image" style="display: inline-block; max-width: 200px;" src="'+url+'"></a>'+(delete_url ? '<a class="delete_url" style="display: inline-block; text-decoration: none!important;" href="'+delete_url+'"><span style="color: #666"><i style="font-size: 20px;" class="process-icon-delete"></i></span></a>' : '')+'</div>');
         }
         else
         {            
-            var imageWrapper = $('input[name="'+name+'"]').parents('.col-lg-9').eq(0).next('.uploaded_image_label').next('.col-lg-9');
+            var imageWrapper = $('input[name="'+name+'"]').parents('.col-lg-9').eq(0);
             imageWrapper.find('a.ybc_fancy').eq(0).attr('href',url);
             imageWrapper.find('a.ybc_fancy img').eq(0).attr('src',url);
             if(imageWrapper.find('a.delete_url').length > 0)
                 imageWrapper.find('a.delete_url').eq(0).attr('href',delete_url);
-            $('input[name="'+name+'"]').parents('.col-lg-9').eq(0).next('.uploaded_image_label').removeClass('hidden');
-            $('input[name="'+name+'"]').parents('.col-lg-9').eq(0).next('.uploaded_image_label').next('.uploaded_img_wrapper').removeClass('hidden');            
+            $('input[name="'+name+'"]').parents('.col-lg-9').eq(0).find('.uploaded_image_label').removeClass('hidden');
+            $('input[name="'+name+'"]').parents('.col-lg-9').eq(0).find('.uploaded_img_wrapper').removeClass('hidden');            
         }
         $('input[name="'+name+'"]').val('');        
     }
@@ -1172,7 +1241,7 @@ var ybcAddAccessory = function(event, data, formatted)
 	var $nameAccessories = $('#nameAccessories');
 
 	/* delete product from select + add product line to the div, input_name, input_ids elements */
-	$divAccessories.html($divAccessories.html() + '<div class="form-control-static form-control-static_'+productId+'"><button type="button" onclick="ybcDelAccessory('+productId+');" class="btn btn-default" name="' + productId + '"><i class="icon-remove text-danger"></i></button>&nbsp;<img src="'+data[2]+'" style="width:32px;">&nbsp;'+ productName +'</div>');
+	$divAccessories.html($divAccessories.html() + '<div class="form-control-static form-control-static_'+productId+'"><button type="button" onclick="ybcDelAccessory('+productId+');" class="btn btn-default remove_button" name="' + productId + '"><i class="icon-remove text-danger"></i></button>&nbsp;<img src="'+data[2]+'" style="width:32px;">&nbsp;'+ productName +'</div>');
 	$nameAccessories.val($nameAccessories.val() + productName + '¤');
 	$inputAccessories.val($inputAccessories.val() + productId + '-');
 	$('#product_autocomplete_input').val('');

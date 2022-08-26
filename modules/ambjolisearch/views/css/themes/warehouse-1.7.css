@@ -1,0 +1,15 @@
+/*
+ *	@module     	Advanced search (AmbJoliSearch)
+ *	@file 			warehouse-1.7.css
+ *	@subject		Add support for warehouse theme
+ *	@copyright  	Copyright (c) 2013-2022 Ambris Informatique SARL (http://www.ambris.com/)
+ *	@author     	Richard Stefan (@RicoStefan)
+ *	@license    	Commercial license
+ *	Support by mail: support@ambris.com
+ *
+ *	suggest (autocomplete) list style
+*/
+
+.ui-autocomplete-loading {
+	transition: none;
+}

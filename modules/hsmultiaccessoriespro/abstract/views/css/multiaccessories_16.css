@@ -1,0 +1,57 @@
+#product #group_accessories .option-row table select {
+    width: 65%;
+    padding: 2px 5px;
+    margin: 5px 0;
+}
+#group_accessories .accessories_group_combination select.product-combination{
+    float: left;
+    padding: 2px 5px;
+    width: 48%;
+}
+#group_accessories .custom_quantity select.product-combination{
+    margin-left: 2px;
+}
+.accessory_dropdown_wrap select.accessories_group{
+    width: 48%;
+    padding: 2px 5px;
+    margin: 5px 0;
+}
+.has_input_quantity select.product-combination{
+    margin-left: 39px !important;
+}
+.has_input_quantity select.accessories_group, .has_input_quantity select.product-combination{
+    width: 45.7% !important;
+}
+
+#group_accessories .accessories_group_combination {
+    margin-bottom: 15px;
+    margin-top: 5px;
+    width: 100% !important;
+}
+
+.hs_multi_accessories_add_to_cart span{
+    background: url("../img/cart.gif") no-repeat scroll 5px 10px rgba(0, 0, 0, 0);
+    border-radius: 3px;
+    min-width: 94px;
+    padding: 14px 1px 4px 37px;
+
+}
+#group_accessories table{
+    width: 100%;
+}
+span.warning_out_of_stock{
+    background: url("../img/warning.png") no-repeat scroll 5px 12px rgba(0, 0, 0, 0);
+}
+span.forbidden_ordering{
+    background: url("../img/forbidden.png") no-repeat scroll 5px 12px rgba(0, 0, 0, 0);
+}
+
+div.checker.disabled span.checked, div.checker.disabled.active span.checked {
+    background-position: -15px -257px !important;
+}
+#product #group_accessories label.dd-option-text{
+    display: block;
+}
+#product #group_accessories .display_combination {
+    margin-left: 4px;
+}

@@ -43,7 +43,7 @@ class OrderFees_Shipping extends MotionSeedModule
     {
         $this->name = 'orderfees_shipping';
         $this->tab = 'shipping_logistics';
-        $this->version = '1.9.5';
+        $this->version = '1.10.3';
         $this->author = 'motionSeed';
         $this->need_instance = 0;
         $this->ps_versions_compliancy['min'] = '1.6.0.0';
@@ -147,9 +147,10 @@ class OrderFees_Shipping extends MotionSeedModule
         }
         
         // Products
-        $free_shipping_products = array();
+        $apply_products = $free_shipping_products = array();
         
         foreach ($product_list as $product) {            
+            $apply_products[] = (int)$product['id_product'].'-'.(int)$product['id_product_attribute'];
             $free_shipping_products[] = (int)$product['id_product'].'-'.(int)$product['id_product_attribute'];
         }
         
@@ -221,6 +222,14 @@ class OrderFees_Shipping extends MotionSeedModule
                     }
                 }
             }
+            
+            if ($shipping_rule->type & (ShippingRule::IS_PERCENT + ShippingRule::IS_AMOUNT + ShippingRule::IS_FORMULA)) {
+                if ($shipping_rule->product_restriction && ($shipping_rule->type & ShippingRule::APPLY_IF_ALL)) {
+                   if (!empty(array_diff($apply_products, $shipping_rule->restrictionsProducts(true)))) {
+                       continue;
+                   }
+                }
+            }
 
             if ($shipping_rule->type == ShippingRule::IS_NONE && !$shipping_rule->package_restriction) {
                 continue;
@@ -233,7 +242,7 @@ class OrderFees_Shipping extends MotionSeedModule
             }
 
             if ($shipping_rule->type & ShippingRule::IS_FREE_SHIPPING) {
-                if ($shipping_rule->product_restriction && ($shipping_rule->type & ShippingRule::FREE_SHIPPING_ALL)) {
+                if ($shipping_rule->product_restriction && ($shipping_rule->type & ShippingRule::APPLY_IF_ALL)) {
                     $free_shipping_products = array_diff(
                         $free_shipping_products,
                         $shipping_rule->restrictionsProducts(true)

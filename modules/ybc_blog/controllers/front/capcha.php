@@ -1,6 +1,6 @@
 <?php
 /**
- * 2007-2019 ETS-Soft
+ * 2007-2022 ETS-Soft
  *
  * NOTICE OF LICENSE
  *
@@ -15,7 +15,7 @@
  * needs please contact us for extra customization service at an affordable price
  *
  *  @author ETS-Soft <etssoft.jsc@gmail.com>
- *  @copyright  2007-2019 ETS-Soft
+ *  @copyright  2007-2022 ETS-Soft
  *  @license    Valid for 1 website (or project) for each purchase of license
  *  International Registered Trademark & Property of ETS-Soft
  */
@@ -34,7 +34,7 @@ class Ybc_blogCapchaModuleFrontController extends ModuleFrontController
         $md5_hash = md5(rand(0,999)); 
         $security_code = Tools::substr($md5_hash, 15, 5); 
         $context = Context::getContext();
-        $type=Tools::getValue('type','comment');
+        $type = Tools::getValue('type','comment');
         if($type=='comment')
         {
             setcookie('ybc_security_capcha_code', $security_code, time() + (86400 * 30), "/");

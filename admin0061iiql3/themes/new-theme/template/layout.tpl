@@ -5,7 +5,7 @@
 </head>
 
 <body
-  class="lang-{$iso_user}{if $lang_is_rtl} lang-rtl{/if} {$smarty.get.controller|escape|strtolower}{if $collapse_menu} page-sidebar-closed{/if}"
+  class="lang-{$iso_user}{if $lang_is_rtl} lang-rtl{/if} {$smarty.get.controller|escape|strtolower}{if $collapse_menu} page-sidebar-closed{/if}{if isset($is_multishop) && $is_multishop} multishop-enabled{/if}{if isset($lite_display) && $lite_display} light_display_layout{/if}"
   {if isset($js_router_metadata.base_url)}data-base-url="{$js_router_metadata.base_url}"{/if}
   {if isset($js_router_metadata.token)}data-token="{$js_router_metadata.token}"{/if}
 >
@@ -59,10 +59,11 @@
         </div>
       {/if}
 
-      <div class="component" id="header-shop-list-container">
-        {include file="components/layout/shop_list.tpl"}
-      </div>
-
+      {if !isset($hideLegacyStoreContextSelector) || !$hideLegacyStoreContextSelector}
+        <div class="component" id="header-shop-list-container">
+          {include file="components/layout/shop_list.tpl"}
+        </div>
+      {/if}
       {if $show_new_orders || $show_new_customers || $show_new_messages}
         <div class="component header-right-component" id="header-notifications-container">
           {include file="components/layout/notifications_center.tpl"}
@@ -81,13 +82,14 @@
   {include file='components/layout/nav_bar.tpl'}
 {/if}
 
+{if isset($page_header_toolbar)}{$page_header_toolbar}{/if}
+
 <div id="main-div">
     {if $install_dir_exists}
       <div class="alert alert-warning">
         {l s='For security reasons, you must also delete the /install folder.' d='Admin.Login.Notification'}
       </div>
     {else}
-      {if isset($page_header_toolbar)}{$page_header_toolbar}{/if}
       {if isset($modal_module_list)}{$modal_module_list}{/if}
 
       <div class="{if $display_header}content-div{/if} {if !isset($page_header_toolbar)}-notoolbar{/if} {if $current_tab_level == 3}with-tabs{/if}">

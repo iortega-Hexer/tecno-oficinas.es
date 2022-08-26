@@ -1,5 +1,5 @@
 {*
-* 2007-2019 ETS-Soft
+* 2007-2022 ETS-Soft
 *
 * NOTICE OF LICENSE
 *
@@ -14,7 +14,7 @@
 * needs, please contact us for extra customization service at an affordable price
 *
 *  @author ETS-Soft <etssoft.jsc@gmail.com>
-*  @copyright  2007-2019 ETS-Soft
+*  @copyright  2007-2022 ETS-Soft
 *  @license    Valid for 1 website (or project) for each purchase of license
 *  International Registered Trademark & Property of ETS-Soft
 *}
@@ -41,7 +41,7 @@ var ybc_blog_polls_g_recaptcha = false;
     <meta property="og:image"         content="{if $blog_post_header.image}{$blog_post_header.image|escape:'html':'UTF-8'}{else}{$blog_post_header.thumb|escape:'html':'UTF-8'}{/if}" />
     <meta property="og:description"   content="{$blog_post_header.short_description|strip_tags|escape:'html':'UTF-8'}" />
     <meta itemprop="author"           content="{ucfirst($blog_post_header.firstname)|escape:'html':'UTF-8'} {ucfirst($blog_post_header.lastname)|escape:'html':'UTF-8'}"/>
-    <meta property="og:url"           content="{$blog_post_header.link|escape:'quotes'}" />
+    <meta property="og:url"           content="{$blog_post_header.link|escape:'quotes':'UTF-8'}" />
     <meta name="twitter:card"         content="summary_large_image" />
     {if $blog_post_header.enabled==-2}
         <meta name="robots" content="noindex, follow" />
@@ -66,7 +66,7 @@ var ybc_blog_polls_g_recaptcha = false;
 {/if}
 {if $YBC_BLOG_CAPTCHA_TYPE=='google3'}
     <script type="text/javascript">
-        var YBC_BLOG_CAPTCHA_SITE_KEY = '{$YBC_BLOG_CAPTCHA_SITE_KEY3|escape:'html':'UTF-8'}';
+        var YBC_BLOG_CAPTCHA_SITE_KEY = '{$YBC_BLOG_CAPTCHA_SITE_KEY|escape:'html':'UTF-8'}';
         {literal}
         var ybc_polls_lonloadCallback = function() {
              grecaptcha.ready(function() {

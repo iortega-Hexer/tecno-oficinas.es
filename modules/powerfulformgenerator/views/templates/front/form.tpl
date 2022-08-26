@@ -3,7 +3,7 @@
 * @author    Cyril Nicodème <contact@prestaddons.net>
 * @copyright Copyright (C) June 2014 prestaddons.net <@email:contact@prestaddons.net>. All rights reserved.
 * @since     2014-04-15
-* @version   2.7.8
+* @version   2.7.9
 * @license   Nicodème Cyril
 *}
 
@@ -50,7 +50,7 @@
 			{hook h='displayGDPRConsent' mod='psgdpr' id_module=$id_module}
 			<p class="submit">
 				<input type="hidden" name="pfg_form_id" value="{$form_id|escape:'quotes':'UTF-8'}" />
-				<input type="submit" name="submitMessage" id="submitMessage" value="{if $label_btn}{$label_btn|escape:'quotes':'UTF-8'}{else}{l s='Send' mod='powerfulformgenerator'}{/if}" class="button_large" />
+				<input type="submit" name="submitMessage" value="{if $label_btn}{$label_btn|escape:'quotes':'UTF-8'}{else}{l s='Send' mod='powerfulformgenerator'}{/if}" class="button_large" />
 			</p>
 		</fieldset>
 	</form>

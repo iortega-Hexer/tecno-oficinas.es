@@ -1,6 +1,6 @@
 <?php
 /**
- * 2007-2019 ETS-Soft
+ * 2007-2022 ETS-Soft
  *
  * NOTICE OF LICENSE
  *
@@ -15,7 +15,7 @@
  * needs please contact us for extra customization service at an affordable price
  *
  *  @author ETS-Soft <etssoft.jsc@gmail.com>
- *  @copyright  2007-2019 ETS-Soft
+ *  @copyright  2007-2022 ETS-Soft
  *  @license    Valid for 1 website (or project) for each purchase of license
  *  International Registered Trademark & Property of ETS-Soft
  */
@@ -38,6 +38,21 @@ class Ybc_blogSitemapModuleFrontController extends ModuleFrontController
 	{
 		parent::init();
 	}
+    public function getAlternativeLangsUrl()
+    {
+        $alternativeLangs = array();
+        $languages = Language::getLanguages(true, $this->context->shop->id);
+
+        if ($languages < 2) {
+            // No need to display alternative lang if there is only one enabled
+            return $alternativeLangs;
+        }
+
+        foreach ($languages as $lang) {
+            $alternativeLangs[$lang['language_code']] = $this->module->getLanguageLink($lang['id_lang']);
+        }
+        return $alternativeLangs;
+    }
     public function initContent()
 	{
 	   parent::initContent();
@@ -68,7 +83,7 @@ class Ybc_blogSitemapModuleFrontController extends ModuleFrontController
                     if($post['thumb'] || $post['image'])
                     {
                         $xml .='<image:image>'."\n";
-                        $xml .='<image:loc><![CDATA['.($post['thumb'] ? $this->module->getBaseLink().'modules/ybc_blog/views/img/post/thumb/'.$post['thumb'] : $this->module->getBaseLink().'modules/ybc_blog/views/img/post/'.$post['image'] ).']]></image:loc>'."\n";
+                        $xml .='<image:loc><![CDATA['.($post['thumb'] ? $this->context->link->getMediaLink(_PS_YBC_BLOG_IMG_.'post/thumb/'.$post['thumb']) : $this->context->link->getMediaLink(_PS_YBC_BLOG_IMG_.'post/'.$post['image'])).']]></image:loc>'."\n";
                         $xml .='<image:caption><![CDATA['.$post['title'].']]></image:caption>'."\n";
                         $xml .='<image:title><![CDATA['.$post['title'].']]></image:title>'."\n";
                         $xml .='</image:image>'."\n";   
@@ -79,10 +94,10 @@ class Ybc_blogSitemapModuleFrontController extends ModuleFrontController
        }
        if(in_array('category',$pages_sitemap))
        {
-            $req = "SELECT c.*, cl.title, cl.description
-                FROM "._DB_PREFIX_."ybc_blog_category c
-                INNER JOIN "._DB_PREFIX_."ybc_blog_category_shop cs ON (c.id_category=cs.id_category AND cs.id_shop='".(int)$this->context->shop->id."')
-                LEFT JOIN "._DB_PREFIX_."ybc_blog_category_lang cl ON c.id_category = cl.id_category
+            $req = "SELECT c.*, cl.title, cl.description,cl.image
+                FROM `"._DB_PREFIX_."ybc_blog_category` c
+                INNER JOIN `"._DB_PREFIX_."ybc_blog_category_shop` cs ON (c.id_category=cs.id_category AND cs.id_shop='".(int)$this->context->shop->id."')
+                LEFT JOIN `"._DB_PREFIX_."ybc_blog_category_lang` cl ON c.id_category = cl.id_category
                 WHERE c.enabled=1 AND cl.id_lang = ".(int)$this->context->language->id." 
                 ORDER BY  datetime_added ASC ";      
            $categories =Db::getInstance()->executeS($req);
@@ -96,7 +111,7 @@ class Ybc_blogSitemapModuleFrontController extends ModuleFrontController
                 if($category['image'] || $category['image'])
                 {
                     $xml .='<image:image>'."\n";
-                    $xml .='<image:loc><![CDATA['.$this->module->getBaseLink().'modules/ybc_blog/views/img/category/'.$category['image'].']]></image:loc>'."\n";
+                    $xml .='<image:loc><![CDATA['.$this->context->link->getMediaLink(_PS_YBC_BLOG_IMG_.'category/'.$category['image']).']]></image:loc>'."\n";
                     $xml .='<image:caption><![CDATA['.$category['title'].']]></image:caption>'."\n";
                     $xml .='<image:title><![CDATA['.$category['title'].']]></image:title>'."\n";
                     $xml .='</image:image>'."\n";   
@@ -106,8 +121,8 @@ class Ybc_blogSitemapModuleFrontController extends ModuleFrontController
        }
        if(in_array('authors',$pages_sitemap))
        {
-            $req  = 'SELECT * FROM '._DB_PREFIX_.'employee e
-            LEFT JOIN '._DB_PREFIX_.'ybc_blog_employee be ON (e.id_employee=be.id_employee AND be.is_customer=0)
+            $req  = 'SELECT * FROM `'._DB_PREFIX_.'employee` e
+            LEFT JOIN `'._DB_PREFIX_.'ybc_blog_employee` be ON (e.id_employee=be.id_employee AND be.is_customer=0)
            ';
            $employees = Db::getInstance()->executeS($req);
            foreach($employees as $employee)
@@ -121,7 +136,7 @@ class Ybc_blogSitemapModuleFrontController extends ModuleFrontController
                 if($employee['avata'] || $employee['avata'])
                 {
                     $xml .='<image:image>'."\n";
-                    $xml .='<image:loc><![CDATA['.$this->module->getBaseLink().'modules/ybc_blog/views/img/avata/'.$employee['avata'].']]></image:loc>'."\n";
+                    $xml .='<image:loc><![CDATA['.$this->context->link->getMediaLink(_PS_YBC_BLOG_IMG_.'avata/'.$employee['avata']).']]></image:loc>'."\n";
                     $xml .='<image:caption><![CDATA['.($employee['name'] ? $employee['name']: $employee['firstname'].' '.$employee['lastname']).']]></image:caption>'."\n";
                     $xml .='<image:title><![CDATA['.($employee['name'] ? $employee['name']: $employee['firstname'].' '.$employee['lastname']).']]></image:title>'."\n";
                     $xml .='</image:image>'."\n";   
@@ -142,7 +157,7 @@ class Ybc_blogSitemapModuleFrontController extends ModuleFrontController
                     if($customer['avata'] || $customer['avata'])
                     {
                         $xml .='<image:image>'."\n";
-                        $xml .='<image:loc><![CDATA['.$this->module->getBaseLink().'modules/ybc_blog/views/img/avata/'.$customer['avata'].']]></image:loc>'."\n";
+                        $xml .='<image:loc><![CDATA['.$this->context->link->getMediaLink(_PS_YBC_BLOG_IMG_.'avata/'.$customer['avata']).']]></image:loc>'."\n";
                         $xml .='<image:caption><![CDATA['.($customer['name'] ? $customer['name']: $customer['firstname'].' '.$customer['lastname']).']]></image:caption>'."\n";
                         $xml .='<image:title><![CDATA['.($customer['name'] ? $customer['name']: $customer['firstname'].' '.$customer['lastname']).']]></image:title>'."\n";
                         $xml .='</image:image>'."\n";   
@@ -181,8 +196,8 @@ class Ybc_blogSitemapModuleFrontController extends ModuleFrontController
        if (ob_get_length() > 0) {
             ob_end_clean();
        }
-       header("Content-Type: application/xml; charset=ISO-8859-1");
+       header("Content-Type: application/xml; charset=UTF-8");
        mb_internal_encoding('UTF-8');
-       die(utf8_encode($xml));
+       die($xml);
     }
 }

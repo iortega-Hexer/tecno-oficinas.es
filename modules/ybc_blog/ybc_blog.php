@@ -1,6 +1,6 @@
 <?php
 /**
- * 2007-2019 ETS-Soft
+ * 2007-2022 ETS-Soft
  *
  * NOTICE OF LICENSE
  *
@@ -15,7 +15,7 @@
  * needs please contact us for extra customization service at an affordable price
  *
  *  @author ETS-Soft <etssoft.jsc@gmail.com>
- *  @copyright  2007-2019 ETS-Soft
+ *  @copyright  2007-2022 ETS-Soft
  *  @license    Valid for 1 website (or project) for each purchase of license
  *  International Registered Trademark & Property of ETS-Soft
  */
@@ -32,18 +32,26 @@ include_once(_PS_MODULE_DIR_.'ybc_blog/classes/ybc_blog_slide_class.php');
 include_once(_PS_MODULE_DIR_.'ybc_blog/classes/ybc_blog_gallery_class.php');
 include_once(_PS_MODULE_DIR_.'ybc_blog/classes/ybc_blog_link_class.php');
 include_once(_PS_MODULE_DIR_.'ybc_blog/classes/ybc_blog_employee_class.php');
+include_once(_PS_MODULE_DIR_.'ybc_blog/classes/ybc_blog_email_template_class.php');
 include_once(_PS_MODULE_DIR_.'ybc_blog/classes/ImportExport.php');
 include_once(_PS_MODULE_DIR_.'ybc_blog/classes/ybc_browser.php');
 include_once(_PS_MODULE_DIR_.'ybc_blog/ybc_blog_defines.php');
 if(!function_exists('ets_getCookie'))
     include_once(_PS_MODULE_DIR_.'ybc_blog/classes/cookie');
+if (!defined('_PS_YBC_BLOG_IMG_DIR_')) {
+    define('_PS_YBC_BLOG_IMG_DIR_', _PS_IMG_DIR_.'ybc_blog/');
+}
+if (!defined('_PS_YBC_BLOG_IMG_')) {
+    define('_PS_YBC_BLOG_IMG_', _PS_IMG_.'ybc_blog/');
+}
+
 class Ybc_blog extends Module
 {
     private $depthLevel = false;
     private $excludedCats = array();
     private $prefix = '-';
     private $blogCategoryDropDown;
-    private $baseAdminPath;
+    public $baseAdminPath;
     private $errorMessage = false;
     private $_html = '';
     public $blogDir;
@@ -53,17 +61,15 @@ class Ybc_blog extends Module
     public $configTabs = array();
     public $import_ok=false;   
     public $errors = array();
-    public $sort = false;
+    public $sort = false;public $controls;
     public function __construct()
 	{
-
 		//Ajax search
         $this->ajaxProductSearch();
-       
         //Init
         $this->name = 'ybc_blog';
 		$this->tab = 'front_office_features';
-		$this->version = '3.1.8';
+		$this->version = '3.3.3';
 		$this->author = 'ETS-Soft';
 		$this->need_instance = 0;
 		$this->secure_key = Tools::encrypt($this->name);
@@ -73,7 +79,9 @@ class Ybc_blog extends Module
         $this->module_key = 'da314fdf1af6d043f9b2f15dce2bef1e';
         parent::__construct();
         $this->shortlink = 'https://mf.short-link.org/';
-        if(Tools::getValue('configure')==$this->name && Tools::isSubmit('othermodules'))
+        $configure = Tools::getValue('configure');
+        $controller = Tools::getValue('controller');
+        if($controller =='AdminModules' && $configure==$this->name && Tools::isSubmit('othermodules'))
         {
             $this->displayRecommendedModules();
         }
@@ -86,24 +94,27 @@ class Ybc_blog extends Module
             else
                 $this->sort = 'p.'.Configuration::get('YBC_BLOG_POST_SORT_BY').' DESC, ';
         }
+
 		$this->displayName = $this->l('BLOG');
         $this->description = $this->l('The most powerful, flexible and feature-rich blog module for Prestashop. BLOG provides everything you need to create a professional blog area for your website.');
 		$this->ps_versions_compliancy = array('min' => '1.6.0.0', 'max' => _PS_VERSION_);
         $this->configTabs = array(
             'general' => $this->l('General'),
             'gallery' => $this->l('Gallery'),
-            'slider' => $this->l('Slider'),            
+            'slider' => $this->l('Slider'),
             'comment' => $this->l('Likes and Comments'), 
-            'polls' => $this->l('Polls'),     
+            'polls' => $this->l('Polls'),
         );
         $this->blogDir = $this->_path;  
-        $this->alias = Configuration::get('YBC_BLOG_ALIAS',$this->context->language->id);
+        $this->alias = Configuration::get('YBC_BLOG_ALIAS',$this->context->language->id) ? : Configuration::get('YBC_BLOG_ALIAS',Configuration::get('PS_LANG_DEFAULT'));
         $this->friendly = (int)Configuration::get('YBC_BLOG_FRIENDLY_URL') && (int)Configuration::get('PS_REWRITING_SETTINGS') ? true : false;    
-        $recaptcha = Tools::getValue('g-recaptcha-response') ? Tools::getValue('g-recaptcha-response') : '';
+        $g_recaptcha = Tools::getValue('g-recaptcha-response');
+        $recaptcha = $g_recaptcha && Validate::isCleanHtml($g_recaptcha) ? $g_recaptcha: '';
         $secret = Configuration::get('YBC_BLOG_CAPTCHA_TYPE')=='google' ? Configuration::get('YBC_BLOG_CAPTCHA_SECRET_KEY') : Configuration::get('YBC_BLOG_CAPTCHA_SECRET_KEY3');
         $this->link_capcha="https://www.google.com/recaptcha/api/siteverify?secret=" . $secret . "&response=" . $recaptcha . "&remoteip=" . Tools::getRemoteAddr();
         $this->setMetas();
-
+        $this->controls = array('category','post','comment','polls','slide','gallery','seo','sitemap','rss','socials','email','image','sidebar','homepage','postlistpage','postpage','categorypage','productpage','employees','customer','export','config','comment_reply','author');
+        
     }
     
     /**
@@ -114,7 +125,6 @@ class Ybc_blog extends Module
 	    return parent::install()&& $this->registerHook('displayLeftColumn')
         && $this->registerHook('displayBackOfficeHeader') 
         && $this->registerHook('displayHome') 
-        && $this->registerHook('displayFullBlogHome')
         && $this->registerHook('displayHeader')
         && $this->registerHook('displayFooter')
         && $this->registerHook('blogSearchBlock')
@@ -144,6 +154,8 @@ class Ybc_blog extends Module
         && $this->registerHook('blogCategoryBlock')
         && $this->registerHook('displayBackOfficeFooter')
         && $this->registerHook('displayFooterYourAccount')
+        && $this->registerHook('actionObjectLanguageAddAfter')
+        && $this->registerHook('displayFooterCategory')
         && $this->_installDb()
         && $this->_installTabs() && $this->_copyForderMail();
     }    
@@ -156,6 +168,42 @@ class Ybc_blog extends Module
     }
     private function _installDb()
     {
+        if(!is_dir(_PS_YBC_BLOG_IMG_DIR_))
+            @mkdir(_PS_YBC_BLOG_IMG_DIR_);
+        if(file_exists(dirname(__FILE__).'/index.php'))
+            Tools::copy(dirname(__FILE__).'/index.php',_PS_YBC_BLOG_IMG_DIR_.'index.php');
+        if(!is_dir(_PS_YBC_BLOG_IMG_DIR_.'slide/'))
+            @mkdir(_PS_YBC_BLOG_IMG_DIR_.'slide/');
+        if(file_exists(dirname(__FILE__).'/index.php'))
+            Tools::copy(dirname(__FILE__).'/index.php',_PS_YBC_BLOG_IMG_DIR_.'slide/index.php');
+        if(!is_dir(_PS_YBC_BLOG_IMG_DIR_.'post/'))
+            @mkdir(_PS_YBC_BLOG_IMG_DIR_.'/post');
+        if(file_exists(dirname(__FILE__).'/index.php'))
+            Tools::copy(dirname(__FILE__).'/index.php',_PS_YBC_BLOG_IMG_DIR_.'post/index.php');
+        if(!is_dir(_PS_YBC_BLOG_IMG_DIR_.'post/thumb/'))
+            @mkdir(_PS_YBC_BLOG_IMG_DIR_.'/post/thumb');
+        if(file_exists(dirname(__FILE__).'/index.php'))
+            Tools::copy(dirname(__FILE__).'/index.php',_PS_YBC_BLOG_IMG_DIR_.'post/thumb/index.php');
+        if(!is_dir(_PS_YBC_BLOG_IMG_DIR_.'gallery/'))
+            @mkdir(_PS_YBC_BLOG_IMG_DIR_.'gallery/');
+        if(file_exists(dirname(__FILE__).'/index.php'))
+            Tools::copy(dirname(__FILE__).'/index.php',_PS_YBC_BLOG_IMG_DIR_.'gallery/index.php');
+        if(!is_dir(_PS_YBC_BLOG_IMG_DIR_.'gallery/thumb/'))
+            @mkdir(_PS_YBC_BLOG_IMG_DIR_.'gallery/thumb/');
+        if(file_exists(dirname(__FILE__).'/index.php'))
+            Tools::copy(dirname(__FILE__).'/index.php',_PS_YBC_BLOG_IMG_DIR_.'gallery/thumb/index.php');
+        if(!is_dir(_PS_YBC_BLOG_IMG_DIR_.'category/'))
+            @mkdir(_PS_YBC_BLOG_IMG_DIR_.'category/');
+        if(file_exists(dirname(__FILE__).'/index.php'))
+            Tools::copy(dirname(__FILE__).'/index.php',_PS_YBC_BLOG_IMG_DIR_.'category/index.php');
+        if(!is_dir(_PS_YBC_BLOG_IMG_DIR_.'category/thumb/'))
+            @mkdir(_PS_YBC_BLOG_IMG_DIR_.'category/thumb/');
+        if(file_exists(dirname(__FILE__).'/index.php'))
+            Tools::copy(dirname(__FILE__).'/index.php',_PS_YBC_BLOG_IMG_DIR_.'category/thumb/index.php');
+        if(!is_dir(_PS_YBC_BLOG_IMG_DIR_.'avata/'))
+            @mkdir(_PS_YBC_BLOG_IMG_DIR_.'avata/');
+        if(file_exists(dirname(__FILE__).'/index.php'))
+            Tools::copy(dirname(__FILE__).'/index.php',_PS_YBC_BLOG_IMG_DIR_.'avata/index.php');
         $languages = Language::getLanguages(false);
         //Install db structure
         Configuration::updateValue('PS_ALLOW_HTML_IFRAME',1);
@@ -415,6 +463,8 @@ class Ybc_blog extends Module
             $adminforder= trim(trim($adminforder,'\\'),'/');
             Configuration::updateValue('YBC_BLOG_ADMIN_FORDER',$adminforder);
         }
+        $this->refreshCssCustom();
+        $this->initEmailTemplate();
         return true;
     }
     public function _copyForderMail()
@@ -431,13 +481,27 @@ class Ybc_blog extends Module
                 {
                      if (($new_dir = dirname(__FILE__) . '/mails/'. $language['iso_code']))
                      {
+                        
                         $this->recurseCopy($temp_dir_ltr, $new_dir);
                      }
                 }
             }
         }
         return true;
-     }
+    }
+    public function deleteDir($dir)
+    {
+        $dir = rtrim($dir,'/');
+        $files = glob($dir.'/*'); 
+        foreach($files as $file){ 
+            if(is_dir($file))
+                $this->deleteDir($file);
+            elseif(is_file($file))
+                @unlink($file); 
+        }
+        @rmdir($dir);
+        return true;
+    }
     public function recurseCopy($src, $dst)
     {
         if(!@file_exists($src))
@@ -567,20 +631,12 @@ class Ybc_blog extends Module
             }
             unset($config);
         }
-        $tbls = array('post', 'post_lang','post_shop','post_category', 'category','category_shop', 'category_lang', 'comment', 'gallery','gallery_shop', 'gallery_lang', 'tag', 'slide', 'slide_shop','slide_lang','employee','employee_lang','log_view','log_like','post_related_categories','reply','polls');
+        $tbls = array('post', 'post_lang','post_shop','post_category', 'category','category_shop', 'category_lang', 'comment', 'gallery','gallery_shop', 'gallery_lang', 'tag', 'slide', 'slide_shop','slide_lang','employee','employee_lang','log_view','log_like','post_related_categories','reply','polls','email_template');
         foreach($tbls as $tbl)
         {
             Db::getInstance()->execute('DROP TABLE IF EXISTS `'._DB_PREFIX_.'ybc_blog_'.pSQL($tbl).'`');
         }
-        $dirs = array('post','category','slide','gallery','post/thumb','gallery/thumb','avata','category/thumb');
-        foreach($dirs as $dir)
-        {
-            $files = glob(dirname(__FILE__).'/views/img/'.$dir.'/*'); 
-            foreach($files as $file){ 
-              if(is_file($file) && $file!=dirname(__FILE__).'/views/img/'.$dir.'/index.php')
-                @unlink($file); 
-            }
-        }   
+        $this->deleteDir(_PS_YBC_BLOG_IMG_DIR_);
         if(file_exists(dirname(__FILE__).'/cache/ybc_blog.data.zip'))
             unlink(dirname(__FILE__).'/cache/ybc_blog.data.zip');    
         return true;
@@ -588,10 +644,11 @@ class Ybc_blog extends Module
     public function getContent()
 	{
         if(!$this->active)
-            return '';           
+            return '';     
         $this->ajaxPostSearch();
         $this->ajaxCustomerSearch();
-        if(Tools::getValue('action')=='getCountMessageYbcBlog')
+        $action = Tools::getValue('action');
+        if($action=='getCountMessageYbcBlog')
         {   
             die(
                 Tools::jsonEncode(
@@ -628,7 +685,7 @@ class Ybc_blog extends Module
        }
        elseif($control=='sitemap')
        {
-            if(!$this->checkProfileEmployee($this->context->employee->id,'sitemap'))
+            if(!$this->checkProfileEmployee($this->context->employee->id,'Sitemap'))
                 return $this->display(__FILE__,'error_access.tpl');
             $this->_postConfig($ybc_defines->configs_sitemap);   
        }
@@ -642,10 +699,10 @@ class Ybc_blog extends Module
        {
             if(!$this->checkProfileEmployee($this->context->employee->id,'Image'))
                 return $this->display(__FILE__,'error_access.tpl');
-            $this->_postConfig($ybc_defines->configs_image,dirname(__FILE__).'/views/img/avata/',Configuration::get('YBC_BLOG_IMAGE_AVATA_WIDTH',300),Configuration::get('YBC_BLOG_IMAGE_AVATA_HEIGHT',300));
+            $this->_postConfig($ybc_defines->configs_image,_PS_YBC_BLOG_IMG_DIR_.'avata/',Configuration::get('YBC_BLOG_IMAGE_AVATA_WIDTH',300),Configuration::get('YBC_BLOG_IMAGE_AVATA_HEIGHT',300));
             if(Tools::isSubmit('deldefaultavataimage'))
             {
-                @unlink(dirname(__FILE__).'views/img/avata/'.Configuration::get('YBC_BLOG_IMAGE_AVATA_DEFAULT'));
+                @unlink(_PS_YBC_BLOG_IMG_DIR_.'avata/'.Configuration::get('YBC_BLOG_IMAGE_AVATA_DEFAULT'));
                 Configuration::updateValue('YBC_BLOG_IMAGE_AVATA_DEFAULT','');  
                 if(Tools::isSubmit('ajax'))
                 {
@@ -653,7 +710,7 @@ class Ybc_blog extends Module
                         array(
                             'messageType' => 'success',
                             'message' => $this->displayConfirmation($this->l('Image deleted')),
-                            'image_default' => $this->getBaseLink().'modules/'.$this->name.'/views/img/avata/default_customer.png',
+                            'image_default' => $this->context->link->getMediaLink(_PS_YBC_BLOG_IMG_.'avata/default_customer.png'),
                         )
                     ));
                 }                                                          
@@ -664,30 +721,59 @@ class Ybc_blog extends Module
             if(!$this->checkProfileEmployee($this->context->employee->id,'Sidebar'))
                 return $this->display(__FILE__,'error_access.tpl');
             $this->_postConfig($ybc_defines->configs_sidebar);  
-            if(Tools::isSubmit('action') && Tools::getValue('action')=='updateSidebarOrdering')
+            if($action=='updateSidebarOrdering')
             {
                 $positions= Tools::getValue('sidebar-position-sidebar');
-                foreach($positions as $key=> $position)
-                    $positions[$key] ='sidebar_'.$position;
-                Configuration::updateValue('YBC_BLOG_POSITION_SIDEBAR',implode(',',$positions));
-                die(
-                    Tools::jsonEncode(
+                if($positions && is_array($positions) && Ybc_blog::validateArray($positions))
+                {
+                    foreach($positions as $key=> $position)
+                        $positions[$key] ='sidebar_'.$position;
+                    Configuration::updateValue('YBC_BLOG_POSITION_SIDEBAR',implode(',',$positions));
+                    die(
+                        Tools::jsonEncode(
+                            array(
+                                'messageType' => 'success',
+                                'message'=> $this->displaySuccessMessage($this->l('Position updated')),
+                            )
+                        )
+                    );
+                }
+                else
+                {
+                    die(
+                        Tools::jsonEncode(
+                            array(
+                                'messageType'=>'error',
+                                'message'=> $this->displayError($this->l('Update failed')),
+                            )
+                        )
+                    );
+                }
+                
+            } 
+            if($action=='updateBlock')
+            {
+                $field = Tools::getValue('field');
+                $value_filed = Tools::getValue('value_filed');
+                if(Validate::isConfigName($field) && Validate::isCleanHtml($value_filed,true))
+                {
+                    Configuration::updateValue(Tools::getValue('field'),Tools::getValue('value_filed'));    
+                    die(Tools::jsonEncode(
                         array(
                             'messageType' => 'success',
-                            'message'=> $this->displaySuccessMessage($this->l('Position updated')),
+                            'message'=> $this->displaySuccessMessage($this->l('Updated successfully')),
                         )
-                    )
-                );
-            } 
-            if(Tools::isSubmit('action') && Tools::getValue('action')=='updateBlock')
-            {
-                Configuration::updateValue(Tools::getValue('field'),Tools::getValue('value_filed'));
-                die(Tools::jsonEncode(
-                    array(
-                        'messageType' => 'success',
-                        'message'=> $this->displaySuccessMessage($this->l('Updated')),
-                    )
-                ));
+                    ));
+                }
+                else
+                {
+                    die(Tools::jsonEncode(
+                        array(
+                            'messageType' => 'error',
+                            'message'=> $this->displayError($this->l('Update failed')),
+                        )
+                    ));
+                }
             } 
        }
        elseif($control=='homepage')
@@ -704,35 +790,64 @@ class Ybc_blog extends Module
                     'default' =>'',
             );
             $this->_postConfig($ybc_defines->configs_homepage);  
-            if(Tools::isSubmit('action') && Tools::getValue('action')=='updateSidebarOrdering')
+            if($action=='updateSidebarOrdering')
             {
                 $positions= Tools::getValue('sidebar-position-homepage');
-                foreach($positions as $key=> $position)
-                    $positions[$key] ='homepage_'.$position;
-                Configuration::updateValue('YBC_BLOG_POSITION_HOMEPAGE',implode(',',$positions));
-                die(
-                    Tools::jsonEncode(
+                if($positions && is_array($positions) && Ybc_blog::validateArray($positions))
+                {
+                    foreach($positions as $key=> $position)
+                        $positions[$key] ='homepage_'.$position;
+                    Configuration::updateValue('YBC_BLOG_POSITION_HOMEPAGE',implode(',',$positions));
+                    die(
+                        Tools::jsonEncode(
+                            array(
+                                'messageType' => 'success',
+                                'message'=> $this->displaySuccessMessage($this->l('Position updated')),
+                            )
+                        )
+                    );
+                }
+                else
+                {
+                    die(
+                        Tools::jsonEncode(
+                            array(
+                                'messageType'=>'error',
+                                'message'=> $this->displayError($this->l('Update failed')),
+                            )
+                        )
+                    );
+                }    
+                
+            } 
+            if($action=='updateBlock')
+            {
+                $field = Tools::getValue('field');
+                $value_filed = Tools::getValue('value_filed');
+                if(Validate::isConfigName($field) && Validate::isCleanHtml($value_filed,true))
+                {
+                    Configuration::updateValue(Tools::getValue('field'),Tools::getValue('value_filed'));    
+                    die(Tools::jsonEncode(
                         array(
                             'messageType' => 'success',
-                            'message'=> $this->displaySuccessMessage($this->l('Position updated')),
+                            'message'=> $this->displaySuccessMessage($this->l('Updated successfully')),
                         )
-                    )
-                );
-            } 
-            if(Tools::isSubmit('action') && Tools::getValue('action')=='updateBlock')
-            {
-                Configuration::updateValue(Tools::getValue('field'),Tools::getValue('value_filed'));
-                die(Tools::jsonEncode(
-                    array(
-                        'messageType' => 'success',
-                        'message'=> $this->displaySuccessMessage($this->l('Updated')),
-                    )
-                ));
+                    ));
+                }
+                else
+                {
+                    die(Tools::jsonEncode(
+                        array(
+                            'messageType' => 'error',
+                            'message'=> $this->displayError($this->l('Update failed')),
+                        )
+                    ));
+                }    
             } 
        }
        elseif($control=='postpage')
        {
-            if(!$this->checkProfileEmployee($this->context->employee->id,'Post page'))
+            if(!$this->checkProfileEmployee($this->context->employee->id,'Post detail page'))
                 return $this->display(__FILE__,'error_access.tpl');
             $this->_postConfig($ybc_defines->configs_postpage);   
        }
@@ -758,7 +873,25 @@ class Ybc_blog extends Module
        {
             if(!$this->checkProfileEmployee($this->context->employee->id,'Email'))
                 return $this->display(__FILE__,'error_access.tpl');
-            $this->_postConfig($ybc_defines->configs_email);   
+            if(Tools::isSubmit('saveEmailTemplate') || Tools::isSubmit('change_enabled'))
+            {
+                $this->submitSaveEamilTemplate();
+            }
+            elseif(Tools::isSubmit('submitBulkEnabled') && ($id_email_template = Tools::getValue('bulk_ybc_email')) )
+            {
+                Db::getInstance()->execute('UPDATE `'._DB_PREFIX_.'ybc_blog_email_template` SET active=1 WHERE id_ybc_blog_email_template IN ('.implode(',',array_map('intval',array_keys($id_email_template))).')');
+                Tools::redirectAdmin($this->baseAdminPath.'&control=email&conf=4');
+            }
+            elseif(Tools::isSubmit('submitBulkDiasabled') && ($id_email_template = Tools::getValue('bulk_ybc_email')) )
+            {
+                Db::getInstance()->execute('UPDATE `'._DB_PREFIX_.'ybc_blog_email_template` SET active=0 WHERE id_ybc_blog_email_template IN ('.implode(',',array_map('intval',array_keys($id_email_template))).')');
+                Tools::redirectAdmin($this->baseAdminPath.'&control=email&conf=4');
+            }
+            else
+            {
+                $this->_postConfig($ybc_defines->configs_email);   
+            }
+            
        }
        elseif($control=='socials')
        {
@@ -798,7 +931,7 @@ class Ybc_blog extends Module
        }
        elseif($control=='employees')
        {
-            if(!$this->checkProfileEmployee($this->context->employee->id,'none'))
+            if(!$this->checkProfileEmployee($this->context->employee->id,'Authors'))
                 return $this->display(__FILE__,'error_access.tpl');
             $this->_postEmployee();
        }
@@ -851,7 +984,16 @@ class Ybc_blog extends Module
        }
        elseif($control=='email')
        {
-            $this->renderConfig($ybc_defines->configs_email, $this->l('Email'),'icon-email');   
+            if(($id_ybc_blog_email_template = (int)Tools::getValue('id_ybc_blog_email_template')) && ($email_template = new Ybc_blog_email_template_class($id_ybc_blog_email_template)) && Validate::isLoadedObject($email_template))
+            {
+                $this->_html .= $email_template->renderForm().$email_template->previewTemplate();
+            }
+            else
+            {
+                $this->renderConfig($ybc_defines->configs_email, $this->l('Email configuration'),'icon-email');
+                $this->_html .= Ybc_blog_email_template_class::getInstance()->renderList();
+            }
+            
        }
        elseif($control=='sidebar')
        {
@@ -938,18 +1080,20 @@ class Ybc_blog extends Module
     }
     public function getAminHtml($control)
     {       
+        $id_post = (int)Tools::getValue('id_post');
+        $id_category = (int)Tools::getValue('id_category');
         $this->smarty->assign(array(
             'ybc_blog_ajax_url' => $this->context->link->getAdminLink('AdminModules', true).'&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&ajaxproductsearch=true',
             'ybc_blog_author_ajax_url' => $this->context->link->getAdminLink('AdminModules', true).'&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&ajaxCustomersearch=true',
             'ybc_blog_default_lang' => Configuration::get('PS_LANG_DEFAULT'),
-            'ybc_blog_is_updating' => Tools::getValue('id_post') || Tools::getValue('id_category') ? 1 :  0,
-            'ybc_blog_is_config_page' => Tools::getValue('control') == 'config' ? 1 : 0,
+            'ybc_blog_is_updating' => (int)$id_post || (int)$id_category ? 1 :  0,
+            'ybc_blog_is_config_page' => $control == 'config' ? 1 : 0,
             'ybc_blog_invalid_file' => $this->l('Invalid file'),
             'ybc_blog_module_dir' => $this->_path,
             'ybc_blog_sidebar' => $this->renderSidebar(),
             'ybc_blog_body_html' => $this->renderAdminBodyHtml($control),
             'ybc_blog_error_message' => $this->errorMessage,
-            'control' => Tools::getValue('control'),
+            'control' => $control,
         ));
         return $this->display(__FILE__, 'admin.tpl');
     }
@@ -962,7 +1106,7 @@ class Ybc_blog extends Module
     {
         $this->baseAdminPath = $this->context->link->getAdminLink('AdminModules').'&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name;
         //List 
-        if(trim(Tools::getValue('list'))=='true')
+        if(Tools::isSubmit('list'))
         {
             $fields_list = array(
                 'id_category' => array(
@@ -1025,32 +1169,40 @@ class Ybc_blog extends Module
             );
             //Filter
             $filter = "";
-            if(trim(Tools::getValue('id_category'))!='')
-                $filter .= " AND c.id_category = ".(int)trim(urldecode(Tools::getValue('id_category')));
-            if(trim(Tools::getValue('sort_order'))!='')
+            if(($idCategory = trim(Tools::getValue('id_category')))!='' && Validate::isCleanHtml($idCategory))
+                $filter .= " AND c.id_category = ".(int)$idCategory;
+            if(($sort_order = trim(Tools::getValue('sort_order')))!='' && Validate::isCleanHtml($sort_order))
                 $filter .= " AND c.sort_order = ".(int)trim(urldecode(Tools::getValue('sort_order')));
-            if(trim(Tools::getValue('title'))!='')
-                $filter .= " AND cl.title like '%".addslashes(trim(urldecode(Tools::getValue('title'))))."%'";
-            if(trim(Tools::getValue('description'))!='')
-                $filter .= " AND cl.description like '%".addslashes(trim(urldecode(Tools::getValue('description'))))."%'";
-             if(trim(Tools::getValue('enabled'))!='')
+            if(($title = trim(Tools::getValue('title')))!='' && Validate::isCleanHtml($title))
+                $filter .= " AND cl.title like '%".pSQL($title)."%'";
+            if(($description =trim(Tools::getValue('description')))!='' && Validate::isCleanHtml($description))
+                $filter .= " AND cl.description like '%".pSQL($description)."%'";
+             if(($enabled = trim(Tools::getValue('enabled')))!='' && Validate::isCleanHtml($enabled))
                 $filter .= " AND c.enabled =".(int)Tools::getValue('enabled');
-            
+            if($filter)
+                $show_reset = true;
+            else
+                $show_reset =false;
             //Sort
             $sort = "";
-            if(trim(Tools::getValue('sort')) && isset($fields_list[Tools::getValue('sort')]))
+            $sort_post = Tools::strtolower(trim(Tools::getValue('sort')));
+            $sort_type = Tools::strtolower(Tools::getValue('sort_type','desc'));
+            if(!in_array($sort_type,array('desc','asc')))
+                $sort_type ='desc';
+            if($sort_post && isset($fields_list[$sort_post]))
             {
-                $sort .= trim(Tools::getValue('sort'))." ".(Tools::getValue('sort_type')=='asc' ? ' ASC ' :' DESC ')." , ";
+                $sort .= $sort_post." ".($sort_type=='asc' ? ' ASC ' :' DESC ')." , ";
             }
             else
                 $sort = "c.sort_order ASC,";
             
             //Paggination
-            $page = (int)Tools::getValue('page') && (int)Tools::getValue('page') > 0 ? (int)Tools::getValue('page') : 1;
-            $totalRecords = (int)$this->countCategoriesWithFilter($filter,Tools::getValue('id_parent',0));
+            $id_parent = (int)Tools::getValue('id_parent');
+            $page = (int)Tools::getValue('page');
+            $totalRecords = (int)$this->countCategoriesWithFilter($filter,$id_parent);
             $paggination = new Ybc_blog_paggination_class();            
             $paggination->total = $totalRecords;
-            $paggination->url = $this->context->link->getAdminLink('AdminModules', true).'&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&control=category&list=true&page=_page_'.$this->getUrlExtra($fields_list);
+            $paggination->url = $this->context->link->getAdminLink('AdminModules', true).'&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&control=category&list=true'.($id_parent ? '&id_parent='.(int)$id_parent:'').'&page=_page_'.$this->getUrlExtra($fields_list);
             $paggination->limit =  20;
             $totalPages = ceil($totalRecords / $paggination->limit);
             if($page > $totalPages)
@@ -1059,20 +1211,20 @@ class Ybc_blog extends Module
             $start = $paggination->limit * ($page - 1);
             if($start < 0)
                 $start = 0;
-            $categories = $this->getCategoriesWithFilter($filter, $sort, $start, $paggination->limit,Tools::getValue('id_parent',0));
+            $categories = $this->getCategoriesWithFilter($filter, $sort, $start, $paggination->limit,$id_parent);
             if($categories)
             {
                 foreach($categories as &$cat)
                 {
                     $cat['view_url'] = $this->getLink('blog',array('id_category' => $cat['id_category']));
-                    if(Db::getInstance()->executeS('SELECT * FROM '._DB_PREFIX_.'ybc_blog_category WHERE id_parent='.(int)$cat['id_category']))
+                    if(Db::getInstance()->executeS('SELECT * FROM `'._DB_PREFIX_.'ybc_blog_category` WHERE id_parent='.(int)$cat['id_category']))
                     {
                         $cat['child_view_url'] = $this->context->link->getAdminLink('AdminModules', true).'&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&control=category&list=true&id_parent='.(int)$cat['id_category'];
                     }
-                    if($cat['thumb'] && file_exists(dirname(__FILE__).'/views/img/category/thumb/'.$cat['thumb']))
-                        $cat['thumb_link'] = '<img src="'.$this->_path.'views/img/category/thumb/'.$cat['thumb'].'" style="width:40px;"/>';
-                    elseif($cat['image'] && file_exists(dirname(__FILE__).'views/img/category/'.$cat['image']))
-                        $cat['thumb_link'] = '<img src="'.$this->_path.'views/img/category/'.$cat['image'].'" style="width:40px;"/>';
+                    if($cat['thumb'] && file_exists(_PS_YBC_BLOG_IMG_DIR_.'category/thumb/'.$cat['thumb']))
+                        $cat['thumb_link'] = '<img src="'._PS_YBC_BLOG_IMG_.'category/thumb/'.$cat['thumb'].'" style="width:40px;"/>';
+                    elseif($cat['image'] && file_exists(_PS_YBC_BLOG_IMG_DIR_.'category/'.$cat['image']))
+                        $cat['thumb_link'] = '<img src="'._PS_YBC_BLOG_IMG_.'category/'.$cat['image'].'" style="width:40px;"/>';
                     else
                         $cat['thumb_link']='';
                 }
@@ -1089,28 +1241,28 @@ class Ybc_blog extends Module
                 'identifier' => 'id_category',
                 'show_toolbar' => true,
                 'show_action' => true,
-                'title' => ($id_parent=Tools::getValue('id_parent')? '<a href="'.$this->context->link->getAdminLink('AdminModules', true).'&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&control=category&list=true" title="'.$this->l('Categories').'">':'').$this->l('Categories').($id_parent=Tools::getValue('id_parent') ? '</a>' :''). ( ($id_parent=Tools::getValue('id_parent'))? $this->getThumbCategory($id_parent,$thumb,$lever):''),
+                'title' => ($id_parent ? '<a href="'.$this->context->link->getAdminLink('AdminModules', true).'&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&control=category&list=true" title="'.$this->l('Categories').'">':'').$this->l('Categories').($id_parent ? '</a>' :''). ( $id_parent ?  $this->getThumbCategory($id_parent,$thumb,$lever):''),
                 'fields_list' => $fields_list,
                 'field_values' => $categories,
                 'paggination' => $paggination->render(),
                 'filter_params' => $this->getFilterParams($fields_list),
-                'show_reset' =>trim(Tools::getValue('sort_order'))!='' || trim(Tools::getValue('enabled'))!='' || trim(Tools::getValue('id_category'))!='' || trim(Tools::getValue('description'))!='' || trim(Tools::getValue('title'))!='' ? true : false,
+                'show_reset' => $show_reset,
                 'totalRecords' => $totalRecords,
-                'sort'=> Tools::getValue('sort','sort_order'),
-                'sort_type' => Tools::getValue('sort_type','asc'),
+                'sort'=> $sort_post,
+                'sort_type' => $sort_type,
             );            
             return $this->_html .= $this->renderList($listData);      
         }
         //Form
-        if(Tools::isSubmit('id_category') && Tools::getValue('id_category'))
+        if(($id_category =  (int)Tools::getValue('id_category')))
         {
-            $blogCategory= new Ybc_blog_category_class(Tools::getValue('id_category'));
+            $blogCategory= new Ybc_blog_category_class($id_category);
         }
         else
             $blogCategory= new Ybc_blog_category_class();
-        $blogcategoriesTree= $this->getBlogCategoriesTree(0,true,$this->context->language->id,Tools::getValue('id_category'));
+        $blogcategoriesTree= $this->getBlogCategoriesTree(0,true,$this->context->language->id,$id_category);
         $depth_level =-1;
-        $this->getBlogCategoriesDropdown($blogcategoriesTree,$depth_level,$blogCategory->id_parent,Tools::getValue('id_category'));  
+        $this->getBlogCategoriesDropdown($blogcategoriesTree,$depth_level,$blogCategory->id_parent,$id_category);  
         $blogCategoryotpionsHtml = $this->blogCategoryDropDown;
         $fields_form = array(
 			'form' => array(
@@ -1134,7 +1286,8 @@ class Ybc_blog extends Module
 						'lang' => true,    
                         'required' => true,   
                         'class' => 'title',  
-                        'tab'=>'basic',            
+                        'tab'=>'basic', 
+                        'desc' => $this->l('Invalid characters: <>;=#{}'),           
 					), 
                     array(
 						'type' => 'text',
@@ -1178,22 +1331,22 @@ class Ybc_blog extends Module
                         'lang'=>true,
                         'tab'=>'seo',
                         'hint' => $this->l('Only letters and the hyphen (-) character are allowed.'),
-                        'desc' => $this->l('Should be as short as possible and contain your focus keyword'),						
+                        'desc' => $this->l('Should be as short as possible and contain your focus keyword.').($id_category ? $this->displayText($this->l('View category'),'a','ybc_link_view',null,$this->getLink('blog',array('id_category'=>$id_category)),true):''),						
 					),
                     array(
-						'type' => 'file',
+						'type' => 'file_lang',
 						'label' => $this->l('Category thumbnail image'),
 						'name' => 'thumb',
                         'imageType' => 'thumb',
                         'tab'=>'basic',
-                        'desc' => $this->l('Recommended size: ').Configuration::get('YBC_BLOG_IMAGE_CATEGORY_THUMB_WIDTH',null,null,null,300).'x'.Configuration::get('YBC_BLOG_IMAGE_CATEGORY_THUMB_HEIGHT',null,null,null,170),						
+                        'desc' =>sprintf($this->l('Accepted formats: jpg, jpeg, png, gif. Limit: %dMb. Recommended size: %sx%s.'),Configuration::get('PS_ATTACHMENT_MAXIMUM_SIZE'),Configuration::get('YBC_BLOG_IMAGE_CATEGORY_THUMB_WIDTH',null,null,null,300),Configuration::get('YBC_BLOG_IMAGE_CATEGORY_THUMB_HEIGHT',null,null,null,170))						
 					),
                     array(
-						'type' => 'file',
+						'type' => 'file_lang',
 						'label' => $this->l('Main category image'),
 						'name' => 'image',
                         'tab'=>'basic',
-                        'desc' => $this->l('Recommended size: ').Configuration::get('YBC_BLOG_IMAGE_CATEGORY_WIDTH',null,null,null,1920).'x'.Configuration::get('YBC_BLOG_IMAGE_CATEGORY_HEIGHT',null,null,null,750),               						
+                        'desc' => sprintf($this->l('Accepted formats: jpg, jpeg, png, gif. Limit: %dMb. Recommended size: %sx%s.'),Configuration::get('PS_ATTACHMENT_MAXIMUM_SIZE'),Configuration::get('YBC_BLOG_IMAGE_CATEGORY_WIDTH',null,null,null,1920),Configuration::get('YBC_BLOG_IMAGE_CATEGORY_HEIGHT',null,null,null,750)),               						
 					),
                     array(
 						'type' => 'switch',
@@ -1247,28 +1400,26 @@ class Ybc_blog extends Module
 			'fields_value' => $this->getFieldsValues(Ybc_blog_defines::$categoryFields,'id_category','Ybc_blog_category_class','saveCategory'),
 			'languages' => $this->context->controller->getLanguages(),
 			'id_language' => $this->context->language->id,
-			'image_baseurl' => $this->_path.'views/img/',
             'link' => $this->context->link,
             'cancel_url' => $this->baseAdminPath.'&control=category&list=true',
             'post_key' => 'id_category',
             'tab_category'=>true,
+            'image_baseurl' =>_PS_YBC_BLOG_IMG_.'category/',
+            'image_baseurl_thumb' => _PS_YBC_BLOG_IMG_.'category/thumb/',
             'addNewUrl' => $this->context->link->getAdminLink('AdminModules', true).'&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&control=category',
 		);
         
-        if(Tools::isSubmit('id_category') && $this->itemExists('category','id_category',(int)Tools::getValue('id_category')))
+        if($id_category && $this->itemExists('category','id_category',$id_category))
         {
-            
             $fields_form['form']['input'][] = array('type' => 'hidden', 'name' => 'id_category');
-            $category = new Ybc_blog_category_class((int)Tools::getValue('id_category'));
+            $category = new Ybc_blog_category_class($id_category);
             if($category->image)
             {             
-                $helper->tpl_vars['display_img'] = $this->_path.'views/img/category/'.$category->image;
-                $helper->tpl_vars['img_del_link'] = $this->baseAdminPath.'&id_category='.Tools::getValue('id_category').'&delcategoryimage=true&control=category';                
+                $helper->tpl_vars['img_del_link'] = $this->baseAdminPath.'&id_category='.$id_category.'&delcategoryimage=true&control=category';                
             }
             if($category->thumb)
             {             
-                $helper->tpl_vars['display_thumb'] = $this->_path.'views/img/category/thumb/'.$category->thumb;
-                $helper->tpl_vars['thumb_del_link'] = $this->baseAdminPath.'&id_category='.Tools::getValue('id_category').'&delcategorythumb=true&control=category';                
+                $helper->tpl_vars['thumb_del_link'] = $this->baseAdminPath.'&id_category='.$id_category.'&delcategorythumb=true&control=category';                
             }
         }
 		$helper->override_folder = '/';
@@ -1277,6 +1428,7 @@ class Ybc_blog extends Module
     private function _postCategory()
     {
         $errors = array();
+        $id_lang_default = Configuration::get('PS_LANG_DEFAULT');
         $id_category = (int)Tools::getValue('id_category');
         if($id_category && !$this->itemExists('category','id_category',$id_category) && !Tools::isSubmit('list'))
             Tools::redirectAdmin($this->baseAdminPath);
@@ -1286,11 +1438,10 @@ class Ybc_blog extends Module
          if(Tools::isSubmit('change_enabled'))
          {
             Hook::exec('actionUpdateBlog', array(
-                'id_category' =>(int)Tools::getValue('id_category'),
+                'id_category' =>(int)$id_category,
             ));
             $status = (int)Tools::getValue('change_enabled') ?  1 : 0;
-            $field = Tools::getValue('field');
-            $id_category = (int)Tools::getValue('id_category');            
+            $field = Tools::getValue('field');         
             if(($field == 'enabled' && $id_category))
             {
                 $this->changeStatus('category',$field,$id_category,$status);
@@ -1322,14 +1473,18 @@ class Ybc_blog extends Module
                 'id_category' => (int)$id_category,
             ));
             $category = new Ybc_blog_category_class($id_category);
-            $icoUrl = dirname(__FILE__).'/views/img/category/'.$category->image; 
-            if($category->image && file_exists($icoUrl))
+            $idLang = (int)Tools::getValue('id_lang');
+            if(isset($category->image[$idLang]) && $category->image[$idLang] && file_exists(_PS_YBC_BLOG_IMG_DIR_.'category/'.$category->image[$idLang]))
             {
-                @unlink($icoUrl);
-                $category->image = '';
+                $oldImage = $category->image[$idLang];
+                $category->image[$idLang] = '';
                 $category->datetime_modified = date('Y-m-d H:i:s');
                 $category->modified_by = (int)$this->context->employee->id;
-                $category->update();  
+                if($category->update())
+                {
+                    if(!in_array($oldImage,$category->image))
+                        @unlink(_PS_YBC_BLOG_IMG_DIR_.'category/'.$oldImage);
+                }  
                 if(Tools::isSubmit('ajax'))
                 {
                     die(Tools::jsonEncode(
@@ -1350,14 +1505,18 @@ class Ybc_blog extends Module
                 'id_category' => (int)$id_category,
             ));
             $category = new Ybc_blog_category_class($id_category);
-            $icoUrl = dirname(__FILE__).'/views/img/category/thumb/'.$category->thumb; 
-            if($category->thumb && file_exists($icoUrl))
+            $idLang = (int)Tools::getValue('id_lang');
+            if(isset($category->thumb[$idLang]) && $category->thumb[$idLang] && file_exists(_PS_YBC_BLOG_IMG_DIR_.'category/thumb/'.$category->thumb[$idLang]))
             {
-                @unlink($icoUrl);
-                $category->thumb = '';
+                $oldThumb = $category->thumb[$idLang];
+                $category->thumb[$idLang] = '';
                 $category->datetime_modified = date('Y-m-d H:i:s');
                 $category->modified_by = (int)$this->context->employee->id;
-                $category->update();  
+                if($category->update())
+                {
+                    if(!in_array($oldThumb,$category->thumb))
+                        @unlink(_PS_YBC_BLOG_IMG_DIR_.'category/thumb/'.$oldThumb);
+                } 
                 if(Tools::isSubmit('ajax'))
                 {
                     die(Tools::jsonEncode(
@@ -1377,40 +1536,41 @@ class Ybc_blog extends Module
          */ 
          if(Tools::isSubmit('del'))
          {
-            $id_category = (int)Tools::getValue('id_category');
-            Hook::exec('actionUpdateBlog', array(
-                'id_category' => (int)$id_category,
-            ));
-            if(!$this->itemExists('category','id_category',$id_category))
-                $errors[] = $this->l('Category does not exist');
-            elseif($this->_deleteCategory($id_category))
-            {                
-                Tools::redirectAdmin($this->context->link->getAdminLink('AdminModules', true).'&conf=4&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&control=category&list=true');
-            }                
-            else
-                $errors[] = $this->l('Could not delete the category. Please try again');    
+                $id_category = (int)Tools::getValue('id_category');
+                Hook::exec('actionUpdateBlog', array(
+                    'id_category' => (int)$id_category,
+                ));
+                if(!$this->itemExists('category','id_category',$id_category))
+                    $errors[] = $this->l('Category does not exist');
+                elseif($this->_deleteCategory($id_category))
+                {                
+                    Tools::redirectAdmin($this->context->link->getAdminLink('AdminModules', true).'&conf=4&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&control=category&list=true');
+                }                
+                else
+                    $errors[] = $this->l('Could not delete the category. Please try again');    
          }    
-         if(Tools::getValue('action')=='updateCategoryOrdering' && $categories=Tools::getValue('cateogires'))
+         if(($action = Tools::getValue('action')) && $action=='updateCategoryOrdering' && ($categories=Tools::getValue('cateogires')) && Ybc_blog::validateArray($categories,'isInt'))
          {
-            $page = Tools::getValue('page',1);
-            foreach($categories as $key=> $category)
-            {
-                $position=  1+ $key + ($page-1)*20;
-                Db::getInstance()->execute('UPDATE '._DB_PREFIX_.'ybc_blog_category SET sort_order="'.(int)$position.'" WHERE id_category='.(int)$category);
-            }
-            die(
-                Tools::jsonEncode(
-                    array(
-                        'page'=>$page,
+                $page = (int)Tools::getValue('page',1);
+                foreach($categories as $key=> $category)
+                {
+                    $position=  1+ $key + ($page-1)*20;
+                    Db::getInstance()->execute('UPDATE `'._DB_PREFIX_.'ybc_blog_category` SET sort_order="'.(int)$position.'" WHERE id_category='.(int)$category);
+                }
+                die(
+                    Tools::jsonEncode(
+                        array(
+                            'page'=>$page,
+                        )
                     )
-                )
-            );
+                );
         }              
         /**
          * Save category 
          */
         if(Tools::isSubmit('saveCategory'))
-        {            
+        {       
+            $id_parent = (int)Tools::getValue('id_parent');
             if($id_category && $this->itemExists('category','id_category',$id_category))
             {
                 Hook::exec('actionUpdateBlog', array(
@@ -1419,9 +1579,9 @@ class Ybc_blog extends Module
                 $category = new Ybc_blog_category_class($id_category);  
                 $category->datetime_modified = date('Y-m-d H:i:s');
                 $category->modified_by = (int)$this->context->employee->id;
-                if(Tools::getValue('id_parent')!=$category->id_parent)
+                if($id_parent!=$category->id_parent)
                 {
-                    $category->sort_order = 1+(int)Db::getInstance()->getValue('SELECT COUNT(*) FROM '._DB_PREFIX_.'ybc_blog_category c,'._DB_PREFIX_.'ybc_blog_category_shop cs WHERE c.id_category =cs.id_category AND c.id_parent="'.(int)Tools::getValue('id_parent').'" AND cs.id_shop='.(int)$this->context->shop->id);
+                    $category->sort_order = 1+(int)Db::getInstance()->getValue('SELECT COUNT(*) FROM `'._DB_PREFIX_.'ybc_blog_category` c,`'._DB_PREFIX_.'ybc_blog_category_shop` cs WHERE c.id_category =cs.id_category AND c.id_parent="'.(int)$id_parent.'" AND cs.id_shop='.(int)$this->context->shop->id);
                 }
             }
             else
@@ -1431,152 +1591,253 @@ class Ybc_blog extends Module
                 $category->datetime_modified = date('Y-m-d H:i:s');
                 $category->modified_by = (int)$this->context->employee->id;
                 $category->added_by = (int)$this->context->employee->id;
-                $category->sort_order = 1+(int)Db::getInstance()->getValue('SELECT COUNT(*) FROM '._DB_PREFIX_.'ybc_blog_category c,'._DB_PREFIX_.'ybc_blog_category_shop cs WHERE c.id_category =cs.id_category AND c.id_parent="'.(int)Tools::getValue('id_parent').'" AND cs.id_shop='.(int)$this->context->shop->id);
+                $category->sort_order = 1+(int)Db::getInstance()->getValue('SELECT COUNT(*) FROM `'._DB_PREFIX_.'ybc_blog_category` c,`'._DB_PREFIX_.'ybc_blog_category_shop` cs WHERE c.id_category =cs.id_category AND c.id_parent="'.(int)$id_parent.'" AND cs.id_shop='.(int)$this->context->shop->id);
             }
-            $category->enabled = trim(Tools::getValue('enabled',1)) ? 1 : 0;
-            $category->id_parent =(int)Tools::getValue('id_parent');
+            $category->enabled = (int)trim(Tools::getValue('enabled',1)) ? 1 : 0;
+            $category->id_parent = (int)$id_parent;
             $languages = Language::getLanguages(false);
-            foreach ($languages as $language)
-			{			
-			    $category->title[$language['id_lang']] = trim(Tools::getValue('title_'.$language['id_lang'])) != '' ? trim(Tools::getValue('title_'.$language['id_lang'])) :  trim(Tools::getValue('title_'.Configuration::get('PS_LANG_DEFAULT')));
-                $category->meta_title[$language['id_lang']] = trim(Tools::getValue('meta_title_'.$language['id_lang'])) != '' ? trim(Tools::getValue('meta_title_'.$language['id_lang'])) :  trim(Tools::getValue('meta_title_'.Configuration::get('PS_LANG_DEFAULT')));
-                $category->url_alias[$language['id_lang']] = trim(Tools::getValue('url_alias_'.$language['id_lang'])) != '' ? trim(Tools::getValue('url_alias_'.$language['id_lang'])) :  trim(Tools::getValue('url_alias_'.Configuration::get('PS_LANG_DEFAULT')));
-                if($category->title[$language['id_lang']] && !Validate::isCleanHtml($category->title[$language['id_lang']]))
-                    $errors[] = $this->l('Title in '.$language['name'].' is not valid');
-                if($category->url_alias[$language['id_lang']] && !Ybc_blog::checkIsLinkRewrite($category->url_alias[$language['id_lang']]))
-                    $errors[] = $this->l('Url alias in '.$language['name'].' is not valid');
-                if($category->url_alias[$language['id_lang']] && Db::getInstance()->getValue('SELECT cs.id_category FROM '._DB_PREFIX_.'ybc_blog_category_lang cl, '._DB_PREFIX_.'ybc_blog_category_shop cs WHERE cl.id_category = cs.id_category AND cs.id_shop="'.(int)$this->context->shop->id.'" AND  cl.url_alias ="'.pSQL($category->url_alias[$language['id_lang']]).'" AND cs.id_category!="'.(int)$category->id.'"'))
-                    $errors[] = $this->l('Url alias in '.$language['name'].' is exists'); 
-                if($category->meta_title[$language['id_lang']] && !Validate::isCleanHtml($category->meta_title[$language['id_lang']]))
-                    $errors[] = $this->l('Meta title in '.$language['name'].' is not valid');
-                $category->meta_description[$language['id_lang']] = trim(Tools::getValue('meta_description_'.$language['id_lang'])) != '' ? trim(Tools::getValue('meta_description_'.$language['id_lang'])) :  trim(Tools::getValue('meta_description_'.Configuration::get('PS_LANG_DEFAULT')));
-                if($category->meta_description[$language['id_lang']] && !Validate::isCleanHtml($category->meta_description[$language['id_lang']], true))
-                    $errors[] = $this->l('Meta description in '.$language['name'].' is not valid');
-                $category->meta_keywords[$language['id_lang']] = trim(Tools::getValue('meta_keywords_'.$language['id_lang'])) != '' ? trim(Tools::getValue('meta_keywords_'.$language['id_lang'])) :  trim(Tools::getValue('meta_keywords_'.Configuration::get('PS_LANG_DEFAULT')));
-                if($category->meta_keywords[$language['id_lang']] && !Validate::isTagsList($category->meta_keywords[$language['id_lang']], true))
-                    $errors[] = $this->l('Meta keywords in '.$language['name'].' are not valid');
-                $category->description[$language['id_lang']] = trim(Tools::getValue('description_'.$language['id_lang'])) != '' ? trim(Tools::getValue('description_'.$language['id_lang'])) :  trim(Tools::getValue('description_'.Configuration::get('PS_LANG_DEFAULT')));
-                if($category->description[$language['id_lang']] && !Validate::isCleanHtml($category->description[$language['id_lang']], true))
-                    $errors[] = $this->l('Description in '.$language['name'].' is not valid');                	
+            $id_lang_default = (int)Configuration::get('PS_LANG_DEFAULT');
+            $title_default = trim(Tools::getValue('title_'.$id_lang_default));
+            if(!$title_default)
+                $errors[] = $this->l('Title is required');
+            if($title_default && !Validate::isCleanHtml($title_default))
+                $errors[] = $this->l('Title is not valid');
+            $meta_title_default = Tools::getValue('meta_title_'.$id_lang_default);
+            if($meta_title_default && !Validate::isCleanHtml($meta_title_default))
+                $errors[] = $this->l('Meta title is not valid');
+            $url_alias_default = Tools::getValue('url_alias_'.$id_lang_default);
+            if(!$url_alias_default)
+                $errors[] = $this->l('Url alias is required');
+            if($url_alias_default && !Ybc_blog::checkIsLinkRewrite($url_alias_default))
+                $errors[] = $this->l('Url alias is not valid');
+            elseif($url_alias_default && Db::getInstance()->getValue('SELECT cs.id_category FROM `'._DB_PREFIX_.'ybc_blog_category_lang` cl, `'._DB_PREFIX_.'ybc_blog_category_shop` cs WHERE cl.id_category = cs.id_category AND cs.id_shop="'.(int)$this->context->shop->id.'" AND  cl.url_alias ="'.pSQL($url_alias_default).'" AND cs.id_category!="'.(int)$category->id.'"') )
+                $errors[] = $this->l('Url alias has already existed');
+            $meta_description_default = Tools::getValue('meta_description_'.$id_lang_default);
+            if($meta_description_default && !Validate::isCleanHtml($meta_description_default,true))
+                $errors[] = $this->l('Meta description is not valid');
+            $meta_keywords_default = Tools::getValue('meta_keywords_'.$id_lang_default);
+            if($meta_keywords_default && !Validate::isTagsList($meta_keywords_default))
+                $errors[] = $this->l('Meta keyword is not valid');
+            $description_default = Tools::getValue('description_'.$id_lang_default);
+            if($description_default && !Validate::isCleanHtml($description_default,true))
+                $errors[] = $this->l('Description is not valid');
+            if(!$errors)
+            {
+                foreach ($languages as $language)
+    			{	
+                    $id_lang = (int)$language['id_lang'];
+                    $title = trim(Tools::getValue('title_'.$language['id_lang']));
+                    if($title && !Validate::isCleanHtml($title))
+                        $errors[] = sprintf($this->l('Title in %s is not valid'),$language['name']);
+                    else
+    			         $category->title[$language['id_lang']] = $title != '' ?  $title:  $title;
+                    $meta_title = trim(Tools::getValue('meta_title_'.$language['id_lang']));
+                    if($meta_title && !Validate::isCleanHtml($meta_title))
+                        $errors[] = sprintf($this->l('Meta title in %s is not valid'),$language['name']);
+                    else
+                        $category->meta_title[$language['id_lang']] = $meta_title != '' ? $meta_title :  $meta_title_default;
+                    $url_alias = trim(Tools::getValue('url_alias_'.$language['id_lang']));
+                    if($url_alias && !Ybc_blog::checkIsLinkRewrite($url_alias))
+                        $errors[] = sprintf($this->l('Url alias in %s is not valid'),$language['name']);
+                    elseif($url_alias && Db::getInstance()->getValue('SELECT cs.id_category FROM `'._DB_PREFIX_.'ybc_blog_category_lang` cl, `'._DB_PREFIX_.'ybc_blog_category_shop` cs WHERE cl.id_category = cs.id_category AND cs.id_shop="'.(int)$this->context->shop->id.'" AND  cl.url_alias ="'.pSQL($url_alias).'" AND cs.id_category!="'.(int)$category->id.'"'))
+                        $errors[] = sprintf($this->l('Url alias in %s has already existed'),$language['name']);
+                    else
+                        $category->url_alias[$language['id_lang']] = $url_alias != '' ? $url_alias :  $url_alias_default;
+                    $meta_description = Tools::getValue('meta_description_'.$id_lang);
+                    if($meta_description && !Validate::isCleanHtml($meta_description, true))
+                        $errors[] = sprintf($this->l('Meta description in %s is not valid'),$language['name']);
+                    else
+                        $category->meta_description[$language['id_lang']] = $meta_description != '' ? $meta_description :  $meta_description_default;
+                    $meta_keywords = Tools::getValue('meta_keywords_'.$id_lang);
+                    if($meta_keywords && !Validate::isTagsList($meta_keywords, true))
+                        $errors[] = sprintf($this->l('Meta keywords in %s are not valid'),$language['name']);
+                    else
+                        $category->meta_keywords[$language['id_lang']] = $meta_keywords != '' ? $meta_keywords : $meta_keywords_default;
+                    $description = Tools::getValue('description_'.$id_lang);
+                    if($description && !Validate::isCleanHtml($description, true))
+                        $errors[] = sprintf($this->l('Description in %s is not valid'),$language['name']);   
+                    $category->description[$language['id_lang']] = $description != '' ? $description :  $description_default;
+                                 	
+                }
             }
             
-            if(Tools::getValue('title_'.Configuration::get('PS_LANG_DEFAULT'))=='')
-                $errors[] = $this->l('You need to set blog category title');                    
-            if($category->url_alias[Configuration::get('PS_LANG_DEFAULT')]=='')
-                $errors[] = $this->l('Url alias is required');
             /**
              * Upload image 
              */  
-            $oldImage = false;
-            $newImage = false;       
-            if(isset($_FILES['image']['tmp_name']) && isset($_FILES['image']['name']) && $_FILES['image']['name'])
+            $oldImages = array();
+            $newImages = array();  
+            $oldThumbs = array();
+            $newThumbs = array();
+            $max_file_size = Configuration::get('PS_ATTACHMENT_MAXIMUM_SIZE')*1024*1024;
+            foreach($languages as $language)
             {
-                if(file_exists(dirname(__FILE__).'/views/img/category/'.$_FILES['image']['name']))
+                if(isset($_FILES['image_'.$language['id_lang']]['tmp_name']) && isset($_FILES['image_'.$language['id_lang']]['name']) && $_FILES['image_'.$language['id_lang']]['name'])
                 {
-                    $_FILES['image']['name'] = Tools::substr(sha1(microtime()),0,10).'-'.$_FILES['image']['name'];
+                    if(!Validate::isFileName($_FILES['image_'.$language['id_lang']]['name']))
+                        $errors[] = sprintf($this->l('Image name is not valid in %s'),$language['iso_code']);
+                    elseif($_FILES['image_'.$language['id_lang']]['size'] > $max_file_size)
+                        $errors[] = sprintf($this->l('Image file is too large. Limit: %s'),Tools::ps_round($max_file_size/1048576,2).'Mb');
+                    else
+                    {
+                        $_FILES['image_'.$language['id_lang']]['name'] = str_replace(' ','-',$_FILES['image_'.$language['id_lang']]['name']);
+                        if(file_exists(_PS_YBC_BLOG_IMG_DIR_.'category/'.$_FILES['image_'.$language['id_lang']]['name']))
+                        {
+                            $_FILES['image_'.$language['id_lang']]['name'] = $this->createNewFileName(_PS_YBC_BLOG_IMG_DIR_.'category/',$_FILES['image_'.$language['id_lang']]['name']);
+                        }
+                        $type = Tools::strtolower(Tools::substr(strrchr($_FILES['image_'.$language['id_lang']]['name'], '.'), 1));
+            			$imagesize = @getimagesize($_FILES['image_'.$language['id_lang']]['tmp_name']);
+            			if (isset($_FILES['image_'.$language['id_lang']]) &&				
+            				!empty($_FILES['image_'.$language['id_lang']]['tmp_name']) &&
+            				!empty($imagesize) &&
+            				in_array($type, array('jpg', 'gif', 'jpeg', 'png'))
+            			)
+            			{
+            				$temp_name = tempnam(_PS_TMP_IMG_DIR_, 'PS');    				
+            				if ($error = ImageManager::validateUpload($_FILES['image_'.$language['id_lang']]))
+            					$errors[] = $error;
+            				elseif (!$temp_name || !move_uploaded_file($_FILES['image_'.$language['id_lang']]['tmp_name'], $temp_name))
+            					$errors[] = $this->l('Cannot upload the file in').' '.$language['iso_code'];
+            				elseif (!ImageManager::resize($temp_name, _PS_YBC_BLOG_IMG_DIR_.'category/'.$_FILES['image_'.$language['id_lang']]['name'], Configuration::get('YBC_BLOG_IMAGE_CATEGORY_WIDTH',null,null,null,1920), Configuration::get('YBC_BLOG_IMAGE_CATEGORY_HEIGHT',null,null,null,750), $type))
+            					$errors[] = $this->displayError($this->l('An error occurred during the image upload process in').' '.$language['iso_code']);
+            				if (isset($temp_name))
+            					@unlink($temp_name);
+                            if($category->image[$language['id_lang']])
+                                $oldImages[$language['id_lang']] = $category->image[$language['id_lang']];
+                            $category->image[$language['id_lang']] = $_FILES['image_'.$language['id_lang']]['name'];
+                            $newImages[$language['id_lang']] = $category->image[$language['id_lang']];			
+            			}
+                        else
+                            $errors[] = sprintf($this->l('Image is not valid in %s'),$language['iso_code']);
+                    }
+                    
                 }
-                
-                $type = Tools::strtolower(Tools::substr(strrchr($_FILES['image']['name'], '.'), 1));
-    			$imagesize = @getimagesize($_FILES['image']['tmp_name']);
-    			if (isset($_FILES['image']) &&				
-    				!empty($_FILES['image']['tmp_name']) &&
-    				!empty($imagesize) &&
-    				in_array($type, array('jpg', 'gif', 'jpeg', 'png'))
-    			)
-    			{
-    				$temp_name = tempnam(_PS_TMP_IMG_DIR_, 'PS');    				
-    				if ($error = ImageManager::validateUpload($_FILES['image']))
-    					$errors[] = $error;
-    				elseif (!$temp_name || !move_uploaded_file($_FILES['image']['tmp_name'], $temp_name))
-    					$errors[] = $this->l('Can not upload the file');
-    				elseif (!ImageManager::resize($temp_name, dirname(__FILE__).'/views/img/category/'.$_FILES['image']['name'], Configuration::get('YBC_BLOG_IMAGE_CATEGORY_WIDTH',null,null,null,1920), Configuration::get('YBC_BLOG_IMAGE_CATEGORY_HEIGHT',null,null,null,750), $type))
-    					$errors[] = $this->displayError($this->l('An error occurred during the image upload process.'));
-    				if (isset($temp_name))
-    					@unlink($temp_name);
-                    if($category->image)
-                        $oldImage = dirname(__FILE__).'/views/img/category/'.$category->image;
-                    $category->image = $_FILES['image']['name'];
-                    $newImage = dirname(__FILE__).'/views/img/category/'.$category->image;			
-    			}
-                
+                if(isset($_FILES['thumb_'.$language['id_lang']]['tmp_name']) && isset($_FILES['thumb_'.$language['id_lang']]['name']) && $_FILES['thumb_'.$language['id_lang']]['name'])
+                {
+                    if(!Validate::isFileName($_FILES['thumb_'.$language['id_lang']]['name']))
+                        $errors[] = sprintf($this->l('Thumbnail image name is not valid in %s'),$language['iso_code']);
+                    elseif($_FILES['thumb_'.$language['id_lang']]['size'] > $max_file_size)
+                        $errors[] = sprintf($this->l('Thumbnail image file is too large. Limit: %s'),Tools::ps_round($max_file_size/1048576,2).'Mb');
+                    else
+                    {
+                        $_FILES['thumb_'.$language['id_lang']]['name'] = str_replace(' ','-',$_FILES['thumb_'.$language['id_lang']]['name']);
+                        if(file_exists(_PS_YBC_BLOG_IMG_DIR_.'category/thumb/'.$_FILES['thumb_'.$language['id_lang']]['name']))
+                        {
+                            $_FILES['thumb_'.$language['id_lang']]['name'] = $this->createNewFileName(_PS_YBC_BLOG_IMG_DIR_.'category/thumb/',$_FILES['thumb_'.$language['id_lang']]['name']);
+                        }
+                        $type = Tools::strtolower(Tools::substr(strrchr($_FILES['thumb_'.$language['id_lang']]['name'], '.'), 1));
+            			$imagesize = @getimagesize($_FILES['thumb_'.$language['id_lang']]['tmp_name']);
+            			if (isset($_FILES['thumb_'.$language['id_lang']]) &&				
+            				!empty($_FILES['thumb_'.$language['id_lang']]['tmp_name']) &&
+            				!empty($imagesize) &&
+            				in_array($type, array('jpg', 'gif', 'jpeg', 'png'))
+            			)
+            			{
+            				$temp_name = tempnam(_PS_TMP_IMG_DIR_, 'PS');    				
+            				if ($error = ImageManager::validateUpload($_FILES['thumb_'.$language['id_lang']]))
+            					$errors[] = $error;
+            				elseif (!$temp_name || !move_uploaded_file($_FILES['thumb_'.$language['id_lang']]['tmp_name'], $temp_name))
+            					$errors[] = $this->l('Cannot upload the file in').' '.$language['iso_code'];
+            				elseif (!ImageManager::resize($temp_name, _PS_YBC_BLOG_IMG_DIR_.'category/thumb/'.$_FILES['thumb_'.$language['id_lang']]['name'], Configuration::get('YBC_BLOG_IMAGE_CATEGORY_THUMB_WIDTH',null,null,null,300), Configuration::get('YBC_BLOG_IMAGE_CATEGORY_THUMB_HEIGHT',null,null,null,170), $type))
+            					$errors[] = $this->displayError($this->l('An error occurred during the image upload process in').' '.$language['iso_code']);
+            				if (isset($temp_name))
+            					@unlink($temp_name);
+                            if($category->thumb[$language['id_lang']])
+                                $oldThumbs[$language['id_lang']] = $category->thumb[$language['id_lang']];
+                            $category->thumb[$language['id_lang']] = $_FILES['thumb_'.$language['id_lang']]['name'];
+                            $newThumbs[] = $category->thumb[$language['id_lang']];			
+            			}
+                        else
+                            $errors[] = sprintf($this->l('Thumbnail image is not valid in %s'),$language['iso_code']);
+                    }
+                }
             }
-            $oldThumb='';
-            $newThumb='';
-            if(isset($_FILES['thumb']['tmp_name']) && isset($_FILES['thumb']['name']) && $_FILES['thumb']['name'])
+            foreach($languages as $language)
             {
-                if(file_exists(dirname(__FILE__).'/views/img/category/thumb/'.$_FILES['thumb']['name']))
-                {
-                    $_FILES['thumb']['name'] = Tools::substr(sha1(microtime()),0,10).'-'.$_FILES['thumb']['name'];
-                }
-                $type = Tools::strtolower(Tools::substr(strrchr($_FILES['thumb']['name'], '.'), 1));
-    			$imagesize = @getimagesize($_FILES['thumb']['tmp_name']);
-    			if (isset($_FILES['thumb']) &&				
-    				!empty($_FILES['thumb']['tmp_name']) &&
-    				!empty($imagesize) &&
-    				in_array($type, array('jpg', 'gif', 'jpeg', 'png'))
-    			)
-    			{
-    				$temp_name = tempnam(_PS_TMP_IMG_DIR_, 'PS');    				
-    				if ($error = ImageManager::validateUpload($_FILES['thumb']))
-    					$errors[] = $error;
-    				elseif (!$temp_name || !move_uploaded_file($_FILES['thumb']['tmp_name'], $temp_name))
-    					$errors[] = $this->l('Can not upload the file');
-    				elseif (!ImageManager::resize($temp_name, dirname(__FILE__).'/views/img/category/thumb/'.$_FILES['thumb']['name'], Configuration::get('YBC_BLOG_IMAGE_CATEGORY_THUMB_WIDTH',null,null,null,300), Configuration::get('YBC_BLOG_IMAGE_CATEGORY_THUMB_HEIGHT',null,null,null,170), $type))
-    					$errors[] = $this->displayError($this->l('An error occurred during the image upload process.'));
-    				if (isset($temp_name))
-    					@unlink($temp_name);
-                    if($category->image)
-                        $oldThumb = dirname(__FILE__).'/views/img/category/thumb/'.$category->thumb;
-                    $category->thumb = $_FILES['thumb']['name'];
-                    $newThumb = dirname(__FILE__).'/views/img/category/thumb/'.$category->thumb;			
-    			}
-                
-            }			
-            
+                if(!$category->image[$language['id_lang']])
+                    $category->image[$language['id_lang']] = $category->image[$id_lang_default];
+                if(!$category->thumb[$language['id_lang']])
+                    $category->thumb[$language['id_lang']] = $category->thumb[$id_lang_default];
+            }      
             /**
              * Save 
              */    
              
             if(!$errors)
             {
-                if (!Tools::getValue('id_category'))
+                if (!$id_category)
     			{
     				if (!$category->add())
                     {
                         $errors[] = $this->displayError($this->l('The category could not be added.'));
-                        if($newImage && file_exists($newImage))
-                            @unlink($newImage);   
-                        if($newThumb && file_exists($newThumb))
-                            @unlink($newThumb);                  
+                        if($newImages)
+                        {
+                            foreach($newImages as $newImage)
+                            {
+                                if(file_exists(_PS_YBC_BLOG_IMG_DIR_.'category/'.$newImage))
+                                    @unlink(_PS_YBC_BLOG_IMG_DIR_.'category/'.$newImage);
+                            }
+                        }  
+                        if($newThumbs)
+                        {
+                            foreach($newThumbs as $newThumb)
+                            {
+                                if(file_exists(_PS_YBC_BLOG_IMG_DIR_.'category/thumb/'.$newThumb))
+                                    @unlink(_PS_YBC_BLOG_IMG_DIR_.'category/thumb/'.$newThumb);
+                            }
+                        }                  
                     }
                     else
                     {
                         $id_category = $this->getMaxId('category','id_category');
                         Hook::exec('actionUpdateBlogImage', array(
                             'id_category' =>(int)$category->id,
-                            'image' => $newImage ? $category->image :false,
-                            'thumb' => $newThumb ? $category->thumb : false,
+                            'image' => $newImages ? $category->image :false,
+                            'thumb' => $newThumbs ? $category->thumb : false,
                         ));
                     }                	                    
     			}				
     			elseif (!$category->update())
                 {
-                    if($newImage && file_exists($newImage))
-                        @unlink($newImage); 
-                    if($newThumb && file_exists($newThumb))
-                        @unlink($newThumb); 
+                    if($newImages)
+                    {
+                        foreach($newImages as $newImage)
+                        {
+                            if(file_exists(_PS_YBC_BLOG_IMG_DIR_.'category/'.$newImage))
+                                @unlink(_PS_YBC_BLOG_IMG_DIR_.'category/'.$newImage);
+                        }
+                    }  
+                    if($newThumbs)
+                    {
+                        foreach($newThumbs as $newThumb)
+                        {
+                            if(file_exists(_PS_YBC_BLOG_IMG_DIR_.'category/thumb/'.$newThumb))
+                                @unlink(_PS_YBC_BLOG_IMG_DIR_.'category/thumb/'.$newThumb);
+                        }
+                    }
                     $errors[] = $this->displayError($this->l('The category could not be updated.'));
                 }
                 else
                 {
-                    if($oldImage && file_exists($oldImage))
-                        @unlink($oldImage); 
-                    if($oldThumb && file_exists($oldThumb))
-                        @unlink($oldThumb); 
+                    if($oldImages)
+                    {
+                        foreach($oldImages as $oldImage)
+                        {
+                            if(!in_array($oldImage,$category->image) && file_exists(_PS_YBC_BLOG_IMG_DIR_.'category/'.$oldImage))
+                                @unlink(_PS_YBC_BLOG_IMG_DIR_.'category/'.$oldImage);
+                        }
+                    }  
+                    if($oldThumbs)
+                    {
+                        foreach($oldThumbs as $oldThumb)
+                        {
+                            if(!in_array($oldThumb,$category->thumb) &&  file_exists(_PS_YBC_BLOG_IMG_DIR_.'category/thumb/'.$oldThumb))
+                                @unlink(_PS_YBC_BLOG_IMG_DIR_.'category/thumb/'.$oldThumb);
+                        }
+                    } 
                     Hook::exec('actionUpdateBlogImage', array(
                         'id_category' =>(int)$category->id,
-                        'image' => $newImage ? $category->image :false,
-                        'thumb' => $newThumb ? $category->thumb : false,
+                        'image' => $newImages ? $category->image :false,
+                        'thumb' => $newThumbs ? $category->thumb : false,
                     ));
                 }
     					                
@@ -1584,26 +1845,44 @@ class Ybc_blog extends Module
          }
          if (count($errors))
          {
-            if($newImage && file_exists($newImage))
-                @unlink($newImage); 
-            if($newThumb && file_exists($newThumb))
-                @unlink($newThumb); 
+            if($newImages)
+            {
+                foreach($newImages as $newImage)
+                {
+                    if(file_exists(_PS_YBC_BLOG_IMG_DIR_.'category/'.$newImage))
+                        @unlink(_PS_YBC_BLOG_IMG_DIR_.'category/'.$newImage);
+                }
+            }  
+            if($newThumbs)
+            {
+                foreach($newThumbs as $newThumb)
+                {
+                    if(file_exists(_PS_YBC_BLOG_IMG_DIR_.'category/thumb/'.$newThumb))
+                        @unlink(_PS_YBC_BLOG_IMG_DIR_.'category/thumb/'.$newThumb);
+                }
+            }
             $this->errorMessage = $this->displayError($errors);  
          }
          $changedImages = array();
-         if(!$errors && isset($newImage) && $newImage && file_exists($newImage) && isset($category) && $category){
+         if(!$errors && isset($newImages) && $newImages && isset($category) && $category->id){
+            foreach($newImages as $id_lang=> $newImage)
+            {
                 $changedImages[] = array(
-                    'name' => 'image',
-                    'url' => $this->_path.'views/img/category/'.$category->image,
-                    'delete_url' => $this->context->link->getAdminLink('AdminModules', true).'&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&id_category='.Tools::getValue('id_category').'&delcategoryimage=true&control=category',
+                    'name' => 'image_'.$id_lang,
+                    'url' => _PS_YBC_BLOG_IMG_.'category/'.$newImage,
+                    'delete_url' => $this->context->link->getAdminLink('AdminModules', true).'&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&id_category='.$id_category.'&delcategoryimage=true&control=category&id_lang='.$id_lang,
                 );
+            }
          } 
-         if(!$errors && isset($newThumb) && $newThumb && file_exists($newThumb) && isset($category) && $category){
-                $changedImages[] = array(
-                    'name' => 'thumb',
-                    'url' => $this->_path.'views/img/category/thumb/'.$category->thumb,
-                    'delete_url' => $this->context->link->getAdminLink('AdminModules', true).'&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&id_category='.Tools::getValue('id_category').'&delcategorythumb=true&control=category',
-                );
+         if(!$errors && isset($newThumbs) && $newThumbs && isset($category) && $category->id){
+                foreach($newThumbs as $id_lang => $newThumb)
+                {
+                    $changedImages[] = array(
+                        'name' => 'thumb_'.$id_lang,
+                        'url' => _PS_YBC_BLOG_IMG_.'category/thumb/'.$newThumb,
+                        'delete_url' => $this->context->link->getAdminLink('AdminModules', true).'&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&id_category='.$id_category.'&delcategorythumb=true&control=category&id_lang='.$id_lang,
+                    );
+                }
          }        
          if(Tools::isSubmit('ajax'))
             {
@@ -1612,14 +1891,14 @@ class Ybc_blog extends Module
                         'messageType' => $errors ? 'error' : 'success',
                         'message' => $errors ? $this->errorMessage : (isset($id_category) && $id_category ? $this->displaySuccessMessage($this->l('Category updated'),$this->l('View category'),$this->getLink('blog',array('id_category'=>$id_category))) : $this->displayConfirmation($this->l('Category updated'))),
                         'images' => isset($changedImages) && $changedImages ? $changedImages : array(),
-                        'postUrl' => !$errors && Tools::isSubmit('saveCategory') && !(int)Tools::getValue('id_category') ? $this->context->link->getAdminLink('AdminModules', true).'&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&id_category='.$this->getMaxId('category','id_category').'&control=category' : 0,
+                        'postUrl' => !$errors && Tools::isSubmit('saveCategory') && !(int)$id_category ? $this->context->link->getAdminLink('AdminModules', true).'&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&id_category='.$this->getMaxId('category','id_category').'&control=category' : 0,
                         'itemKey' => 'id_category',
-                        'itemId' => !$errors && Tools::isSubmit('saveCategory') && !(int)Tools::getValue('id_category') ? $this->getMaxId('category','id_category') : ((int)Tools::getValue('id_category') > 0 ? (int)Tools::getValue('id_category') : 0),
+                        'itemId' => !$errors && Tools::isSubmit('saveCategory') && !(int)$id_category ? $this->getMaxId('category','id_category') : ((int)$id_category > 0 ? (int)$id_category : 0),
                     )
                 ));
             } 
          if (Tools::isSubmit('saveCategory') && Tools::isSubmit('id_category'))
-			Tools::redirectAdmin($this->context->link->getAdminLink('AdminModules', true).'&conf=4&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&id_category='.Tools::getValue('id_category').'&control=category');
+			Tools::redirectAdmin($this->context->link->getAdminLink('AdminModules', true).'&conf=4&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&id_category='.$id_category.'&control=category');
 		 elseif (Tools::isSubmit('saveCategory'))
          {
             Tools::redirectAdmin($this->context->link->getAdminLink('AdminModules', true).'&conf=3&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&id_category='.$this->getMaxId('category','id_category').'&control=category');
@@ -1640,13 +1919,17 @@ class Ybc_blog extends Module
         if($this->itemExists('category','id_category',$id_category))
         {
             $category = new Ybc_blog_category_class($id_category);
-            if($category->image && file_exists(dirname(__FILE__).'/views/img/category/'.$category->image))
+            if($category->image)
             {
-                @unlink(dirname(__FILE__).'/views/img/category/'.$category->image);
+                foreach($category->image as $image)
+                    if(file_exists(_PS_YBC_BLOG_IMG_DIR_.'category/'.$image))
+                        @unlink(_PS_YBC_BLOG_IMG_DIR_.'category/'.$image);
             } 
-            if($category->thumb && file_exists(dirname(__FILE__).'/views/img/category/thumb/'.$category->thumb))
+            if($category->thumb)
             {
-                @unlink(dirname(__FILE__).'/views/img/category/thumb/'.$category->thumb);
+                foreach($category->thumb as $thumb)
+                    if(file_exists(_PS_YBC_BLOG_IMG_DIR_.'category/thumb/'.$thumb))
+                        @unlink(_PS_YBC_BLOG_IMG_DIR_.'category/thumb/'.$thumb);
             }
             $id_parent = $category->id_parent;           
             if($category->delete())
@@ -1666,19 +1949,19 @@ class Ybc_blog extends Module
                         }
                     }
                 }
-                $req = "DELETE FROM "._DB_PREFIX_."ybc_blog_post_category WHERE id_category=".(int)$id_category;
+                $req = "DELETE FROM `"._DB_PREFIX_."ybc_blog_post_category` WHERE id_category=".(int)$id_category;
                 Db::getInstance()->execute($req);
-                $req ="DELETE FROM "._DB_PREFIX_."ybc_blog_category_shop WHERE id_category=".(int)$id_category;
+                $req ="DELETE FROM `"._DB_PREFIX_."ybc_blog_category_shop` WHERE id_category=".(int)$id_category;
                 Db::getInstance()->execute($req);
-                $categories = Db::getInstance()->executeS('SELECT c.id_category FROM '._DB_PREFIX_.'ybc_blog_category c
-                INNER JOIN '._DB_PREFIX_.'ybc_blog_category_shop cs ON (c.id_category=cs.id_category)
+                $categories = Db::getInstance()->executeS('SELECT c.id_category FROM `'._DB_PREFIX_.'ybc_blog_category` c
+                INNER JOIN `'._DB_PREFIX_.'ybc_blog_category_shop` cs ON (c.id_category=cs.id_category)
                 WHERE cs.id_shop= "'.(int)$this->context->shop->id.'" AND c.id_parent='.(int)$id_parent.' ORDER BY c.sort_order ASC');
                 if($categories)
                 {
                     foreach($categories as $key=> $category)
                     {
                         $position =$key+1;
-                        Db::getInstance()->execute('UPDATE '._DB_PREFIX_.'ybc_blog_post_category SET position="'.(int)$position.'" WHERE id_category='.(int)$category['id_category']);
+                        Db::getInstance()->execute('UPDATE `'._DB_PREFIX_.'ybc_blog_post_category` SET position="'.(int)$position.'" WHERE id_category='.(int)$category['id_category']);
                     }
                 }
                 return true;
@@ -1753,34 +2036,41 @@ class Ybc_blog extends Module
             );
             //Filter
             $filter=" AND p.added_by =".(int)$this->context->customer->id." AND p.is_customer=1";
-            if(trim(Tools::getValue('id_post'))!='')
-                $filter .= " AND p.id_post = ".(int)trim(urldecode(Tools::getValue('id_post')));
-            if(trim(Tools::getValue('sort_order'))!='')
-                $filter .= " AND p.sort_order = ".(int)trim(urldecode(Tools::getValue('sort_order')));
-            if(trim(Tools::getValue('click_number'))!='')
-                $filter .= " AND p.click_number = ".(int)trim(urldecode(Tools::getValue('click_number')));
-            if(trim(Tools::getValue('likes'))!='')
-                $filter .= " AND p.likes = ".(int)trim(urldecode(Tools::getValue('likes')));            
-            if(trim(Tools::getValue('title'))!='')
-                $filter .= " AND pl.title like '%".addslashes(trim(urldecode(Tools::getValue('title'))))."%'";
-            if(trim(Tools::getValue('description'))!='')
-                $filter .= " AND pl.description like '%".addslashes(trim(urldecode(Tools::getValue('description'))))."%'";
-            if(trim(Tools::getValue('id_category'))!='')
-                $filter .= " AND p.id_post IN (SELECT id_post FROM "._DB_PREFIX_."ybc_blog_post_category WHERE id_category = ".(int)trim(urldecode(Tools::getValue('id_category'))).") ";
-            if(trim(Tools::getValue('enabled'))!='')
-                $filter .= " AND p.enabled = ".(int)trim(urldecode(Tools::getValue('enabled')));
-            if(trim(Tools::getValue('is_featured'))!='')
-                $filter .= " AND p.is_featured = ".(int)trim(urldecode(Tools::getValue('is_featured')));
+            $show_reset = false;
+            if(($idPost = trim(Tools::getValue('id_post')))!='' && Validate::isCleanHtml($idPost))
+                $filter .= " AND p.id_post = ".(int)$idPost;
+            if(($sort_order = trim(Tools::getValue('sort_order')))!='' && Validate::isCleanHtml($sort_order))
+                $filter .= " AND p.sort_order = ".(int)$sort_order;
+            if(($click_number = trim(Tools::getValue('click_number')))!='' && Validate::isCleanHtml($click_number))
+                $filter .= " AND p.click_number = ".(int)$click_number;
+            if(($likes = trim(Tools::getValue('likes')))!='' && Validate::isCleanHtml($likes))
+                $filter .= " AND p.likes = ".(int)$likes;            
+            if(($title = trim(Tools::getValue('title')))!='' && Validate::isCleanHtml($title))
+                $filter .= " AND pl.title like '%".pSQL($title)."%'";
+            if(($description = trim(Tools::getValue('description')))!='' && Validate::isCleanHtml($description))
+                $filter .= " AND pl.description like '%".pSQL($description)."%'";
+            if(($idCategory = trim(Tools::getValue('id_category')))!='' && Validate::isCleanHtml($idCategory))
+                $filter .= " AND p.id_post IN (SELECT id_post FROM `"._DB_PREFIX_."ybc_blog_post_category` WHERE id_category = ".(int)$idCategory.") ";
+            if(($enabled = trim(Tools::getValue('enabled')))!='' && Validate::isCleanHtml($enabled))
+                $filter .= " AND p.enabled = ".(int)$enabled;
+            if(($is_featured = trim(Tools::getValue('is_featured')))!='' && Validate::isCleanHtml($is_featured))
+                $filter .= " AND p.is_featured = ".(int)$is_featured;
             //Sort
             $sort = "";
-            if(trim(Tools::getValue('sort')) && isset($fields_list[Tools::getValue('sort')]))
+            $sort_post = Tools::strtolower(Tools::getValue('sort'));
+            $sort_type = Tools::strtolower(Tools::getValue('sort_type','desc'));
+            if(!in_array($sort_type,array('desc','asc')))
+                $sort_type = 'desc';
+            if($sort_post && isset($fields_list[$sort_post]))
             {
-                $sort .= trim(Tools::getValue('sort'))." ".(Tools::getValue('sort_type')=='asc' ? ' ASC ' :' DESC ')." , ";
+                $sort .= $sort_post." ".($sort_type=='asc' ? ' ASC ' :' DESC ')." , ";
             }
             else
                 $sort = false;
             //Paggination
-            $page = (int)Tools::getValue('page') && (int)Tools::getValue('page') > 0 && Tools::getValue('tabmanagament')=='post' ? (int)Tools::getValue('page') : 1;
+            $page = (int)Tools::getValue('page');
+            if($page<1)
+                $page=1;
             $totalRecords = (int)$this->countPostsWithFilter($filter);
             $paggination = new Ybc_blog_paggination_class();            
             $paggination->total = $totalRecords;
@@ -1826,14 +2116,14 @@ class Ybc_blog extends Module
                 'field_values' => $posts,
                 'paggination' => $paggination->render(),
                 'filter_params' => $this->getFilterParamsFontEnd($fields_list,'ybc_submit_ybc_post'),
-                'show_reset' => trim(Tools::getValue('likes'))!='' || trim(Tools::getValue('sort_order'))!='' || trim(Tools::getValue('click_number'))!='' || trim(Tools::getValue('enabled'))!='' || trim(Tools::getValue('is_featured'))!='' ||  trim(Tools::getValue('id_category'))!=''  ||  trim(Tools::getValue('id_post'))!='' || trim(Tools::getValue('description'))!='' || trim(Tools::getValue('title'))!='' ? true : false,
+                'show_reset' => $show_reset,
                 'totalRecords' => $totalRecords,
                 'totalPost' => (int)$this->countPostsWithFilter(" AND p.added_by =".(int)$this->context->customer->id." AND p.is_customer=1"),
                 'preview_link' => $this->getLink('blog'),
                 'show_add_new' => true,
                 'link_addnew'=> $this->context->link->getModuleLink($this->name,'managementblog',array('tabmanagament'=>'post','addpost'=>1)),
-                'sort'=>Tools::getValue('sort'),
-                'sort_type'=>Tools::getValue('sort_type'),
+                'sort'=> $sort_post,
+                'sort_type'=> $sort_type,
                                 
             );            
             return $this->renderListPostByCustomer($listData);
@@ -1845,7 +2135,7 @@ class Ybc_blog extends Module
     {
         //List 
         $show_reset=false;
-        if(trim(Tools::getValue('list'))=='true' || $list)
+        if(Tools::isSubmit('list') || $list)
         {
             $fields_list = array(
                 'id_post' => array(
@@ -1979,42 +2269,46 @@ class Ybc_blog extends Module
                     )
                 ),
             );
-            if(trim(Tools::getValue('id_category'))!='')
+            if(($idCategory = trim(Tools::getValue('id_category')))!='' && Validate::isInt($idCategory))
                 unset($fields_list['sort_order']);
             else
                 unset($fields_list['position']);
             //Filter
-            if(trim(Tools::getValue('id_post'))!='')
-                $filter .= " AND p.id_post = ".(int)trim(urldecode(Tools::getValue('id_post')));
-            if(trim(Tools::getValue('sort_order'))!='')
-                $filter .= " AND p.sort_order = ".(int)trim(urldecode(Tools::getValue('sort_order')));
-            if(trim(Tools::getValue('click_number'))!='')
-                $filter .= " AND p.click_number = ".(int)trim(urldecode(Tools::getValue('click_number')));
-            if(trim(Tools::getValue('likes'))!='')
-                $filter .= " AND p.likes = ".(int)trim(urldecode(Tools::getValue('likes')));            
-            if(trim(Tools::getValue('title'))!='')
-                $filter .= " AND pl.title like '%".addslashes(trim(urldecode(Tools::getValue('title'))))."%'";
-            if(trim(Tools::getValue('description'))!='')
-                $filter .= " AND pl.description like '%".addslashes(trim(urldecode(Tools::getValue('description'))))."%'";
-            if(trim(Tools::getValue('id_category'))!='')
-                $filter .= " AND p.id_post IN (SELECT id_post FROM "._DB_PREFIX_."ybc_blog_post_category WHERE id_category = ".(int)trim(urldecode(Tools::getValue('id_category'))).") ";
-            if(trim(Tools::getValue('enabled'))!='')
-                $filter .= " AND p.enabled = ".(int)trim(urldecode(Tools::getValue('enabled')));
-            if(trim(Tools::getValue('is_featured'))!='')
-                $filter .= " AND p.is_featured = ".(int)trim(urldecode(Tools::getValue('is_featured')));
-            if(trim(Tools::getValue('name_author'))!='')
-                $filter .=" AND (CONCAT(e.firstname,' ', e.lastname) like '%".pSQL(trim(Tools::getValue('name_author')))."%' OR CONCAT(c.firstname,' ', c.lastname) like '%".pSQL(trim(Tools::getValue('name_author')))."%')";
+            if(($idPost = trim(Tools::getValue('id_post')))!='' && Validate::isCleanHtml($idPost))
+                $filter .= " AND p.id_post = ".(int)$idPost;
+            if(($sort_order = trim(Tools::getValue('sort_order')))!='' && Validate::isCleanHtml($sort_order))
+                $filter .= " AND p.sort_order = ".(int)$sort_order;
+            if(($click_number = trim(Tools::getValue('click_number')))!='' && Validate::isCleanHtml($click_number))
+                $filter .= " AND p.click_number = ".(int)$click_number;
+            if(($likes = trim(Tools::getValue('likes')))!='' && Validate::isCleanHtml($likes))
+                $filter .= " AND p.likes = ".(int)$likes;            
+            if(($title = trim(Tools::getValue('title')))!='' && Validate::isCleanHtml($title))
+                $filter .= " AND pl.title like '%".pSQL($title)."%'";
+            if(($description = trim(Tools::getValue('description')))!='' && Validate::isCleanHtml($description))
+                $filter .= " AND pl.description like '%".pSQL($description)."%'";
+            if(($id_category = trim(Tools::getValue('id_category')))!='' && Validate::isCleanHtml($id_category))
+                $filter .= " AND p.id_post IN (SELECT id_post FROM `"._DB_PREFIX_."ybc_blog_post_category` WHERE id_category = ".(int)$id_category.") ";
+            if(($enabled = trim(Tools::getValue('enabled')))!='' && Validate::isCleanHtml($enabled))
+                $filter .= " AND p.enabled = ".(int)$enabled;
+            if(($is_featured = trim(Tools::getValue('is_featured')))!='' && Validate::isCleanHtml($is_featured))
+                $filter .= " AND p.is_featured = ".(int)$is_featured;
+            if(($name_author = trim(Tools::getValue('name_author')))!='' && Validate::isCleanHtml($name_author))
+                $filter .=" AND (CONCAT(e.firstname,' ', e.lastname) like '%".pSQL($name_author)."%' OR CONCAT(c.firstname,' ', c.lastname) like '%".pSQL($name_author)."%')";
             //Sort
             $sort = 'p.id_post DESC,';
-            if(trim(Tools::getValue('sort')) && isset($fields_list[Tools::getValue('sort')]))
+            $sort_post = Tools::strtolower(trim(Tools::getValue('sort')));
+            $sort_type = Tools::strtolower(Tools::getValue('sort_type','desc'));
+            if($sort_post && isset($fields_list[$sort_post]))
             {
-                $sort = trim(Tools::getValue('sort'))." ".(Tools::getValue('sort_type')=='asc' ? ' ASC ' :' DESC ')." , ";
+                $sort = $sort_post." ".($sort_type=='asc' ? ' ASC ' :' DESC ')." , ";
             }
             if($filter)
                 $show_reset=true;
             
             //Paggination
-            $page = (int)Tools::getValue('page') && (int)Tools::getValue('page') > 0 ? (int)Tools::getValue('page') : 1;
+            $page = (int)Tools::getValue('page');
+            if($page<=1)
+                $page =1;
             $totalRecords = (int)$this->countPostsWithFilter($filter,false);
             $paggination = new Ybc_blog_paggination_class();            
             $paggination->total = $totalRecords;
@@ -2062,15 +2356,15 @@ class Ybc_blog extends Module
                 'show_reset' =>  $show_reset,
                 'totalRecords' => $totalRecords,
                 'preview_link' => $this->getLink('blog'),
-                'sort' => Tools::getValue('sort','id_post'),   
-                'sort_type' => Tools::getValue('sort_type','desc'),             
+                'sort' => $sort_post ? : 'id_post',   
+                'sort_type' => $sort_type,             
             );            
             return $list? $this->renderList($listData): $this->_html .= $this->renderList($listData);      
         }
         //Form
-        if(Tools::isSubmit('id_post') && $this->itemExists('post','id_post',(int)Tools::getValue('id_post')))
+        if(($id_post = (int)Tools::getValue('id_post')) && $this->itemExists('post','id_post',(int)$id_post))
         {
-            $post= new Ybc_blog_post_class(Tools::getValue('id_post'));
+            $post= new Ybc_blog_post_class($id_post);
         }
         $fields_form = array(
 			'form' => array(
@@ -2085,8 +2379,7 @@ class Ybc_blog extends Module
 						'lang' => true,    
                         'required' => true, 
                         'tab'=>'basic',
-                        'class' => 'title',
-					    'hint' => $this->l('Invalid characters:').' &lt;&gt;;=#{}',                               
+                        'class' => 'title',                             
 					),
                     array(
                         'type' => 'text',
@@ -2094,7 +2387,6 @@ class Ybc_blog extends Module
 						'name' => 'meta_title',
 						'lang' => true,    
                         'tab'=>'seo',   
-                        'hint' => $this->l('Invalid characters:').' &lt;&gt;;=#{}',
                         'desc' => $this->l('Should contain your focus keyword and be attractive'),
                     ),
                     array(
@@ -2103,7 +2395,6 @@ class Ybc_blog extends Module
 						'name' => 'meta_description',
                         'lang' => true,
                         'tab'=>'seo',
-                        'hint' => $this->l('Invalid characters:').' &lt;&gt;;=#{}',
                         'desc' => $this->l('Should contain your focus keyword and be attractive. Meta description should be less than 300 characters.'),						
 					),
                     array(
@@ -2114,7 +2405,6 @@ class Ybc_blog extends Module
                         'tab'=>'seo',
                         'hint' => array(
     						$this->l('To add "keywords" click in the field, write something, and then press "Enter."'),
-    						$this->l('Invalid characters:').' &lt;&gt;;=#{}'
     					),
                         'desc'=>$this->l('Enter your focus keywords and minor keywords'),						
 					),
@@ -2125,8 +2415,7 @@ class Ybc_blog extends Module
                         'required' => true,
                         'lang'=>true,
                         'tab'=>'seo',
-                        'hint' => $this->l('Only letters and the hyphen (-) character are allowed.'),
-                        'desc' => $this->l('Should be as short as possible and contain your focus keyword'),						
+                        'desc' => $this->l('Should be as short as possible and contain your focus keyword.').($id_post ? $this->displayText($this->l('View post'),'a','ybc_link_view',null,$this->getLink('blog',array('id_post'=>$id_post)),true):''),						
 					),
                     array(
 						'type' => 'tags',
@@ -2136,7 +2425,6 @@ class Ybc_blog extends Module
                         'tab'=>'option',
                         'hint' => array(
     						$this->l('To add "tags" click in the field, write something, and then press "Enter."'),
-    						$this->l('Invalid characters:').' &lt;&gt;;=#{}'
     					),
                         'desc'=>$this->l('Tags are separated by a comma. Related posts are the posts in the same tag or in the same post categories.'),							
 					),
@@ -2148,7 +2436,6 @@ class Ybc_blog extends Module
                         'required' => true,
                         'autoload_rte' => true,
                         'tab'=>'basic',
-                        'hint' => $this->l('Invalid characters:').' <>;=#{}',
                         'desc' => $this->l('Short description is displayed in post listing pages'),                      
 					),
                     array(
@@ -2159,44 +2446,42 @@ class Ybc_blog extends Module
                         'autoload_rte' => true,
                         'required' => true,
                         'tab'=>'basic',
-                        'hint' => $this->l('Invalid characters:').' <>;=#{}',
                         'desc' => $this->l('Post content is displayed in post details page (single page).'),                          
 					),
                     array(
-						'type' => 'file',
+						'type' => 'file_lang',
 						'label' => $this->l('Post thumbnail'),
 						'name' => 'thumb',
                         'imageType' => 'thumb',
                         'required' => true,
                         'tab'=>'basic',
-                        'desc' => $this->l('Recommended size: ').Configuration::get('YBC_BLOG_IMAGE_BLOG_THUMB_WIDTH',null,null,null,260).'x'.Configuration::get('YBC_BLOG_IMAGE_BLOG_THUMB_HEIGHT',null,null,null,180).'. '.$this->l('Post thumbnail image is required. You should adjust your image to the recommended size before uploading it.'),						
+                        'desc' => sprintf($this->l('Accepted formats: jpg, jpeg, png, gif. Limit: %dMb. Recommended size: %sx%s. Post thumbnail image is required. You should adjust your image to the recommended size before uploading it.'),Configuration::get('PS_ATTACHMENT_MAXIMUM_SIZE'),Configuration::get('YBC_BLOG_IMAGE_BLOG_THUMB_WIDTH',null,null,null,260),Configuration::get('YBC_BLOG_IMAGE_BLOG_THUMB_HEIGHT',null,null,null,180)),
 					),
                     array(
-						'type' => 'file',
+						'type' => 'file_lang',
 						'label' => $this->l('Blog post main image'),
 						'name' => 'image',
                         'tab'=>'basic',
-                        'desc' => $this->l('Recommended size: ').Configuration::get('YBC_BLOG_IMAGE_BLOG_WIDTH',null,null,null,1920).'x'.Configuration::get('YBC_BLOG_IMAGE_BLOG_HEIGHT',null,null,null,750),						
+                        'desc' => sprintf($this->l('Accepted formats: jpg, jpeg, png, gif. Limit: %dMb. Recommended size: %sx%s.'),Configuration::get('PS_ATTACHMENT_MAXIMUM_SIZE'),Configuration::get('YBC_BLOG_IMAGE_BLOG_WIDTH',null,null,null,1920),Configuration::get('YBC_BLOG_IMAGE_BLOG_HEIGHT',null,null,null,750))						
 					),
                     array(
     					'type' => 'blog_categories',
     					'label' => $this->l('Post categories'),
-                        'html_content' =>$this->displayBlogCategoryTre($this->getBlogCategoriesTree(0),$this->getSelectedCategories((int)Tools::getValue('id_post'))),
+                        'html_content' =>$this->displayBlogCategoryTre($this->getBlogCategoriesTree(0),$this->getSelectedCategories($id_post)),
     					'categories' => $this->getBlogCategoriesTree(0),
     					'name' => 'categories',
                         'required' => true,
                         'tab'=>'basic',
-                        'selected_categories' => $this->getSelectedCategories((int)Tools::getValue('id_post'))                                           
+                        'selected_categories' => $this->getSelectedCategories($id_post)                                           
     				),
                     array(
 						'type' => 'products_search',
 						'label' => $this->l('Related products'),
 						'name' => 'products',
-                        'selected_products' => $this->getSelectedProducts((int)Tools::getValue('id_post')),	
+                        'selected_products' => $this->getSelectedProducts($id_post),	
                         'tab'=>'option',					
 					    'hint' => array(
-    						$this->l('To add "products", type in product name and choose the product from the dropdown'),
-    						$this->l('Invalid characters:').' &lt;&gt;;=#{}'
+    						$this->l('To add "products", type in product name and choose the product from the dropdown')
     					),	
                         'desc' => $this->l('Related products are displayed on post details page'),
                     ),
@@ -2207,7 +2492,7 @@ class Ybc_blog extends Module
                         'tab'=>'option',
     					'tree'  => array(
     						'id'      => 'categories-tree',
-    						'selected_categories' => $this->getSelectedRelatedCategories((int)Tools::getValue('id_post')),
+    						'selected_categories' => $this->getSelectedRelatedCategories($id_post),
                             'use_search' => true,
                             'use_checkbox' => true,
     					),
@@ -2283,10 +2568,17 @@ class Ybc_blog extends Module
                         ),					
 					),
                     array(
-						'type' => 'date',
+						'type' => 'datetime',
 						'label' => $this->l('Publish date'),
+						'name' => 'datetime_added',	
+                        'tab'=>'basic',				
+					),
+                    array(
+						'type' => 'date',
+						'label' => $this->l('Schedule publish date'),
 						'name' => 'datetime_active',	
                         'tab'=>'basic',
+                        'required2'=>true,
                         'desc'=> $this->l('You can select the time to automatically publish this post. Leave blank to save this post as draft'),				
 					),
                     array(
@@ -2302,7 +2594,7 @@ class Ybc_blog extends Module
                         'type'=>'submit',
                         'name' =>'submitSaveAndPreview',
                         'title' => $this->l('Save and preview'),
-                        'class' => Tools::getValue('id_post') && isset($post) && $post->enabled!=-2 ? 'pull-right hide':'pull-right',
+                        'class' => $id_post && isset($post) && $post->enabled!=-2 ? 'pull-right hide':'pull-right',
                         'icon'=>'process-icon-save',
                     )
                 ),
@@ -2331,31 +2623,29 @@ class Ybc_blog extends Module
 			'fields_value' => $this->getFieldsValues(Ybc_blog_defines::$postFields,'id_post','Ybc_blog_post_class','savePost'),
 			'languages' => $this->context->controller->getLanguages(),
 			'id_language' => $this->context->language->id,
-			'image_baseurl' => $this->_path.'views/img/',
             'link' => $this->context->link,
             'post_key' => 'id_post',
             'tab_post' => true,
             'check_suspend' => $this->checkPostSuspend(),
-            'form_author_post' => $this->getFormAuthorPost(Tools::getValue('id_post')),
+            'form_author_post' => $this->getFormAuthorPost($id_post),
             'cancel_url' => $this->baseAdminPath.'&control=post&list=true',
+            'image_baseurl' => _PS_YBC_BLOG_IMG_.'post/',
+            'image_baseurl_thumb' => _PS_YBC_BLOG_IMG_.'post/thumb/',
             'addNewUrl' => $this->context->link->getAdminLink('AdminModules', true).'&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&control=post',
-            'preview_link' => Tools::getValue('id_post') ? $this->getLink('blog',array('id_post'=>Tools::getValue('id_post'))):'',
+            'preview_link' => $id_post ? $this->getLink('blog',array('id_post'=>$id_post)):'',
 		);
-        
-        if(Tools::isSubmit('id_post') && $this->itemExists('post','id_post',(int)Tools::getValue('id_post')))
+        if($id_post && $this->itemExists('post','id_post',(int)$id_post))
         {
             
             $fields_form['form']['input'][] = array('type' => 'hidden', 'name' => 'id_post');
-            $post = new Ybc_blog_post_class((int)Tools::getValue('id_post'));
-            if($post->image && file_exists(dirname(__FILE__).'/views/img/post/'.$post->image))
+            $post = new Ybc_blog_post_class((int)$id_post);
+            if($post->image)
             {             
-                $helper->tpl_vars['display_img'] = $this->_path.'views/img/post/'.$post->image;
-                $helper->tpl_vars['img_del_link'] = $this->baseAdminPath.'&id_post='.Tools::getValue('id_post').'&delpostimage=true&control=post';                
+                $helper->tpl_vars['img_del_link'] = $this->baseAdminPath.'&id_post='.$id_post.'&delpostimage=true&control=post';                
             }
-            if($post->thumb && file_exists(dirname(__FILE__).'/views/img/post/thumb/'.$post->thumb))
+            if($post->thumb)
             {             
-                $helper->tpl_vars['display_thumb'] = $this->_path.'views/img/post/thumb/'.$post->thumb;
-                $helper->tpl_vars['thumb_del_link'] = $this->baseAdminPath.'&id_post='.Tools::getValue('id_post').'&delpostthumb=true&control=post';                
+                $helper->tpl_vars['thumb_del_link'] = $this->baseAdminPath.'&id_post='.$id_post.'&delpostthumb=true&control=post';                
             }
         }
         
@@ -2363,13 +2653,13 @@ class Ybc_blog extends Module
         $this->_html .= $helper->generateForm(array($fields_form));			
     }
     public function checkPostSuspend(){
-        if(!Tools::getValue('id_post'))
+        if(!($id_post = (int)Tools::getValue('id_post')))
             return false;
         else
         {
-            $author = Db::getInstance()->getRow('SELECT * FROM '._DB_PREFIX_.'ybc_blog_post p
-                INNER JOIN '._DB_PREFIX_.'ybc_blog_employee ybc ON (p.is_customer=ybc.is_customer AND p.added_by = ybc.id_employee)
-                WHERE id_post="'.(int)Tools::getValue('id_post').'" AND ybc.status=-1');
+            $author = Db::getInstance()->getRow('SELECT * FROM `'._DB_PREFIX_.'ybc_blog_post` p
+                INNER JOIN `'._DB_PREFIX_.'ybc_blog_employee` ybc ON (p.is_customer=ybc.is_customer AND p.added_by = ybc.id_employee)
+                WHERE id_post="'.(int)$id_post.'" AND ybc.status=-1');
             if($author)
             {
                 return true;
@@ -2382,11 +2672,11 @@ class Ybc_blog extends Module
         
         if(!$id_post)
             return '';
-        $post = Db::getInstance()->getRow('SELECT * FROM '._DB_PREFIX_.'ybc_blog_post p WHERE id_post='.(int)$id_post);
+        $post = Db::getInstance()->getRow('SELECT * FROM `'._DB_PREFIX_.'ybc_blog_post` p WHERE id_post='.(int)$id_post);
         if($post['is_customer'])
         {
-            $author = Db::getInstance()->getRow('SELECT c.id_customer,c.firstname,c.lastname,ybe.is_customer,ybe.name FROM '._DB_PREFIX_.'customer c
-                LEFT JOIN '._DB_PREFIX_.'ybc_blog_employee ybe on (ybe.is_customer=1 AND ybe.id_employee=c.id_customer)
+            $author = Db::getInstance()->getRow('SELECT c.id_customer,c.firstname,c.lastname,ybe.is_customer,ybe.name FROM `'._DB_PREFIX_.'customer` c
+                LEFT JOIN `'._DB_PREFIX_.'ybc_blog_employee` ybe on (ybe.is_customer=1 AND ybe.id_employee=c.id_customer)
                 WHERE c.id_customer= "'.$post['added_by'].'"
             ');
             if($author)
@@ -2394,8 +2684,8 @@ class Ybc_blog extends Module
         }
         else
         {
-            $author = Db::getInstance()->getRow('SELECT e.id_employee,e.firstname,e.lastname,ybe.is_customer,ybe.name FROM '._DB_PREFIX_.'employee e
-                LEFT JOIN '._DB_PREFIX_.'ybc_blog_employee ybe on (ybe.is_customer=0 AND ybe.id_employee=e.id_employee)
+            $author = Db::getInstance()->getRow('SELECT e.id_employee,e.firstname,e.lastname,ybe.is_customer,ybe.name FROM `'._DB_PREFIX_.'employee` e
+                LEFT JOIN `'._DB_PREFIX_.'ybc_blog_employee` ybe on (ybe.is_customer=0 AND ybe.id_employee=e.id_employee)
                 WHERE e.id_employee="'.(int)$post['added_by'].'"
             ');
             if($author)
@@ -2410,8 +2700,8 @@ class Ybc_blog extends Module
             );
         }
         $admin_authors= Db::getInstance()->executeS(
-        'SELECT e.id_employee,e.firstname,e.lastname,ybe.name,ybe.is_customer FROM '._DB_PREFIX_.'employee e
-        LEFT JOIN '._DB_PREFIX_.'ybc_blog_employee ybe ON (ybe.is_customer =0 AND ybe.id_employee=e.id_employee)
+        'SELECT e.id_employee,e.firstname,e.lastname,ybe.name,ybe.is_customer FROM `'._DB_PREFIX_.'employee` e
+        LEFT JOIN `'._DB_PREFIX_.'ybc_blog_employee` ybe ON (ybe.is_customer =0 AND ybe.id_employee=e.id_employee)
         ');
         if($admin_authors)
         {
@@ -2435,20 +2725,20 @@ class Ybc_blog extends Module
             Hook::exec('actionUpdateBlog', array(
                 'id_author' => (int)$id_author,
             ));
-            $posts= Db::getInstance()->executeS('SELECT * FROM '._DB_PREFIX_.'ybc_blog_post WHERE is_customer=1 AND added_by="'.(int)$id_author.'"');
+            $posts= Db::getInstance()->executeS('SELECT * FROM `'._DB_PREFIX_.'ybc_blog_post` WHERE is_customer=1 AND added_by="'.(int)$id_author.'"');
             if($posts)
             {
                 foreach($posts as $post)
                 {
                     if($this->_deletePost($post['id_post']))
                     {   
-                        $posts = Db::getInstance()->executeS('SELECT * FROM '._DB_PREFIX_.'ybc_blog_post p, '._DB_PREFIX_.'ybc_blog_post_shop ps  WHERE p.id_post = ps.id_post AND ps.id_shop="'.(int)$this->context->shop->id.'" order by sort_order asc');
+                        $posts = Db::getInstance()->executeS('SELECT * FROM `'._DB_PREFIX_.'ybc_blog_post` p, `'._DB_PREFIX_.'ybc_blog_post_shop` ps  WHERE p.id_post = ps.id_post AND ps.id_shop="'.(int)$this->context->shop->id.'" order by sort_order asc');
                         if($posts)
                         {
                             foreach($posts as $key=> $post)
                             {
                                 $position=$key+1;
-                                Db::getInstance()->execute('update '._DB_PREFIX_.'ybc_blog_post SET sort_order ="'.(int)$position.'" WHERE id_post='.(int)$post['id_post']);
+                                Db::getInstance()->execute('update `'._DB_PREFIX_.'ybc_blog_post` SET sort_order ="'.(int)$position.'" WHERE id_post='.(int)$post['id_post']);
                             }
                         }
                     }
@@ -2456,14 +2746,14 @@ class Ybc_blog extends Module
             }
             Tools::redirectAdmin($this->context->link->getAdminLink('AdminModules', true).'&conf=1&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&control=customer&list=true');
         }
-        if(Tools::isSubmit('delemployeeimage'))
+        if(Tools::isSubmit('delemployeeimage') && ($id_customer = (int)Tools::getValue('id_customer')))
         {
-            $id_employee_post= (int)Db::getInstance()->getValue('SELECT id_employee_post FROM '._DB_PREFIX_.'ybc_blog_employee WHERE id_employee='.(int)Tools::getValue('id_customer').' AND is_customer=1');
+            $id_employee_post= (int)Db::getInstance()->getValue('SELECT id_employee_post FROM `'._DB_PREFIX_.'ybc_blog_employee` WHERE id_employee='.(int)$id_customer.' AND is_customer=1');
             Hook::exec('actionUpdateBlog', array(
-                'id_author' =>(int)Tools::getValue('id_customer'),
+                'id_author' =>(int)$id_customer,
             ));
             $employeePost = new Ybc_blog_post_employee_class($id_employee_post);
-            @unlink(dirname(__FILE__).'/../views/img/avata/'.$employeePost->avata);
+            @unlink(_PS_YBC_BLOG_IMG_DIR_.'avata/'.$employeePost->avata);
             $employeePost->avata='';
             $employeePost->update();
             if(Tools::isSubmit('ajax'))
@@ -2484,9 +2774,9 @@ class Ybc_blog extends Module
             $field = Tools::getValue('field');
             $id_customer = (int)Tools::getValue('id_customer');  
             Hook::exec('actionUpdateBlog', array(
-                'id_author' =>(int)Tools::getValue('id_customer'),
+                'id_author' =>(int)$id_customer,
             ));
-            $id_employee_post= (int)Db::getInstance()->getValue('SELECT id_employee_post FROM '._DB_PREFIX_.'ybc_blog_employee WHERE id_employee='.(int)$id_customer.' AND is_customer=1');          
+            $id_employee_post= (int)Db::getInstance()->getValue('SELECT id_employee_post FROM `'._DB_PREFIX_.'ybc_blog_employee` WHERE id_employee='.(int)$id_customer.' AND is_customer=1');
             if(($field == 'status' && $id_customer))
             {
                 if($id_employee_post)
@@ -2513,7 +2803,7 @@ class Ybc_blog extends Module
                 {
                     die(Tools::jsonEncode(array(
                         'listId' => $id_customer,
-                        'enabled' => Tools::getValue('change_enabled'),
+                        'enabled' => $status,
                         'field' => $field,
                         'message' => $this->displaySuccessMessage($this->l('The status has been successfully updated')),
                         'messageType'=>'success',
@@ -2524,13 +2814,13 @@ class Ybc_blog extends Module
                 Tools::redirectAdmin($this->context->link->getAdminLink('AdminModules', true).'&conf=4&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&control=customer&list=true');
             }
         }
-        if($id_customer=Tools::getValue('id_customer'))
+        if(($id_customer=(int)Tools::getValue('id_customer')))
         {
-            $id_employee_post= (int)Db::getInstance()->getValue('SELECT id_employee_post FROM '._DB_PREFIX_.'ybc_blog_employee WHERE id_employee='.(int)$id_customer.' AND is_customer=1');
+            $id_employee_post= (int)Db::getInstance()->getValue('SELECT id_employee_post FROM `'._DB_PREFIX_.'ybc_blog_employee` WHERE id_employee='.(int)$id_customer.' AND is_customer=1');
             if(Tools::isSubmit('saveBlogEmployee'))
             {
                 Hook::exec('actionUpdateBlog', array(
-                    'id_author' =>(int)Tools::getValue('id_customer'),
+                    'id_author' =>(int)$id_customer,
                 ));
                 if($id_employee_post)
                 {
@@ -2541,26 +2831,39 @@ class Ybc_blog extends Module
                 $employeePost->id_employee=$id_customer;
                 $employeePost->is_customer=1;
                 $employeePost->status = (int)Tools::getValue('status');
-                if(!Tools::getValue('name'))
+                $name = Tools::getValue('name');
+                if(!$name)
                 {
                     $errors[]=$this->l('Name is required');
                 }
+                elseif(!Validate::isCleanHtml($name))
+                    $errors[]=$this->l('Name is not valid');
                 else
-                    $employeePost->name=Tools::getValue('name');
+                    $employeePost->name = $name;
+                $description_default = Tools::getValue('description_'.Configuration::get('PS_LANG_DEFAULT'));
+                if($description_default && !Validate::isCleanHtml($description_default))
+                    $errors[] = $this->l('Description is not valid');
                 $employeePost->profile_employee = '';
                 $languages= Language::getLanguages(false);
-                foreach($languages as $language)
+                if(!$errors)
                 {
-                    $employeePost->description[$language['id_lang']]= Tools::getValue('description_'.$language['id_lang'],Tools::getValue('description_'.Configuration::get('PS_LANG_DEFAULT')));
+                    foreach($languages as $language)
+                    {
+                        $description = Tools::getValue('description_'.$language['id_lang']);
+                        if($description && !Validate::isCleanHtml($description,true))
+                            $errors[] = sprintf($this->l('Description in %s is not valid'),$language['name']);
+                        $employeePost->description[$language['id_lang']] = $description ? : $description_default;
+                    }
                 }
                 $oldImage = false;
                 $newImage = false;  
                 $changedImages=array(); 
                 if(isset($_FILES['avata']['tmp_name']) && isset($_FILES['avata']['name']) && $_FILES['avata']['name'])
                 {
-                    if(file_exists(dirname(__FILE__).'/views/img/avata/'.$_FILES['avata']['name']))
+                    $_FILES['avata']['name'] = str_replace(' ','-',$_FILES['avata']['name']);
+                    if(file_exists(_PS_YBC_BLOG_IMG_DIR_.'avata/'.$_FILES['avata']['name']))
                     {
-                        $file_name = Tools::substr(sha1(microtime()),0,10).'-'.$_FILES['avata']['name'];
+                        $file_name = $this->createNewFileName(_PS_YBC_BLOG_IMG_DIR_.'avata/',$_FILES['avata']['name']);
                     } 
                     else
                        $file_name = $_FILES['avata']['name'];                
@@ -2574,15 +2877,15 @@ class Ybc_blog extends Module
         				if ($error = ImageManager::validateUpload($_FILES['avata']))
         					$errors[] = $error;
         				elseif (!$temp_name || !move_uploaded_file($_FILES['avata']['tmp_name'], $temp_name))
-        					$errors[] = $this->l('Can not upload the file');
-        				elseif (!ImageManager::resize($temp_name, dirname(__FILE__).'/views/img/avata/'.$file_name, null, null, $type))
+        					$errors[] = $this->l('Cannot upload the file');
+        				elseif (!ImageManager::resize($temp_name, _PS_YBC_BLOG_IMG_DIR_.'avata/'.$file_name, null, null, $type))
         					$errors[] = $this->displayError($this->l('An error occurred during the image upload process.'));
         				if (isset($temp_name))
         					@unlink($temp_name);
                         if($employeePost->avata)
-                            $oldImage = dirname(__FILE__).'/views/img/avata/'.$employeePost->avata;
+                            $oldImage = _PS_YBC_BLOG_IMG_DIR_.'avata/'.$employeePost->avata;
                         $employeePost->avata = $file_name;
-                        $newImage = dirname(__FILE__).'/views/img/avata/'.$employeePost->avata;			
+                        $newImage = _PS_YBC_BLOG_IMG_DIR_.'avata/'.$employeePost->avata;			
         			}
                     elseif(isset($_FILES['avata']) &&				
         				!empty($_FILES['avata']['tmp_name']) &&
@@ -2615,8 +2918,8 @@ class Ybc_blog extends Module
                 if(isset($newImage) && $newImage && file_exists($newImage) && !$errors && isset($employeePost)){
                     $changedImages[] = array(
                         'name' => 'avata',
-                        'url' => $this->_path.'views/img/avata/'.$employeePost->avata,
-                        'delete_url' => $this->context->link->getAdminLink('AdminModules', true).'&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&id_customer='.Tools::getValue('id_customer').'&delemployeeimage=true&control=customer',
+                        'url' => _PS_YBC_BLOG_IMG_.'avata/'.$employeePost->avata,
+                        'delete_url' => $this->context->link->getAdminLink('AdminModules', true).'&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&id_customer='.$id_customer.'&delemployeeimage=true&control=customer',
                     );
                 }  
                 if(Tools::isSubmit('ajax'))
@@ -2624,9 +2927,9 @@ class Ybc_blog extends Module
                     die(Tools::jsonEncode(
                         array(
                             'messageType' => $errors ? 'error' : 'success',
-                            'message' => $errors ? $this->errorMessage :  $this->displaySuccessMessage($this->l('Author customer saved')),
+                            'message' => $errors ? $this->errorMessage :  $this->displaySuccessMessage($this->l('Customer - Author has been saved')),
                             'images' => isset($changedImages) && $changedImages ? $changedImages : array(),
-                            'postUrl' => !$errors && Tools::isSubmit('saveBlogEmployee') && (int)Tools::getValue('id_customer') ? $this->context->link->getAdminLink('AdminModules', true).'&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&id_customer='.(int)Tools::getValue('id_customer').'&control=customer' : 0,
+                            'postUrl' => !$errors && Tools::isSubmit('saveBlogEmployee') && (int)$id_customer ? $this->context->link->getAdminLink('AdminModules', true).'&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&id_customer='.(int)$id_customer.'&control=customer' : 0,
                             'itemKey' => 'id_employee',
                             'itemId' => !$errors ? $id_customer:0,
                         )
@@ -2635,7 +2938,7 @@ class Ybc_blog extends Module
                 if(!$errors)
                 {
                     if (Tools::isSubmit('saveBlogEmployee') && Tools::isSubmit('id_customer'))
-            			Tools::redirectAdmin($this->context->link->getAdminLink('AdminModules', true).'&conf=4&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&id_customer='.Tools::getValue('id_customer').'&control=customer');
+            			Tools::redirectAdmin($this->context->link->getAdminLink('AdminModules', true).'&conf=4&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&id_customer='.$id_customer.'&control=customer');
                }
             }
         }
@@ -2643,25 +2946,25 @@ class Ybc_blog extends Module
     private function _postEmployee()
     {
         $errors=array();
-        if(Tools::isSubmit('deleteAllPostEmployee') && $id_author=Tools::getValue('id_author'))
+        if(Tools::isSubmit('deleteAllPostEmployee') && ($id_author=(int)Tools::getValue('id_author')) )
         {
             Hook::exec('actionUpdateBlog', array(
                 'id_author' =>(int)$id_author,
             ));
-            $posts= Db::getInstance()->executeS('SELECT * FROM '._DB_PREFIX_.'ybc_blog_post WHERE is_customer=0 AND added_by="'.(int)$id_author.'"');
+            $posts= Db::getInstance()->executeS('SELECT * FROM `'._DB_PREFIX_.'ybc_blog_post` WHERE is_customer=0 AND added_by="'.(int)$id_author.'"');
             if($posts)
             {
                 foreach($posts as $post)
                 {
                     if($this->_deletePost($post['id_post']))
                     {   
-                        $posts = Db::getInstance()->executeS('SELECT * FROM '._DB_PREFIX_.'ybc_blog_post p, '._DB_PREFIX_.'ybc_blog_post_shop ps  WHERE p.id_post = ps.id_post AND ps.id_shop="'.(int)$this->context->shop->id.'" order by sort_order asc');
+                        $posts = Db::getInstance()->executeS('SELECT * FROM `'._DB_PREFIX_.'ybc_blog_post` p, `'._DB_PREFIX_.'ybc_blog_post_shop` ps  WHERE p.id_post = ps.id_post AND ps.id_shop="'.(int)$this->context->shop->id.'" order by sort_order asc');
                         if($posts)
                         {
                             foreach($posts as $key=> $post)
                             {
                                 $position=$key+1;
-                                Db::getInstance()->execute('update '._DB_PREFIX_.'ybc_blog_post SET sort_order ="'.(int)$position.'" WHERE id_post='.(int)$post['id_post']);
+                                Db::getInstance()->execute('update `'._DB_PREFIX_.'ybc_blog_post` SET sort_order ="'.(int)$position.'" WHERE id_post='.(int)$post['id_post']);
                             }
                         }
                     }
@@ -2669,14 +2972,14 @@ class Ybc_blog extends Module
             }
             Tools::redirectAdmin($this->context->link->getAdminLink('AdminModules', true).'&conf=1&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&control=employees&list=true');
         }
-        if(Tools::isSubmit('delemployeeimage'))
+        if(Tools::isSubmit('delemployeeimage') && ($id_employee = (int)Tools::getValue('id_employee')))
         {
-            $id_employee_post= (int)Db::getInstance()->getValue('SELECT id_employee_post FROM '._DB_PREFIX_.'ybc_blog_employee WHERE id_employee='.(int)Tools::getValue('id_employee').' AND is_customer=0');
+            $id_employee_post= (int)Db::getInstance()->getValue('SELECT id_employee_post FROM `'._DB_PREFIX_.'ybc_blog_employee` WHERE id_employee='.(int)$id_employee.' AND is_customer=0');
             Hook::exec('actionUpdateBlog', array(
-                'id_author' =>(int)Tools::getValue('id_employee'),
+                'id_author' =>(int)$id_employee,
             ));
-            $employeePost = new Ybc_blog_post_employee_class(Tools::getValue('id_employee'));
-            @unlink(dirname(__FILE__).'/../views/img/avata/'.$employeePost->avata);
+            $employeePost = new Ybc_blog_post_employee_class($id_employee_post);
+            @unlink(_PS_YBC_BLOG_IMG_DIR_.'avata/'.$employeePost->avata);
             $employeePost->avata='';
             $employeePost->update();
             if(Tools::isSubmit('ajax'))
@@ -2697,9 +3000,9 @@ class Ybc_blog extends Module
             $field = Tools::getValue('field');
             $id_employee = (int)Tools::getValue('id_employee');  
             Hook::exec('actionUpdateBlog', array(
-                'id_author' =>(int)Tools::getValue('id_employee'),
+                'id_author' =>(int)$id_employee,
             ));
-            $id_employee_post= (int)Db::getInstance()->getValue('SELECT id_employee_post FROM '._DB_PREFIX_.'ybc_blog_employee WHERE id_employee='.(int)$id_employee.' AND is_customer=0');          
+            $id_employee_post= (int)Db::getInstance()->getValue('SELECT id_employee_post FROM `'._DB_PREFIX_.'ybc_blog_employee` WHERE id_employee='.(int)$id_employee.' AND is_customer=0');
             if(($field == 'status' && $id_employee))
             {
                 if($id_employee_post)
@@ -2725,7 +3028,7 @@ class Ybc_blog extends Module
                 {
                     die(Tools::jsonEncode(array(
                         'listId' => $id_employee,
-                        'enabled' => Tools::getValue('change_enabled'),
+                        'enabled' => $status,
                         'field' => $field,
                         'message' => $this->displaySuccessMessage($this->l('The status has been successfully updated')),
                         'messageType'=>'success',
@@ -2736,13 +3039,13 @@ class Ybc_blog extends Module
                 Tools::redirectAdmin($this->context->link->getAdminLink('AdminModules', true).'&conf=4&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&control=employees&list=true');
             }
         }
-        if($id_employee=Tools::getValue('id_employee'))
+        if(($id_employee = (int)Tools::getValue('id_employee')))
         {
-            $id_employee_post= (int)Db::getInstance()->getValue('SELECT id_employee_post FROM '._DB_PREFIX_.'ybc_blog_employee WHERE id_employee='.(int)$id_employee.' AND is_customer=0');
+            $id_employee_post= (int)Db::getInstance()->getValue('SELECT id_employee_post FROM `'._DB_PREFIX_.'ybc_blog_employee` WHERE id_employee='.(int)$id_employee.' AND is_customer=0');
             if(Tools::isSubmit('saveBlogEmployee'))
             {
                 Hook::exec('actionUpdateBlog', array(
-                    'id_author' =>(int)Tools::getValue('id_employee'),
+                    'id_author' =>(int)$id_employee,
                 ));
                 if($id_employee_post)
                 {
@@ -2752,27 +3055,45 @@ class Ybc_blog extends Module
                     $employeePost = new Ybc_blog_post_employee_class();
                 $employeePost->id_employee=$id_employee;
                 $employeePost->is_customer=0;
-                if(!Tools::getValue('name'))
+                $name = Tools::getValue('name');
+                if(!$name)
                 {
                     $errors[]=$this->l('Name is required');
                 }
+                elseif(!Validate::isCleanHtml($name))
+                    $errors[]=$this->l('Name is not valid');
                 else
-                    $employeePost->name=Tools::getValue('name');
-                $employeePost->profile_employee = implode(',',Tools::getValue('profile_employee'));
+                    $employeePost->name = $name;
+                $description_default = Tools::getValue('description_'.Configuration::get('PS_LANG_DEFAULT'));
+                if($description_default && !Validate::isCleanHtml($description_default))
+                    $errors[] = $this->l('Introduction is not valid');
+                $profile_employee = Tools::getValue('profile_employee');
+                if($profile_employee && !Validate::isCleanHtml($profile_employee))
+                    $errors[] = $this->l('Profile is not valid');
+                else
+                    $employeePost->profile_employee = implode(',',$profile_employee);
                 $employeePost->status = (int)Tools::getValue('status');
                 $languages= Language::getLanguages(false);
-                foreach($languages as $language)
+                if(!$errors)
                 {
-                    $employeePost->description[$language['id_lang']]= Tools::getValue('description_'.$language['id_lang'],Tools::getValue('description_'.Configuration::get('PS_LANG_DEFAULT')));
+                    foreach($languages as $language)
+                    {
+                        $description  = Tools::getValue('description_'.$language['id_lang']);
+                        if($description && !Validate::isCleanHtml($description))
+                            $errors[] = sprintf($this->l('Introduction in %s not valid'),$language['name']);
+                        else
+                            $employeePost->description[$language['id_lang']] = $description ? : $description_default;
+                    }
                 }
                 $oldImage = false;
                 $newImage = false;  
                 $changedImages=array(); 
                 if(isset($_FILES['avata']['tmp_name']) && isset($_FILES['avata']['name']) && $_FILES['avata']['name'])
                 {
-                    if(file_exists(dirname(__FILE__).'/views/img/avata/'.$_FILES['avata']['name']))
+                    $_FILES['avata']['name'] = str_replace(' ','-',$_FILES['avata']['name']);
+                    if(file_exists(_PS_YBC_BLOG_IMG_DIR_.'avata/'.$_FILES['avata']['name']))
                     {
-                        $file_name = Tools::substr(sha1(microtime()),0,10).'-'.$_FILES['avata']['name'];
+                        $file_name = $this->createNewFileName(_PS_YBC_BLOG_IMG_DIR_.'avata/',$_FILES['avata']['name']);
                     } 
                     else
                        $file_name = $_FILES['avata']['name'];                
@@ -2786,15 +3107,15 @@ class Ybc_blog extends Module
         				if ($error = ImageManager::validateUpload($_FILES['avata']))
         					$errors[] = $error;
         				elseif (!$temp_name || !move_uploaded_file($_FILES['avata']['tmp_name'], $temp_name))
-        					$errors[] = $this->l('Can not upload the file');
-        				elseif (!ImageManager::resize($temp_name, dirname(__FILE__).'/views/img/avata/'.$file_name, Configuration::get('YBC_BLOG_IMAGE_AVATA_WIDTH',null,null,null,300), Configuration::get('YBC_BLOG_IMAGE_AVATA_HEIGHT',null,null,null,300), $type))
+        					$errors[] = $this->l('Cannot upload the file');
+        				elseif (!ImageManager::resize($temp_name, _PS_YBC_BLOG_IMG_DIR_.'avata/'.$file_name, Configuration::get('YBC_BLOG_IMAGE_AVATA_WIDTH',null,null,null,300), Configuration::get('YBC_BLOG_IMAGE_AVATA_HEIGHT',null,null,null,300), $type))
         					$errors[] = $this->displayError($this->l('An error occurred during the image upload process.'));
         				if (isset($temp_name))
         					@unlink($temp_name);
                         if($employeePost->avata)
-                            $oldImage = dirname(__FILE__).'/views/img/avata/'.$employeePost->avata;
+                            $oldImage = _PS_YBC_BLOG_IMG_DIR_.'avata/'.$employeePost->avata;
                         $employeePost->avata = $file_name;
-                        $newImage = dirname(__FILE__).'/views/img/avata/'.$employeePost->avata;			
+                        $newImage = _PS_YBC_BLOG_IMG_DIR_.'avata/'.$employeePost->avata;			
         			}
                     elseif(isset($_FILES['avata']) &&				
         				!empty($_FILES['avata']['tmp_name']) &&
@@ -2826,8 +3147,8 @@ class Ybc_blog extends Module
                 if(isset($newImage) && $newImage && file_exists($newImage) && !$errors && isset($employeePost)){
                     $changedImages[] = array(
                         'name' => 'avata',
-                        'url' => $this->_path.'views/img/avata/'.$employeePost->avata,
-                        'delete_url' => $this->context->link->getAdminLink('AdminModules', true).'&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&id_employee='.Tools::getValue('id_employee').'&delemployeeimage=true&control=employees',
+                        'url' => _PS_YBC_BLOG_IMG_.'avata/'.$employeePost->avata,
+                        'delete_url' => $this->context->link->getAdminLink('AdminModules', true).'&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&id_employee='.$id_employee.'&delemployeeimage=true&control=employees',
                     );
                 }  
                 if(Tools::isSubmit('ajax'))
@@ -2835,9 +3156,9 @@ class Ybc_blog extends Module
                     die(Tools::jsonEncode(
                         array(
                             'messageType' => $errors ? 'error' : 'success',
-                            'message' => $errors ? $this->errorMessage :  $this->displaySuccessMessage($this->l('Author administrators saved')),
+                            'message' => $errors ? $this->errorMessage :  $this->displaySuccessMessage($this->l('Administrator - Author has been saved')),
                             'images' => isset($changedImages) && $changedImages ? $changedImages : array(),
-                            'postUrl' => !$errors && Tools::isSubmit('saveBlogEmployee') && !(int)Tools::getValue('id_employee') ? $this->context->link->getAdminLink('AdminModules', true).'&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&id_employee='.$id_employee.'&control=employees' : 0,
+                            'postUrl' => !$errors && Tools::isSubmit('saveBlogEmployee') && $id_employee ? $this->context->link->getAdminLink('AdminModules', true).'&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&id_employee='.$id_employee.'&control=employees' : 0,
                             'itemKey' => 'id_employee',
                             'itemId' => !$errors ? $id_employee:0,
                         )
@@ -2846,7 +3167,7 @@ class Ybc_blog extends Module
                 if(!$errors)
                 {
                     if (Tools::isSubmit('saveBlogEmployee') && Tools::isSubmit('id_employee'))
-            			Tools::redirectAdmin($this->context->link->getAdminLink('AdminModules', true).'&conf=4&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&id_employee='.Tools::getValue('id_employee').'&control=employees');
+            			Tools::redirectAdmin($this->context->link->getAdminLink('AdminModules', true).'&conf=4&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&id_employee='.$id_employee.'&control=employees');
                }
             }
         }
@@ -2875,9 +3196,9 @@ class Ybc_blog extends Module
                 'id_post' =>(int)$id_post,
             ));
             $this->changeStatus('post',$field,$id_post,$status);
-            if(Configuration::get('YBC_BLOG_CUSTOMER_EMAIL_APPROVED_POST') && $field == 'enabled' && $status==1 && $post_class->is_customer)
+            $customer= new Customer($post_class->added_by);
+            if(($subject = Ybc_blog_email_template_class::getSubjectByTemplate('approved_blog_customer',$customer->id_lang)) && $field == 'enabled' && $status==1 && $post_class->is_customer)
             {
-                $customer= new Customer($post_class->added_by);
                 $template_customer_vars=array(
                     '{customer_name}' => $customer->firstname .' '.$customer->lastname,
                     '{post_title}' => $post_class->title[$this->context->language->id],
@@ -2886,9 +3207,9 @@ class Ybc_blog extends Module
                     '{color_hover}'=>Configuration::get('YBC_BLOG_CUSTOM_COLOR_HOVER')
                 );
                 Mail::Send(
-        			Context::getContext()->language->id,
+        			$customer->id_lang,
         			'approved_blog_customer',
-        			$this->l('Your post has been approved'),
+        			$subject,
         			$template_customer_vars,
 			        $customer->email,
         			$customer->firstname .' '.$customer->lastname,
@@ -2928,21 +3249,21 @@ class Ybc_blog extends Module
             Tools::redirectAdmin($this->context->link->getAdminLink('AdminModules', true).'&conf=4&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&control=post&list=true');
         }
      }
-     if(Tools::getValue('action')=='updatePostOrdering' && $pots=Tools::getValue('posts'))
+     if(($action = Tools::getValue('action')) && $action=='updatePostOrdering' && ($pots=Tools::getValue('posts')) && Ybc_blog::validateArray($pots,'isInt'))
      {
-        $page = Tools::getValue('page',1);
+        $page = (int)Tools::getValue('page',1);
         foreach($pots as $key=> $post)
         {
             Hook::exec('actionUpdateBlog', array(
                 'id_post' =>(int)$post,
             )); 
             $position=  1+ $key + ($page-1)*20;
-            if((int)Tools::getValue('id_category'))
+            if(($id_category = (int)Tools::getValue('id_category')))
             {
-                Db::getInstance()->execute('UPDATE '._DB_PREFIX_.'ybc_blog_post_category SET position="'.(int)$position.'" WHERE id_post='.(int)$post.' AND id_category='.(int)Tools::getValue('id_category'));
+                Db::getInstance()->execute('UPDATE `'._DB_PREFIX_.'ybc_blog_post_category` SET position="'.(int)$position.'" WHERE id_post='.(int)$post.' AND id_category='.(int)$id_category);
             }
             else
-                Db::getInstance()->execute('UPDATE '._DB_PREFIX_.'ybc_blog_post SET sort_order="'.(int)$position.'" WHERE id_post='.(int)$post);
+                Db::getInstance()->execute('UPDATE `'._DB_PREFIX_.'ybc_blog_post` SET sort_order="'.(int)$position.'" WHERE id_post='.(int)$post);
         }
         die(
             Tools::jsonEncode(
@@ -2959,8 +3280,6 @@ class Ybc_blog extends Module
      if($id_post && $this->itemExists('post','id_post',$id_post) && (Tools::isSubmit('delpostimage') || Tools::isSubmit('delpostthumb')))
      {
         $post = new Ybc_blog_post_class($id_post);
-        $imageUrl = dirname(__FILE__).'/views/img/post/'.$post->image;
-        $thumbUrl = dirname(__FILE__).'/views/img/post/thumb/'.$post->thumb;
         $post->datetime_modified = date('Y-m-d H:i:s');
         $post->modified_by = (int)$this->context->employee->id;
         Hook::exec('actionUpdateBlog', array(
@@ -2968,11 +3287,14 @@ class Ybc_blog extends Module
         )); 
         if(Tools::isSubmit('delpostthumb'))
         {
-            if(file_exists($thumbUrl) && $post->thumb)
-            {
-                @unlink($thumbUrl);  
-                $post->thumb = '';              
-                $post->update();    
+            $id_lang = (int)Tools::getValue('id_lang');
+            if(isset($post->thumb[$id_lang]) && $post->thumb[$id_lang])
+            { 
+                $oldThumb = $post->thumb[$id_lang];
+                $post->thumb[$id_lang] = $post->thumb[(int)Configuration::get('PS_LANG_DEFAULT')];              
+                $post->update();
+                if(!in_array($oldThumb,$post->thumb))
+                    @unlink(_PS_YBC_BLOG_IMG_DIR_.'post/thumb/'.$oldThumb);    
                 if(Tools::isSubmit('ajax'))
                 {
                     die(Tools::jsonEncode(
@@ -3002,11 +3324,14 @@ class Ybc_blog extends Module
         }
         elseif(Tools::isSubmit('delpostimage'))
         {
-            if($post->image && file_exists($imageUrl))
+            $id_lang = (int)Tools::getValue('id_lang');
+            if(isset($post->image[$id_lang]) && $post->image[$id_lang])
             {
-                @unlink($imageUrl);
-                $post->image = '';                
-                $post->update();  
+                $oldImage = $post->image[$id_lang];
+                $post->image[$id_lang] = '';                
+                $post->update(); 
+                if(!in_array($oldImage,$post->image))
+                    @unlink(_PS_YBC_BLOG_IMG_DIR_.'post/'.$oldImage); 
                 Hook::exec('actionUpdateBlog', array(
                     'id_post' =>(int)$id_post,
                 ));
@@ -3051,13 +3376,13 @@ class Ybc_blog extends Module
             $errors[] = $this->l('Post does not exist');
         elseif($this->_deletePost($id_post))
         {   
-            $posts = Db::getInstance()->executeS('SELECT * FROM '._DB_PREFIX_.'ybc_blog_post p, '._DB_PREFIX_.'ybc_blog_post_shop ps  WHERE p.id_post=ps.id_post AND  ps.id_shop="'.(int)$this->context->shop->id.'" order by p.sort_order asc');
+            $posts = Db::getInstance()->executeS('SELECT * FROM `'._DB_PREFIX_.'ybc_blog_post` p, `'._DB_PREFIX_.'ybc_blog_post_shop` ps  WHERE p.id_post=ps.id_post AND  ps.id_shop="'.(int)$this->context->shop->id.'" order by p.sort_order asc');
             if($posts)
             {
                 foreach($posts as $key=> $post)
                 {
                     $position=$key+1;
-                    Db::getInstance()->execute('update '._DB_PREFIX_.'ybc_blog_post SET sort_order ="'.(int)$position.'" WHERE id_post='.(int)$post['id_post']);
+                    Db::getInstance()->execute('update `'._DB_PREFIX_.'ybc_blog_post` SET sort_order ="'.(int)$position.'" WHERE id_post='.(int)$post['id_post']);
                 }
             }
             Tools::redirectAdmin($this->context->link->getAdminLink('AdminModules', true).'&conf=4&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&control=post&list=true');
@@ -3069,145 +3394,181 @@ class Ybc_blog extends Module
      * Save post 
      */
     if(Tools::isSubmit('savePost'))
-    {            
+    {  
+        $id_lang_default = Configuration::get('PS_LANG_DEFAULT');
+        $datetime_added = Tools::getValue('datetime_added'); 
         if($id_post && $this->itemExists('post','id_post',$id_post))
         {
-            
             $post = new Ybc_blog_post_class($id_post);  
-            $post->datetime_modified = date('Y-m-d H:i:s');
+            if($datetime_added)
+                $post->datetime_added = $datetime_added;
+            $post->datetime_modified = $datetime_added ?: date('Y-m-d H:i:s');
             $post->modified_by = (int)$this->context->employee->id;
             $post->is_customer= (int)Tools::getValue('is_customer');
             if($post->is_customer)
             {
-                if(!Tools::getValue('customer_author'))
+                $customer_author = (int)Tools::getValue('customer_author');
+                if(!$customer_author)
                     $errors[]=  $this->l('Community - Authors is required');
                 else
-                    $post->added_by = (int)Tools::getValue('customer_author');
+                    $post->added_by = (int)$customer_author;
             }
             else
             {
-                if(!Tools::getValue('admin_author'))
+                $admin_author = (int)Tools::getValue('admin_author');
+                if(!$admin_author)
                     $errors[]=  $this->l('Administrator - Author is required');
                 else
-                    $post->added_by = (int)Tools::getValue('admin_author');
+                    $post->added_by = (int)$admin_author;
             }    
             
         }
         else
         {
             $post = new Ybc_blog_post_class();
-            $post->datetime_added = date('Y-m-d H:i:s');
-            $post->datetime_modified = date('Y-m-d H:i:s');
+            $post->datetime_added = $datetime_added && Validate::isDate($datetime_added) ? $datetime_added : date('Y-m-d H:i:s');
+            $post->datetime_modified = $datetime_added && Validate::isDate($datetime_added) ? $datetime_added : date('Y-m-d H:i:s');
             $post->modified_by = (int)$this->context->employee->id;
             $post->added_by = (int)$this->context->employee->id;
             $post->is_customer=0;
-            $post->sort_order =1+ (int)Db::getInstance()->getValue('SELECT count(*) FROM '._DB_PREFIX_.'ybc_blog_post_shop WHERE id_shop='.(int)$this->context->shop->id);
+            $post->sort_order =1+ (int)Db::getInstance()->getValue('SELECT count(*) FROM `'._DB_PREFIX_.'ybc_blog_post_shop` WHERE id_shop='.(int)$this->context->shop->id);
         }
-        $post->products = trim(trim(Tools::getValue('inputAccessories','')),'-');
+        $inputAccessories = trim(trim(Tools::getValue('inputAccessories','')),'-');
+        if($inputAccessories && Validate::isCleanHtml($inputAccessories))
+            $post->products = $inputAccessories;
+        else
+            $post->products = '';
         $enabled = $post->enabled;
         if($post->id || !Tools::isSubmit('submitSaveAndPreview'))
-            $post->enabled = Tools::getValue('enabled');
+            $post->enabled = (int)Tools::getValue('enabled');
         else
             $post->enabled = -2;
         if($enabled!=$post->enabled && $post->enabled==1)
             $updatestatus=true;
         else
             $updatestatus=false;
-        $post->is_featured = Tools::getValue('is_featured') ? 1 : 0;
+        $post->is_featured = (int)Tools::getValue('is_featured') ? 1 : 0;
         if($post->enabled==2)
         {
-            if(Tools::getValue('datetime_active')=='')
+            $datetime_active = Tools::getValue('datetime_active');
+            if($datetime_active=='')
                 $errors[]=$this->l('Publish date is required');
-            elseif(Tools::getValue('datetime_active')=='0000-00-00' || !Validate::isDate(Tools::getValue('datetime_active')))
+            elseif($datetime_active=='0000-00-00' || !Validate::isDate($datetime_active))
                 $errors[] = $this->l('Publish date is not valid');
             else
-                $post->datetime_active= Tools::getValue('datetime_active');
+                $post->datetime_active = $datetime_active;
         }
+        elseif(!$post->id)
+            $post->datetime_active = date('Y-m-d');
         $languages = Language::getLanguages(false);
         $post->click_number = (int)Tools::getValue('click_number');
         $post->likes = (int)Tools::getValue('likes');
         $tags = array();                     
         $categories = Tools::getValue('blog_categories');            
-        if(Tools::getValue('title_'.Configuration::get('PS_LANG_DEFAULT'))=='')
+        $title_default = trim(Tools::getValue('title_'.$id_lang_default));
+        if($title_default=='')
             $errors[] = $this->l('You need to set blog post title');
-        if(Tools::getValue('short_description_'.Configuration::get('PS_LANG_DEFAULT'))=='')
+        elseif(!Validate::isCatalogName($title_default))
+            $errors[] = $this->l('Blog post title is not valid');
+        $short_description_default = trim(Tools::getValue('short_description_'.$id_lang_default));
+        if($short_description_default=='')
             $errors[] = $this->l('You need to set blog post short description');
-        if(Tools::getValue('description_'.Configuration::get('PS_LANG_DEFAULT'))=='')
-            $errors[] = $this->l('You need to set blog post content');            
-        if(Tools::getValue('url_alias_'.Configuration::get('PS_LANG_DEFAULT'))=='')
+        elseif(!Validate::isCleanHtml($short_description_default,true))
+            $errors[] = $this->l('Blog post short description is not valid');
+        $description_default = trim(Tools::getValue('description_'.$id_lang_default));
+        if($description_default=='')
+            $errors[] = $this->l('You need to set blog post content');  
+        elseif(!Validate::isCleanHtml($description_default,true))
+            $errors[] = $this->l('Blog post content is not valid');
+        $url_alias_default = Tools::getValue('url_alias_'.$id_lang_default);          
+        if($url_alias_default=='')
             $errors[] = $this->l('Url alias is required');
+        elseif(!Validate::isLinkRewrite($url_alias_default))
+            $errors[] = $this->l('Url alias is not valid');
         if(!$categories || !is_array($categories))
             $errors[] = $this->l('You need to choose at least 1 category'); 
-        if(!Tools::getValue('main_category'))
+        elseif(!Ybc_blog::validateArray($categories))
+            $errors[] = $this->l('Categories is not valid'); 
+        $main_category = (int)Tools::getValue('main_category');
+        if(!$main_category)
             $errors[] = $this->l('Main category is required');
-        elseif(!in_array(Tools::getValue('main_category'),$categories))
+        elseif(!in_array($main_category,$categories))
             $errors[] = $this->l('Main category is not valid');
         else    
-            $post->id_category_default = (int)Tools::getValue('main_category');
-        if(Tools::getValue('click_number')=='')
+            $post->id_category_default = (int)$main_category;
+        $click_number = Tools::getValue('click_number');
+        if($click_number=='')
             $errors[] = $this->l('Views are required');
-        elseif(!Validate::isInt(Tools::getValue('click_number')))
+        elseif(!Validate::isUnsignedInt($click_number))
             $errors[] = $this->l('Views are not valid');
-        if(Tools::getValue('likes')=='')
+        $likes = Tools::getValue('likes');
+        if($likes=='')
             $errors[] = $this->l('Likes are required');
-        elseif(!Validate::isInt(Tools::getValue('likes')))
+        elseif(!Validate::isUnsignedInt($likes))
             $errors[] = $this->l('Likes are not valid');
-        if(!$post->thumb && !(isset($_FILES['thumb']['tmp_name']) && isset($_FILES['thumb']['name']) && $_FILES['thumb']['name']))
+        if(!$post->thumb[$id_lang_default] && !(isset($_FILES['thumb_'.$id_lang_default]['tmp_name']) && isset($_FILES['thumb_'.$id_lang_default]['name']) && $_FILES['thumb_'.$id_lang_default]['name']))
             $errors[]= $this->l('Post thumbnail image is required');
+        $meta_title_default = trim(Tools::getValue('meta_title_'.$id_lang_default));
+        if($meta_title_default && !Validate::isGenericName($meta_title_default))
+            $errors[] = $this->l('Meta title is not valid');
+        $meta_description_default = trim(Tools::getValue('meta_description_'.$id_lang_default));
+        if($meta_description_default && !Validate::isGenericName($meta_description_default))
+            $errors[] = $this->l('Meta description is not valid');
+        $meta_keywords_default = trim(Tools::getValue('meta_keywords_'.$id_lang_default));
+        if($meta_keywords_default && !Validate::isTagsList($meta_keywords_default))
+            $errors[] = $this->l('Meta keyword is not valid');
         if(!$errors)
         {
             foreach ($languages as $language)
     		{			
     			$title = trim(Tools::getValue('title_'.$language['id_lang']));
-                $title_default =trim(Tools::getValue('title_'.Configuration::get('PS_LANG_DEFAULT')));
                 $meta_title = trim(Tools::getValue('meta_title_'.$language['id_lang']));
-                $meta_title_default = trim(Tools::getValue('meta_title_'.Configuration::get('PS_LANG_DEFAULT')));
                 $url_alias = trim(Tools::getValue('url_alias_'.$language['id_lang']));
-                $url_alias_default= trim(Tools::getValue('url_alias_'.Configuration::get('PS_LANG_DEFAULT')));
-                if($title && !Validate::isCleanHtml($title))
-                    $errors[] = $this->l('Title in '.$language['name'].' is not valid');
+                if($title && !Validate::isCatalogName($title))
+                    $errors[] = sprintf($this->l('Title in %s is not valid'),$language['name']);
                 else
-                    $post->title[$language['id_lang']] = $title ? $title:$title_default;
-                if($meta_title && !Validate::isCleanHtml($meta_title))
-                    $errors[] = $this->l('Meta title in '.$language['name'].' is not valid');
+                    $post->title[$language['id_lang']] = $title ? $title : $title_default;
+                if($meta_title && !Validate::isGenericName($meta_title))
+                    $errors[] = sprintf($this->l('Meta title in %s is not valid'),$language['name']);
                 else
                     $post->meta_title[$language['id_lang']] = $meta_title ? $meta_title: $meta_title_default;
                 if($url_alias && str_replace(array('0','1','2','3','4','5','6','7','8','9'),'',Tools::substr($url_alias,0,1))=='')
-                    $errors[] = $this->l('Post alias').' in '.$language['name'].' '.$this->l('cannot have number on the start position because it will cause error when you enable "Remove post ID" option');  
+                    $errors[] = sprintf($this->l('Post alias in %s cannot have number on the start position because it will cause error when you enable "Remove post ID" option'),$language['name']);  
                 elseif($url_alias && !Ybc_blog::checkIsLinkRewrite($url_alias))
-                    $errors[] = $this->l('Url alias in '.$language['name'].' is not valid');
-                elseif($url_alias && Db::getInstance()->getValue('SELECT ps.id_post FROM '._DB_PREFIX_.'ybc_blog_post_lang pl,'._DB_PREFIX_.'ybc_blog_post_shop ps WHERE ps.id_post= pl.id_post AND ps.id_shop="'.(int)$this->context->shop->id.'" AND pl.url_alias ="'.pSQL($url_alias).'" AND ps.id_post!="'.(int)$post->id.'"'))
-                    $errors[] = $this->l('Url alias in '.$language['name'].' is exists');
+                    $errors[] = sprintf($this->l('Url alias in %s is not valid'),$language['name']);
+                elseif($url_alias && Db::getInstance()->getValue('SELECT ps.id_post FROM `'._DB_PREFIX_.'ybc_blog_post_lang` pl,`'._DB_PREFIX_.'ybc_blog_post_shop` ps WHERE ps.id_post= pl.id_post AND ps.id_shop="'.(int)$this->context->shop->id.'" AND pl.url_alias ="'.pSQL($url_alias).'" AND ps.id_post!="'.(int)$post->id.'"'))
+                    $errors[] = sprintf($this->l('Url alias in %s has already existed'),$language['name']);
                 else
-                    $post->url_alias[$language['id_lang']]= $url_alias ? $url_alias:$url_alias_default;                    
-               
-                if(trim(Tools::getValue('meta_description_'.$language['id_lang'])) && !Validate::isCleanHtml(trim(Tools::getValue('meta_description_'.$language['id_lang'])), true))
-                    $errors[] = $this->l('Meta description in '.$language['name'].' is not valid');
+                    $post->url_alias[$language['id_lang']]= $url_alias ? $url_alias : $url_alias_default;                    
+                $meta_description = trim(Tools::getValue('meta_description_'.$language['id_lang']));
+                if($meta_description && !Validate::isGenericName($meta_description, true))
+                    $errors[] = sprintf($this->l('Meta description in %s is not valid'),$language['name']);
                 else
-                     $post->meta_description[$language['id_lang']] = trim(Tools::getValue('meta_description_'.$language['id_lang'])) != '' ? trim(Tools::getValue('meta_description_'.$language['id_lang'])) :  trim(Tools::getValue('meta_description_'.Configuration::get('PS_LANG_DEFAULT')));
-                if(trim(Tools::getValue('meta_keywords_'.$language['id_lang'])) && !Validate::isTagsList(trim(Tools::getValue('meta_keywords_'.$language['id_lang'])), true))
-                    $errors[] = $this->l('Meta keywords in '.$language['name'].' are not valid');
+                     $post->meta_description[$language['id_lang']] = $meta_description ? $meta_description :  $meta_description_default;
+                $meta_keywords = trim(Tools::getValue('meta_keywords_'.$language['id_lang']));
+                if($meta_keywords && !Validate::isTagsList($meta_keywords, true))
+                    $errors[] = sprintf($this->l('Meta keywords in %s are not valid'),$language['name']);
                 else
-                    $post->meta_keywords[$language['id_lang']] = trim(Tools::getValue('meta_keywords_'.$language['id_lang'])) != '' ? trim(Tools::getValue('meta_keywords_'.$language['id_lang'])) :  trim(Tools::getValue('meta_keywords_'.Configuration::get('PS_LANG_DEFAULT')));
-                
-                if(trim(Tools::getValue('short_description_'.$language['id_lang'])) && !Validate::isCleanHtml(trim(Tools::getValue('short_description_'.$language['id_lang'])), true))
-                    $errors[] = $this->l('Short description in '.$language['name'].' is not valid');
+                    $post->meta_keywords[$language['id_lang']] = $meta_keywords != '' ? $meta_keywords :  $meta_keywords_default;
+                $short_description = trim(Tools::getValue('short_description_'.$language['id_lang']));
+                if($short_description && !Validate::isCleanHtml($short_description, true) )
+                    $errors[] = sprintf($this->l('Short description in %s is not valid'),$language['name']);
+                elseif($short_description && !self::checkIframeHTML($short_description))
+                    $errors[] = sprintf($this->l('Short description in %s is not valid'),$language['name']).$this->displayErrorIframe();
                 else
-                    $post->short_description[$language['id_lang']] = trim(Tools::getValue('short_description_'.$language['id_lang'])) != '' ? trim(Tools::getValue('short_description_'.$language['id_lang'])) :  trim(Tools::getValue('short_description_'.Configuration::get('PS_LANG_DEFAULT')));
-                if($post->short_description[$language['id_lang']] && !self::checkIframeHTML($post->short_description[$language['id_lang']]))
-                    $errors[] =$this->l('Short description in '.$language['name'].' is not valid.').' '.$this->displayErrorIframe();
-                if(trim(Tools::getValue('description_'.$language['id_lang'])) && !Validate::isCleanHtml(trim(Tools::getValue('description_'.$language['id_lang'])), true))
-                    $errors[] = $this->l('Description in '.$language['name'].' is not valid');
-                elseif(trim(Tools::getValue('description_'.$language['id_lang'])) && !self::checkIframeHTML(trim(Tools::getValue('description_'.$language['id_lang']))))
-                    $errors[] =$this->l('Description in '.$language['name'].' is not valid.').' '.$this->displayErrorIframe();
+                    $post->short_description[$language['id_lang']] = $short_description != '' ? $short_description :  $short_description;
+                $description = Tools::getValue('description_'.$language['id_lang']);
+                if(trim($description) && !Validate::isCleanHtml($description, true))
+                    $errors[] = sprintf($this->l('Description in %s is not valid'),$language['name']);
+                elseif($description && !self::checkIframeHTML($description))
+                    $errors[] = sprintf($this->l('Description in %s is not valid.'),$language['name']).' '.$this->displayErrorIframe();
                 else
-                    $post->description[$language['id_lang']] = trim(Tools::getValue('description_'.$language['id_lang'])) != '' ? trim(Tools::getValue('description_'.$language['id_lang'])) :  trim(Tools::getValue('description_'.Configuration::get('PS_LANG_DEFAULT')));
+                    $post->description[$language['id_lang']] = $description != '' ? $description :  $description_default;
                 if($post->products && !preg_match('/^[0-9]+([\-0-9])*$/', $post->products))
                 {
                     $errors[] = $this->l('Products are not valid');
                 }
                 $tagStr = trim(Tools::getValue('tags_'.$language['id_lang']));
-                
                 if($tagStr && Validate::isTagsList($tagStr))
                     $tags[$language['id_lang']] = explode(',',$tagStr);
                 elseif($tagStr && !Validate::isTagsList($tagStr))
@@ -3219,148 +3580,200 @@ class Ybc_blog extends Module
                     $tags[$language['id_lang']] = array();                                                           
             }
         }          
-        /**
-         * Upload image 
-         */  
-        $oldImage = false;
-        $newImage = false;   
-        if(isset($_FILES['image']['tmp_name']) && isset($_FILES['image']['name']) && $_FILES['image']['name'])
+         
+        $oldImages = array();
+        $newImages = array();  
+        $oldThumbs = array();
+        $newThumbs = array(); 
+        foreach($languages as $language)
         {
-            $_FILES['image']['name'] = str_replace(' ','_',$_FILES['image']['name']);
-            if(file_exists(dirname(__FILE__).'/views/img/post/'.$_FILES['image']['name']))
+            /**
+             * Upload image 
+             */ 
+            $max_file_size = Configuration::get('PS_ATTACHMENT_MAXIMUM_SIZE')*1024*1024;
+            
+            if(isset($_FILES['image_'.$language['id_lang']]['tmp_name']) && isset($_FILES['image_'.$language['id_lang']]['name']) && $_FILES['image_'.$language['id_lang']]['name'])
             {
-                $_FILES['image']['name'] = Tools::substr(sha1(microtime()),0,10).'-'.$_FILES['image']['name'];
-            }                
-            $type = Tools::strtolower(Tools::substr(strrchr($_FILES['image']['name'], '.'), 1));
-			$imagesize = @getimagesize($_FILES['image']['tmp_name']);
-			if (isset($_FILES['image']) &&
-				in_array($type, array('jpg', 'gif', 'jpeg', 'png'))
-			)
-			{
-				$temp_name = tempnam(_PS_TMP_IMG_DIR_, 'PS');    				
-				if ($error = ImageManager::validateUpload($_FILES['image']))
-					$errors[] = $error;
-				elseif (!$temp_name || !move_uploaded_file($_FILES['image']['tmp_name'], $temp_name))
-					$errors[] = $this->l('Can not upload the file');
-				elseif (!ImageManager::resize($temp_name, dirname(__FILE__).'/views/img/post/'.$_FILES['image']['name'], Configuration::get('YBC_BLOG_IMAGE_BLOG_WIDTH',null,null,null,1920), Configuration::get('YBC_BLOG_IMAGE_BLOG_HEIGHT',null,null,null,750), $type))
-					$errors[] = $this->displayError($this->l('An error occurred during the image upload process.'));
-				if (isset($temp_name))
-					@unlink($temp_name);
-                if($post->image)
-                    $oldImage = dirname(__FILE__).'/views/img/post/'.$post->image;
-                $post->image = $_FILES['image']['name'];
-                $newImage = dirname(__FILE__).'/views/img/post/'.$post->image;			
-			}
-            elseif(isset($_FILES['image']) &&				
-				!empty($_FILES['image']['tmp_name']) &&
-				!empty($imagesize) &&
-				in_array($type, array('jpg', 'gif', 'jpeg', 'png')
-			))
-                $errors[] = $this->l('Image is invalid');                
+                
+                if(!Validate::isFileName($_FILES['image_'.$language['id_lang']]['name']))
+                    $errors[] = sprintf($this->l('Image name is not valid in %s'),$language['iso_code']);
+                elseif($_FILES['image_'.$language['id_lang']]['size'] > $max_file_size)
+                    $errors[] = sprintf($this->l('Image file is too large. Limit: %s'),Tools::ps_round($max_file_size/1048576,2).'Mb');
+                else
+                {
+                    $_FILES['image_'.$language['id_lang']]['name'] = str_replace(' ','-',$_FILES['image_'.$language['id_lang']]['name']);
+                    if(file_exists(_PS_YBC_BLOG_IMG_DIR_.'post/'.$_FILES['image_'.$language['id_lang']]['name']))
+                    {
+                        $_FILES['image_'.$language['id_lang']]['name'] = $this->createNewFileName(_PS_YBC_BLOG_IMG_DIR_.'post/',$_FILES['image_'.$language['id_lang']]['name']);
+                    }                
+                    $type = Tools::strtolower(Tools::substr(strrchr($_FILES['image_'.$language['id_lang']]['name'], '.'), 1));
+        			$imagesize = @getimagesize($_FILES['image_'.$language['id_lang']]['tmp_name']);
+        			if (isset($_FILES['image_'.$language['id_lang']]) &&
+        				in_array($type, array('jpg', 'gif', 'jpeg', 'png'))
+        			)
+        			{
+        			 
+        				$temp_name = tempnam(_PS_TMP_IMG_DIR_, 'PS');    				
+        				if ($error = ImageManager::validateUpload($_FILES['image_'.$language['id_lang']]))
+        					$errors[] = $error;
+        				elseif (!$temp_name || !move_uploaded_file($_FILES['image_'.$language['id_lang']]['tmp_name'], $temp_name))
+        					$errors[] = $this->l('Cannot upload the file in').' '.$language['iso_code'];
+        				elseif (!ImageManager::resize($temp_name, _PS_YBC_BLOG_IMG_DIR_.'post/'.$_FILES['image_'.$language['id_lang']]['name'], Configuration::get('YBC_BLOG_IMAGE_BLOG_WIDTH',null,null,null,1920), Configuration::get('YBC_BLOG_IMAGE_BLOG_HEIGHT',null,null,null,750), $type))
+        					$errors[] = $this->l('An error occurred during the image upload process in').' '.$language['iso_code'];
+        				if (isset($temp_name))
+        					@unlink($temp_name);
+                        if($post->image[$language['id_lang']])
+                            $oldImages[$language['id_lang']] = $post->image[$language['id_lang']];
+                        $post->image[$language['id_lang']] = $_FILES['image_'.$language['id_lang']]['name'];
+                        $newImages[$language['id_lang']] = $post->image[$language['id_lang']];			
+        			}
+                    elseif(isset($_FILES['image_'.$language['id_lang']]) &&				
+        				!empty($_FILES['image_'.$language['id_lang']]['tmp_name']) &&
+        				!empty($imagesize) &&
+        				in_array($type, array('jpg', 'gif', 'jpeg', 'png')
+        			))
+                    $errors[] = $this->l('Image is invalid in').' '.$language['iso_code'];
+                }             
+            }
+            
+           
+            /**
+             * Upload thumbnail
+             */  
+              
+            if(isset($_FILES['thumb_'.$language['id_lang']]['tmp_name']) && isset($_FILES['thumb_'.$language['id_lang']]['name']) && $_FILES['thumb_'.$language['id_lang']]['name'])
+            {
+                if(!Validate::isFileName($_FILES['thumb_'.$language['id_lang']]['name']))
+                    $errors[] = sprintf($this->l('Thumbnail image name is not valid in %s'),$language['iso_code']);
+                elseif($_FILES['thumb_'.$language['id_lang']]['size'] > $max_file_size)
+                    $errors[] = sprintf($this->l('Thumbnail image file is too large. Limit: %s'),Tools::ps_round($max_file_size/1048576,2).'Mb');
+                else
+                {
+                    $_FILES['thumb_'.$language['id_lang']]['name'] = str_replace(' ','-',$_FILES['thumb_'.$language['id_lang']]['name']);
+                    if(file_exists(_PS_YBC_BLOG_IMG_DIR_.'post/thumb/'.$_FILES['thumb_'.$language['id_lang']]['name']))
+                    {
+                        $_FILES['thumb_'.$language['id_lang']]['name'] = $this->createNewFileName(_PS_YBC_BLOG_IMG_DIR_.'post/thumb/',$_FILES['thumb_'.$language['id_lang']]['name']);
+                    }                
+                    $type = Tools::strtolower(Tools::substr(strrchr($_FILES['thumb_'.$language['id_lang']]['name'], '.'), 1));
+        			$thumbsize = @getimagesize($_FILES['thumb_'.$language['id_lang']]['tmp_name']);
+        			if (isset($_FILES['thumb_'.$language['id_lang']]) &&				
+        				!empty($_FILES['thumb_'.$language['id_lang']]['tmp_name']) &&
+        				!empty($thumbsize) &&
+        				in_array($type, array('jpg', 'gif', 'jpeg', 'png'))
+        			)
+        			{
+        				$temp_name = tempnam(_PS_TMP_IMG_DIR_, 'PS');    				
+        				if ($error = ImageManager::validateUpload($_FILES['thumb_'.$language['id_lang']]))
+        					$errors[] = $error;
+        				elseif (!$temp_name || !move_uploaded_file($_FILES['thumb_'.$language['id_lang']]['tmp_name'], $temp_name))
+        					$errors[] = $this->l('Cannot upload the file in').' '.$language['iso_code'];
+        				elseif (!ImageManager::resize($temp_name, _PS_YBC_BLOG_IMG_DIR_.'post/thumb/'.$_FILES['thumb_'.$language['id_lang']]['name'], Configuration::get('YBC_BLOG_IMAGE_BLOG_THUMB_WIDTH',null,null,null,260), Configuration::get('YBC_BLOG_IMAGE_BLOG_THUMB_HEIGHT',null,null,null,180), $type))
+        					$errors[] = $this->l('An error occurred during the thumbnail upload process in').' '.$language['iso_code'];
+        				if (isset($temp_name))
+        					@unlink($temp_name);
+                        if($post->thumb[$language['id_lang']])
+                            $oldThumbs[$language['id_lang']] = $post->thumb[$language['id_lang']];
+                        $post->thumb[$language['id_lang']] = $_FILES['thumb_'.$language['id_lang']]['name'];
+                        $newThumbs[$language['id_lang']] = $post->thumb[$language['id_lang']];			
+        			}
+                    elseif(isset($_FILES['thumb_'.$language['id_lang']]) &&
+        				!in_array($type, array('jpg', 'gif', 'jpeg', 'png'))
+        			)
+                    $errors[] = $this->l('Thumbnail image is invalid in').' '.$language['iso_code'];   
+                 }             
+            }
+        } 
+        				
+        foreach($languages as $language)
+        {
+            if(!$post->thumb[$language['id_lang']])
+                $post->thumb[$language['id_lang']] = $post->thumb[$id_lang_default];
+            if(!$post->image[$language['id_lang']])
+                $post->image[$language['id_lang']] = $post->image[$id_lang_default];
         }
-        
-       
-        /**
-         * Upload thumbnail
-         */  
-        $oldThumb = false;
-        $newThumb = false;   
-        if(isset($_FILES['thumb']['tmp_name']) && isset($_FILES['thumb']['name']) && $_FILES['thumb']['name'])
-        {
-            $_FILES['thumb']['name'] = str_replace(' ','_',$_FILES['thumb']['name']);
-            if(file_exists(dirname(__FILE__).'/views/img/post/thumb/'.$_FILES['thumb']['name']))
-            {
-                $_FILES['thumb']['name'] = Tools::substr(sha1(microtime()),0,10).'-'.$_FILES['thumb']['name'];
-            }                
-            $type = Tools::strtolower(Tools::substr(strrchr($_FILES['thumb']['name'], '.'), 1));
-			$thumbsize = @getimagesize($_FILES['thumb']['tmp_name']);
-			if (isset($_FILES['thumb']) &&				
-				!empty($_FILES['thumb']['tmp_name']) &&
-				!empty($thumbsize) &&
-				in_array($type, array('jpg', 'gif', 'jpeg', 'png'))
-			)
-			{
-				$temp_name = tempnam(_PS_TMP_IMG_DIR_, 'PS');    				
-				if ($error = ImageManager::validateUpload($_FILES['thumb']))
-					$errors[] = $error;
-				elseif (!$temp_name || !move_uploaded_file($_FILES['thumb']['tmp_name'], $temp_name))
-					$errors[] = $this->l('Can not upload the file');
-				elseif (!ImageManager::resize($temp_name, dirname(__FILE__).'/views/img/post/thumb/'.$_FILES['thumb']['name'], Configuration::get('YBC_BLOG_IMAGE_BLOG_THUMB_WIDTH',null,null,null,260), Configuration::get('YBC_BLOG_IMAGE_BLOG_THUMB_HEIGHT',null,null,null,180), $type))
-					$errors[] = $this->displayError($this->l('An error occurred during the thumbnail upload process.'));
-				if (isset($temp_name))
-					@unlink($temp_name);
-                if($post->thumb)
-                    $oldThumb = dirname(__FILE__).'/views/img/post/thumb/'.$post->thumb;
-                $post->thumb = $_FILES['thumb']['name'];
-                $newThumb = dirname(__FILE__).'/views/img/post/thumb/'.$post->thumb;			
-			}
-            elseif(isset($_FILES['thumb']) &&
-				!in_array($type, array('jpg', 'gif', 'jpeg', 'png'))
-			)
-                $errors[] = $this->l('Thumbnail image is invalid');                
-        }				
-        
         /**
          * Save 
          */    
         $changedImages = array();
         if(!$errors)
         {
-            if (!Tools::getValue('id_post'))
+            if (!$id_post)
 			{
 				if (!$post->add())
                 {
                     $errors[] = $this->displayError($this->l('The post could not be added.')); 
-                    if($newImage && file_exists($newImage))
-                        @unlink($newImage);
-                    if($newThumb && file_exists($newThumb))
-                        @unlink($newThumb);
+                    if($newImages)
+                    {
+                        foreach($newImages as $newImage)
+                            if(file_exists(_PS_YBC_BLOG_IMG_DIR_.'post/'.$newImage))
+                                @unlink(_PS_YBC_BLOG_IMG_DIR_.'post/'.$newImage);
+                    }
+                    if($newThumbs)
+                        foreach($newThumbs as $newThumb)
+                           if(file_exists(_PS_YBC_BLOG_IMG_DIR_.'post/thumb/'.$newThumb))
+                                @unlink(_PS_YBC_BLOG_IMG_DIR_.'post/thumb/'.$newThumb); 
                 }    					
                 else
                 {
                     $id_post = $this->getMaxId('post','id_post');
                     $this->updateCategories($categories, $id_post);
                     $relatedCategories= Tools::getValue('related_categories');
-                    $this->updateRelatedCategories($relatedCategories,$id_post);
+                    if(Ybc_blog::validateArray($relatedCategories))
+                        $this->updateRelatedCategories($relatedCategories,$id_post);
                     $this->updateTags($id_post, $tags);  
                     Hook::exec('actionUpdateBlogImage', array(
                         'id_post' =>(int)$post->id,
-                        'image' => $newImage ? $post->image :false,
-                        'thumb' => $newThumb ? $post->thumb : false,
+                        'image' => $newImages ? $post->image :false,
+                        'thumb' => $newThumbs ? $post->thumb : false,
                     ));
                 }
                                     
 			}				
 			elseif (!$post->update())
             {
-                if($newImage && file_exists($newImage))
-                    @unlink($newImage);
-                if($newThumb && file_exists($newThumb))
-                    @unlink($newThumb);
+                if($newImages)
+                {
+                    foreach($newImages as $newImage)
+                        if(file_exists(_PS_YBC_BLOG_IMG_DIR_.'post/'.$newImage))
+                            @unlink(_PS_YBC_BLOG_IMG_DIR_.'post/'.$newImage);
+                }
+                if($newThumbs)
+                    foreach($newThumbs as $newThumb)
+                       if(file_exists(_PS_YBC_BLOG_IMG_DIR_.'post/thumb/'.$newThumb))
+                            @unlink(_PS_YBC_BLOG_IMG_DIR_.'post/thumb/'.$newThumb); 
                 $errors[] = $this->displayError($this->l('The post could not be updated.'));
             }    					
             else
             {
-                if($oldImage && file_exists($oldImage))
+                if($oldImages)
                 {
-                    @unlink($oldImage);                        
+                    foreach($oldImages as $oldImage)
+                    {
+                        if(!in_array($oldImage,$post->image))
+                            @unlink(_PS_YBC_BLOG_IMG_DIR_.'post/'.$oldImage);
+                    }
                 }
-                if($oldThumb && file_exists($oldThumb))
+                if($oldThumbs)
                 {
-                    @unlink($oldThumb);                        
+                    foreach($oldThumbs as $oldThumb)
+                    {
+                        if(!in_array($oldThumb,$post->thumb))
+                            @unlink(_PS_YBC_BLOG_IMG_DIR_.'post/thumb/'.$oldThumb); 
+                    }
                 }
                 Hook::exec('actionUpdateBlogImage', array(
                     'id_post' =>(int)$post->id,
-                    'image' => $newImage ? $post->image :false,
-                    'thumb' => $newThumb ? $post->thumb : false,
+                    'image' => $newImages ? $post->image :false,
+                    'thumb' => $newThumbs ? $post->thumb : false,
                 ));
                 $this->updateCategories($categories, $id_post);   
                 $relatedCategories= Tools::getValue('related_categories');
-                $this->updateRelatedCategories($relatedCategories,$id_post);
+                if(Ybc_blog::validateArray($relatedCategories))
+                    $this->updateRelatedCategories($relatedCategories,$id_post);
                 $this->updateTags($id_post, $tags);
-                if(Configuration::get('YBC_BLOG_CUSTOMER_EMAIL_APPROVED_POST') && $updatestatus &&  $post->is_customer)
+                $customer= new Customer($post->added_by);
+                if(($subject = Ybc_blog_email_template_class::getSubjectByTemplate('approved_blog_customer',$customer->id_lang)) && $updatestatus &&  $post->is_customer)
                 {
-                    $customer= new Customer($post->added_by);
                     $template_customer_vars=array(
                         '{customer_name}' => $customer->firstname .' '.$customer->lastname,
                         '{post_title}' => $post->title[$this->context->language->id],
@@ -3369,7 +3782,7 @@ class Ybc_blog extends Module
                         '{color_hover}'=>Configuration::get('YBC_BLOG_CUSTOM_COLOR_HOVER')
                     );
                     Mail::Send(
-            			Context::getContext()->language->id,
+            			$customer->id_lang,
             			'approved_blog_customer',
             			$this->l('Your post has been approved'),
             			$template_customer_vars,
@@ -3390,35 +3803,48 @@ class Ybc_blog extends Module
      }
      if (count($errors))
      {
-        if($newImage && file_exists($newImage))
-            @unlink($newImage);
-        if($newThumb && file_exists($newThumb))
-            @unlink($newThumb);
+        if($newImages)
+        {
+            foreach($newImages as $newImage)
+                if(file_exists(_PS_YBC_BLOG_IMG_DIR_.'post/'.$newImage))
+                    @unlink(_PS_YBC_BLOG_IMG_DIR_.'post/'.$newImage);
+        }
+        if($newThumbs)
+            foreach($newThumbs as $newThumb)
+               if(file_exists(_PS_YBC_BLOG_IMG_DIR_.'post/thumb/'.$newThumb))
+                    @unlink(_PS_YBC_BLOG_IMG_DIR_.'post/thumb/'.$newThumb); 
         $this->errorMessage = $this->displayError($errors);  
      }
-     if(isset($newThumb) && $newThumb && file_exists($newThumb) && !$errors && isset($post))
+     if(isset($newThumbs) && $newThumbs && !$errors && isset($post))
      {
-        $changedImages[] = array(
-            'name' => 'thumb',
-            'url' => $this->_path.'views/img/post/thumb/'.$post->thumb,
-            'delete_url' => $this->context->link->getAdminLink('AdminModules', true).'&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&id_post='.Tools::getValue('id_post').'&delpostthumb=true&control=post',
-        );
+        foreach($languages as $language)
+        {
+           $changedImages[] = array(
+                'name' => 'thumb_'.$language['id_lang'],
+                'url' => _PS_YBC_BLOG_IMG_.'post/thumb/'.$post->thumb[$language['id_lang']],
+                'delete_url' => false,
+            ); 
+        }
      } 
-     if(isset($newImage) && $newImage && file_exists($newImage) && !$errors && isset($post)){
-        $changedImages[] = array(
-            'name' => 'image',
-            'url' => $this->_path.'views/img/post/'.$post->image,
-            'delete_url' => $this->context->link->getAdminLink('AdminModules', true).'&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&id_post='.Tools::getValue('id_post').'&delpostimage=true&control=post',
-        );
+     if(isset($newImages) && $newImages && !$errors && isset($post)){
+        foreach($languages as $language)
+        {
+            $changedImages[] = array(
+                'name' => 'image_'.$language['id_lang'],
+                'url' => _PS_YBC_BLOG_IMG_.'post/'.$post->image[$language['id_lang']],
+                'delete_url' => $this->context->link->getAdminLink('AdminModules', true).'&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&id_post='.$id_post.'&delpostimage=true&control=post&id_lang='.$language['id_lang'],
+            );
+        }
+        
      }  
      if(Tools::isSubmit('ajax'))
      {
-            $itemId=!$errors && Tools::isSubmit('savePost') && !(int)Tools::getValue('id_post') ? $this->getMaxId('post','id_post') : ((int)Tools::getValue('id_post') > 0 ? (int)Tools::getValue('id_post') : 0);
+            $itemId= !$errors && Tools::isSubmit('savePost') && !(int)$id_post ? $this->getMaxId('post','id_post') : ((int)$id_post > 0 ? (int)$id_post : 0);
             $array = array(
                 'messageType' => $errors ? 'error' : 'success',
-                'message' => $errors ? $this->errorMessage : (isset($id_post) && $id_post ? $this->displaySuccessMessage($this->l('Post saved'),$this->l('View this post'),$this->getLink('blog',array('id_post'=>$id_post))) : $this->displayConfirmation($this->l('Post saved'))),
+                'message' => $errors ? $this->errorMessage : (isset($id_post) && $id_post ? $this->displaySuccessMessage($this->l('Post has been saved'),$this->l('View this post'),$this->getLink('blog',array('id_post'=>$id_post))) : $this->displayConfirmation($this->l('Post saved'))),
                 'images' => isset($changedImages) && $changedImages ? $changedImages : array(),
-                'postUrl' => !$errors && Tools::isSubmit('savePost') && !(int)Tools::getValue('id_post') ? $this->context->link->getAdminLink('AdminModules', true).'&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&id_post='.$this->getMaxId('post','id_post').'&control=post' : 0,
+                'postUrl' => !$errors && Tools::isSubmit('savePost') && !(int)$id_post ? $this->context->link->getAdminLink('AdminModules', true).'&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&id_post='.$this->getMaxId('post','id_post').'&control=post' : 0,
                 'itemKey' => 'id_post',
                 'itemId' => $itemId,
                 'link_preview'=> Tools::isSubmit('submitSaveAndPreview') && !$errors  ? $this->getLink('blog',array('id_post'=>$post->id,'preview'=>1)):'',
@@ -3433,7 +3859,7 @@ class Ybc_blog extends Module
      if(!$errors)
      {
         if (Tools::isSubmit('savePost') && Tools::isSubmit('id_post'))
-			Tools::redirectAdmin($this->context->link->getAdminLink('AdminModules', true).'&conf=4&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&id_post='.Tools::getValue('id_post').'&control=post');
+			Tools::redirectAdmin($this->context->link->getAdminLink('AdminModules', true).'&conf=4&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&id_post='.$id_post.'&control=post');
 		 elseif (Tools::isSubmit('savePost'))
          {
             Tools::redirectAdmin($this->context->link->getAdminLink('AdminModules', true).'&conf=3&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&id_post='.$this->getMaxId('post','id_post').'&control=post');
@@ -3446,23 +3872,28 @@ public function _deletePost($id_post)
     if($this->itemExists('post','id_post',$id_post))
     {
         $post = new Ybc_blog_post_class($id_post);
-        if($post->image && file_exists(dirname(__FILE__).'/views/img/post/'.$post->image))
+        if($post->image)
         {
-            @unlink(dirname(__FILE__).'/views/img/post/'.$post->image);
+            foreach($post->image as $image)
+                if(file_exists(_PS_YBC_BLOG_IMG_DIR_.'post/'.$image))
+                    @unlink(_PS_YBC_BLOG_IMG_DIR_.'post/'.$image);
         }
-        if($post->thumb && file_exists(dirname(__FILE__).'/views/img/post/thumb/'.$post->thumb))
+        if($post->thumb)
         {
-            @unlink(dirname(__FILE__).'/views/img/post/thumb/'.$post->thumb);
+            foreach($post->thumb as $thumb)
+                if(file_exists(_PS_YBC_BLOG_IMG_DIR_.'post/thumb/'.$thumb))
+                    @unlink(_PS_YBC_BLOG_IMG_DIR_.'post/thumb/'.$thumb);
         }             
         if($post->delete())
         {
-            $req = "DELETE FROM "._DB_PREFIX_."ybc_blog_post_category WHERE id_post=".(int)$id_post;
+            
+            $req = "DELETE FROM `"._DB_PREFIX_."ybc_blog_post_category` WHERE id_post=".(int)$id_post;
             Db::getInstance()->execute($req);
-            $req = "DELETE FROM "._DB_PREFIX_."ybc_blog_tag WHERE id_post=".(int)$id_post;
+            $req = "DELETE FROM `"._DB_PREFIX_."ybc_blog_tag` WHERE id_post=".(int)$id_post;
             Db::getInstance()->execute($req);
-            $req = "DELETE FROM "._DB_PREFIX_."ybc_blog_comment WHERE id_post=".(int)$id_post;
+            $req = "DELETE FROM `"._DB_PREFIX_."ybc_blog_comment` WHERE id_post=".(int)$id_post;
             Db::getInstance()->execute($req);
-            $req = "DELETE FROM "._DB_PREFIX_."ybc_blog_post_shop WHERE id_post=".(int)$id_post;
+            $req = "DELETE FROM `"._DB_PREFIX_."ybc_blog_post_shop` WHERE id_post=".(int)$id_post;
             Db::getInstance()->execute($req);
             return true;
         }
@@ -3483,13 +3914,15 @@ private function _deleteSlide($id_slide)
     if($this->itemExists('slide','id_slide',$id_slide))
     {
         $slide = new Ybc_blog_slide_class($id_slide);
-        if($slide->image && file_exists(dirname(__FILE__).'/views/img/slide/'.$slide->image))
+        if($slide->image)
         {
-            @unlink(dirname(__FILE__).'/views/img/slide/'.$slide->image);
+            foreach($slide->image as $image)
+                if(file_exists(_PS_YBC_BLOG_IMG_DIR_.'slide/'.$image))
+                    @unlink(_PS_YBC_BLOG_IMG_DIR_.'slide/'.$image);
         }            
         if($slide->delete())
         {
-            Db::getInstance()->execute('DELETE FROM '._DB_PREFIX_.'ybc_blog_slide_shop WHERE id_slide='.(int)$id_slide);
+            Db::getInstance()->execute('DELETE FROM `'._DB_PREFIX_.'ybc_blog_slide_shop` WHERE id_slide='.(int)$id_slide);
             return true;
         }
     }
@@ -3500,17 +3933,21 @@ private function _deleteGallery($id_gallery)
     if($this->itemExists('gallery','id_gallery',$id_gallery))
     {
         $gallery = new Ybc_blog_gallery_class($id_gallery);
-        if($gallery->image && file_exists(dirname(__FILE__).'/views/img/gallery/'.$gallery->image))
+        if($gallery->image)
         {
-            @unlink(dirname(__FILE__).'/views/img/gallery/'.$gallery->image);
+            foreach($gallery->image as $image)
+                if(file_exists(_PS_YBC_BLOG_IMG_DIR_.'gallery/'.$image))
+                    @unlink(_PS_YBC_BLOG_IMG_DIR_.'gallery/'.$image);
         } 
-        if($gallery->thumb && file_exists(dirname(__FILE__).'/views/img/gallery/thumb/'.$gallery->thumb))
+        if($gallery->thumb)
         {
-            @unlink(dirname(__FILE__).'/views/img/gallery/thumb/'.$gallery->thumb);
+            foreach($gallery->thumb as $thumb)
+                if(file_exists(_PS_YBC_BLOG_IMG_DIR_.'gallery/thumb/'.$thumb))
+                    @unlink(_PS_YBC_BLOG_IMG_DIR_.'gallery/thumb/'.$thumb);
         }            
         if($gallery->delete())
         {
-            Db::getInstance()->execute('DELETE FROM '._DB_PREFIX_.'ybc_blog_gallery_shop WHERE id_gallery='.(int)$id_gallery);
+            Db::getInstance()->execute('DELETE FROM `'._DB_PREFIX_.'ybc_blog_gallery_shop` WHERE id_gallery='.(int)$id_gallery);
             return true;
         }
     }
@@ -3518,7 +3955,7 @@ private function _deleteGallery($id_gallery)
 }
 public function updateCategories($categories, $id_post)
 {
-    $req = "DELETE FROM "._DB_PREFIX_."ybc_blog_post_category WHERE id_post = ".(int)$id_post .($categories? ' AND id_category NOT IN ('.implode(',',array_map('intval',$categories)).')':'');
+    $req = "DELETE FROM `"._DB_PREFIX_."ybc_blog_post_category` WHERE id_post = ".(int)$id_post .($categories? ' AND id_category NOT IN ('.implode(',',array_map('intval',$categories)).')':'');
     Db::getInstance()->execute($req);
     if($categories)
     {            
@@ -3526,8 +3963,8 @@ public function updateCategories($categories, $id_post)
         {
             if(!$this->checkPostCategory($id_post, (int)$cat))
             {
-                $position = 1+ (int)Db::getInstance()->getValue('SELECT COUNT(*) FROM '._DB_PREFIX_.'ybc_blog_post_category WHERE id_category='.(int)$cat);
-                $req = "INSERT INTO "._DB_PREFIX_."ybc_blog_post_category(id_post, id_category,position) VALUES(".(int)$id_post.", ".(int)$cat.",".(int)$position.")";
+                $position = 1+ (int)Db::getInstance()->getValue('SELECT COUNT(*) FROM `'._DB_PREFIX_.'ybc_blog_post_category` WHERE id_category='.(int)$cat);
+                $req = "INSERT INTO `"._DB_PREFIX_."ybc_blog_post_category`(id_post, id_category,position) VALUES(".(int)$id_post.", ".(int)$cat.",".(int)$position.")";
                 Db::getInstance()->execute($req);   
             }                
         }
@@ -3535,7 +3972,7 @@ public function updateCategories($categories, $id_post)
 }
 public function updateRelatedCategories($categories, $id_post)
 {
-    $req = "DELETE FROM "._DB_PREFIX_."ybc_blog_post_related_categories WHERE id_post = ".(int)$id_post .($categories? ' AND id_category NOT IN ('.implode(',',array_map('intval',$categories)).')':'');
+    $req = "DELETE FROM `"._DB_PREFIX_."ybc_blog_post_related_categories` WHERE id_post = ".(int)$id_post .($categories? ' AND id_category NOT IN ('.implode(',',array_map('intval',$categories)).')':'');
     Db::getInstance()->execute($req);
     if($categories)
     {            
@@ -3543,7 +3980,7 @@ public function updateRelatedCategories($categories, $id_post)
         {
             if(!$this->checkPostRelatedCategory($id_post, (int)$cat))
             {
-                $req = "INSERT INTO "._DB_PREFIX_."ybc_blog_post_related_categories(id_post, id_category) VALUES(".(int)$id_post.", ".(int)$cat.")";
+                $req = "INSERT INTO `"._DB_PREFIX_."ybc_blog_post_related_categories`(id_post, id_category) VALUES(".(int)$id_post.", ".(int)$cat.")";
                 Db::getInstance()->execute($req);   
             }                
         }
@@ -3551,39 +3988,39 @@ public function updateRelatedCategories($categories, $id_post)
 }
 public function checkPostCategory($id_post, $id_category)
 {
-    $req = "SELECT * FROM "._DB_PREFIX_."ybc_blog_post_category WHERE id_post = ".(int)$id_post." AND id_category = ".(int)$id_category;
+    $req = "SELECT * FROM `"._DB_PREFIX_."ybc_blog_post_category` WHERE id_post = ".(int)$id_post." AND id_category = ".(int)$id_category;
     return Db::getInstance()->getRow($req);
 }
 public function checkPostRelatedCategory($id_post, $id_category)
 {
-    $req = "SELECT * FROM "._DB_PREFIX_."ybc_blog_post_related_categories WHERE id_post = ".(int)$id_post." AND id_category = ".(int)$id_category;
+    $req = "SELECT * FROM `"._DB_PREFIX_."ybc_blog_post_related_categories` WHERE id_post = ".(int)$id_post." AND id_category = ".(int)$id_category;
     return Db::getInstance()->getRow($req);
 }
 public function getCategories($id_category=0)
 {
     $req = "SELECT c.*, cl.*
-            FROM "._DB_PREFIX_."ybc_blog_category c
-            INNER JOIN "._DB_PREFIX_."ybc_blog_category_shop cs ON (c.id_category=cs.id_category AND cs.id_shop='".(int)$this->context->shop->id."')
-            LEFT JOIN "._DB_PREFIX_."ybc_blog_category_lang cl ON c.id_category = cl.id_category
+            FROM `"._DB_PREFIX_."ybc_blog_category` c
+            INNER JOIN `"._DB_PREFIX_."ybc_blog_category_shop` cs ON (c.id_category=cs.id_category AND cs.id_shop='".(int)$this->context->shop->id."')
+            LEFT JOIN `"._DB_PREFIX_."ybc_blog_category_lang` cl ON c.id_category = cl.id_category
             WHERE cl.id_lang = ".(int)$this->context->language->id.($id_category ? ' AND c.id_category<"'.(int)$id_category.'"':'');
     return Db::getInstance()->executeS($req);
 }
 public function getCategoriesWithFilter($filter = false, $sort = false, $start = false, $limit = false,$id_parent=0)
 {          
     $req = "SELECT c.*, cl.*
-            FROM "._DB_PREFIX_."ybc_blog_category c
-            INNER JOIN "._DB_PREFIX_."ybc_blog_category_shop cs ON (c.id_category=cs.id_category AND cs.id_shop='".(int)$this->context->shop->id."')
-            LEFT JOIN "._DB_PREFIX_."ybc_blog_category_lang cl ON c.id_category = cl.id_category
+            FROM `"._DB_PREFIX_."ybc_blog_category` c
+            INNER JOIN `"._DB_PREFIX_."ybc_blog_category_shop` cs ON (c.id_category=cs.id_category AND cs.id_shop='".(int)$this->context->shop->id."')
+            LEFT JOIN `"._DB_PREFIX_."ybc_blog_category_lang` cl ON c.id_category = cl.id_category
             WHERE c.id_parent='".(int)$id_parent."' AND  cl.id_lang = ".(int)$this->context->language->id.($filter ? $filter : '')." 
             ORDER BY ".($sort ? $sort : '')." c.id_category desc " . ($start !== false && $limit ? " LIMIT ".(int)$start.", ".(int)$limit : "");      
     return Db::getInstance()->executeS($req);
 }
 public function getSlidesWithFilter($filter = false, $sort = false, $start = false, $limit = false)
 {          
-    $req = "SELECT s.*, sl.caption, sl.url
-            FROM "._DB_PREFIX_."ybc_blog_slide s
-            INNER JOIN "._DB_PREFIX_."ybc_blog_slide_shop ss ON (s.id_slide=ss.id_slide AND ss.id_shop='".(int)$this->context->shop->id."')
-            LEFT JOIN "._DB_PREFIX_."ybc_blog_slide_lang sl ON s.id_slide = sl.id_slide
+    $req = "SELECT s.*, sl.caption, sl.url,sl.image
+            FROM `"._DB_PREFIX_."ybc_blog_slide` s
+            INNER JOIN `"._DB_PREFIX_."ybc_blog_slide_shop` ss ON (s.id_slide=ss.id_slide AND ss.id_shop='".(int)$this->context->shop->id."')
+            LEFT JOIN `"._DB_PREFIX_."ybc_blog_slide_lang` sl ON s.id_slide = sl.id_slide
             WHERE sl.id_lang = ".(int)$this->context->language->id.($filter ? $filter : '')." 
             ORDER BY ".($sort ? $sort : '')." s.id_slide ASC " . ($start !== false && $limit ? " LIMIT ".(int)$start.", ".(int)$limit : "");      
     return Db::getInstance()->executeS($req);
@@ -3591,19 +4028,19 @@ public function getSlidesWithFilter($filter = false, $sort = false, $start = fal
 public function countSlidesWithFilter($filter = false)
 {          
     $req = "SELECT COUNT(s.id_slide) as total_slides
-            FROM "._DB_PREFIX_."ybc_blog_slide s
-            INNER JOIN "._DB_PREFIX_."ybc_blog_slide_shop ss ON (s.id_slide=ss.id_slide AND ss.id_shop='".(int)$this->context->shop->id."')
-            LEFT JOIN "._DB_PREFIX_."ybc_blog_slide_lang sl ON s.id_slide = sl.id_slide
+            FROM `"._DB_PREFIX_."ybc_blog_slide` s
+            INNER JOIN `"._DB_PREFIX_."ybc_blog_slide_shop` ss ON (s.id_slide=ss.id_slide AND ss.id_shop='".(int)$this->context->shop->id."')
+            LEFT JOIN `"._DB_PREFIX_."ybc_blog_slide_lang` sl ON s.id_slide = sl.id_slide
             WHERE sl.id_lang = ".(int)$this->context->language->id.($filter ? $filter : '');
     $row = Db::getInstance()->getRow($req);
     return isset($row['total_slides']) ? (int)$row['total_slides'] : 0;
 }
 public function getGalleriesWithFilter($filter = false, $sort = false, $start = false, $limit = false)
 {          
-    $req = "SELECT g.*, gl.title, gl.description
-            FROM "._DB_PREFIX_."ybc_blog_gallery g
-            INNER JOIN "._DB_PREFIX_."ybc_blog_gallery_shop gs ON (g.id_gallery=gs.id_gallery AND gs.id_shop='".(int)$this->context->shop->id."')
-            LEFT JOIN "._DB_PREFIX_."ybc_blog_gallery_lang gl ON g.id_gallery = gl.id_gallery
+    $req = "SELECT g.*, gl.title, gl.description,gl.image,gl.thumb
+            FROM `"._DB_PREFIX_."ybc_blog_gallery` g
+            INNER JOIN `"._DB_PREFIX_."ybc_blog_gallery_shop` gs ON (g.id_gallery=gs.id_gallery AND gs.id_shop='".(int)$this->context->shop->id."')
+            LEFT JOIN `"._DB_PREFIX_."ybc_blog_gallery_lang` gl ON g.id_gallery = gl.id_gallery
             WHERE gl.id_lang = ".(int)$this->context->language->id.($filter ? $filter : '')." 
             ORDER BY ".($sort ? $sort : '')." g.id_gallery ASC " . ($start !== false && $limit ? " LIMIT ".(int)$start.", ".(int)$limit : "");      
     
@@ -3612,9 +4049,9 @@ public function getGalleriesWithFilter($filter = false, $sort = false, $start = 
 public function countGalleriesWithFilter($filter = false)
 {    
     $req = "SELECT COUNT(g.id_gallery) as total_galleries
-            FROM "._DB_PREFIX_."ybc_blog_gallery g
-            INNER JOIN "._DB_PREFIX_."ybc_blog_gallery_shop gs ON (g.id_gallery=gs.id_gallery AND gs.id_shop='".(int)$this->context->shop->id."')
-            LEFT JOIN "._DB_PREFIX_."ybc_blog_gallery_lang gl ON g.id_gallery = gl.id_gallery
+            FROM `"._DB_PREFIX_."ybc_blog_gallery` g
+            INNER JOIN `"._DB_PREFIX_."ybc_blog_gallery_shop` gs ON (g.id_gallery=gs.id_gallery AND gs.id_shop='".(int)$this->context->shop->id."')
+            LEFT JOIN `"._DB_PREFIX_."ybc_blog_gallery_lang` gl ON g.id_gallery = gl.id_gallery
             WHERE gl.id_lang = ".(int)$this->context->language->id.($filter ? $filter : '');
     $row = Db::getInstance()->getRow($req);
     return isset($row['total_galleries']) ? (int)$row['total_galleries'] : 0;
@@ -3624,18 +4061,18 @@ public function getCategoryById($id_category, $id_lang = false)
     if(!$id_lang)
         $id_lang = (int)$this->context->language->id;
     $req = "SELECT c.*, cl.*
-            FROM "._DB_PREFIX_."ybc_blog_category c
-            INNER JOIN "._DB_PREFIX_."ybc_blog_category_shop cs ON (c.id_category =cs.id_category AND cs.id_shop='".(int)$this->context->shop->id."')
-            LEFT JOIN "._DB_PREFIX_."ybc_blog_category_lang cl ON c.id_category = cl.id_category
+            FROM `"._DB_PREFIX_."ybc_blog_category` c
+            INNER JOIN `"._DB_PREFIX_."ybc_blog_category_shop` cs ON (c.id_category =cs.id_category AND cs.id_shop='".(int)$this->context->shop->id."')
+            LEFT JOIN `"._DB_PREFIX_."ybc_blog_category_lang` cl ON c.id_category = cl.id_category
             WHERE cl.id_lang = ".(int)$id_lang." AND c.id_category=".(int)$id_category;
     return Db::getInstance()->getRow($req);
 }
 public function countCategoriesWithFilter($filter,$id_parent=0)
 {
     $req = "SELECT c.*, cl.*
-            FROM "._DB_PREFIX_."ybc_blog_category c
-            INNER JOIN "._DB_PREFIX_."ybc_blog_category_shop cs ON (c.id_category=cs.id_category AND cs.id_shop='".(int)$this->context->shop->id."')
-            LEFT JOIN "._DB_PREFIX_."ybc_blog_category_lang cl ON c.id_category = cl.id_category
+            FROM `"._DB_PREFIX_."ybc_blog_category` c
+            INNER JOIN `"._DB_PREFIX_."ybc_blog_category_shop` cs ON (c.id_category=cs.id_category AND cs.id_shop='".(int)$this->context->shop->id."')
+            LEFT JOIN `"._DB_PREFIX_."ybc_blog_category_lang` cl ON c.id_category = cl.id_category
             WHERE c.id_parent='".(int)$id_parent."' AND  cl.id_lang = ".(int)$this->context->language->id.($filter ? $filter : '');     
     $res = Db::getInstance()->executeS($req);
     return $res ? count($res) : 0;
@@ -3645,7 +4082,7 @@ public function getSelectedCategories($id_post=0)
     if(Tools::isSubmit('submitPostStay'))
     {
         $categories = Tools::getValue('blog_categories');
-        if(is_array($categories))
+        if(is_array($categories) && Ybc_blog::validateArray($categories))
             return $categories;
         else
             return array();
@@ -3653,7 +4090,7 @@ public function getSelectedCategories($id_post=0)
     $categories = array();
     if($id_post)
     {
-        $req = "SELECT id_category FROM "._DB_PREFIX_."ybc_blog_post_category
+        $req = "SELECT id_category FROM `"._DB_PREFIX_."ybc_blog_post_category`
                 WHERE id_post = ".(int)$id_post;            
         $rows = Db::getInstance()->executeS($req);
         if($rows)
@@ -3667,13 +4104,14 @@ public function getSelectedCategories($id_post=0)
 public function getSelectedProducts($id_post)
 {
     $products = array();
-    if(Tools::isSubmit('inputAccessories') && trim(trim(Tools::getValue('inputAccessories')),','))
+    $inputAccessories = Tools::getValue('inputAccessories');
+    if(Tools::isSubmit('inputAccessories') && trim(trim($inputAccessories),',') && Validate::isCleanHtml($inputAccessories))
     {
-        $products = explode('-', trim(trim(Tools::getValue('inputAccessories')),'-'));
+        $products = explode('-', trim(trim($inputAccessories),'-'));
     }
     elseif($id_post)
     {
-        $req = "SELECT products FROM "._DB_PREFIX_."ybc_blog_post
+        $req = "SELECT products FROM `"._DB_PREFIX_."ybc_blog_post`
                 WHERE id_post = ".(int)$id_post;            
         $row = Db::getInstance()->getRow($req);
         if($row)
@@ -3703,7 +4141,7 @@ public function getSelectedProducts($id_post)
 
             foreach($product_list as &$product)
             {
-                $id_image = Db::getInstance()->getValue("SELECT id_image FROM "._DB_PREFIX_."image WHERE id_product=".(int)$product['id_product'].' AND cover=1');
+                $id_image = Db::getInstance()->getValue("SELECT id_image FROM `"._DB_PREFIX_."image` WHERE id_product=".(int)$product['id_product'].' AND cover=1');
                 $product['link_image'] =str_replace('http://', Tools::getShopProtocol(), Context::getContext()->link->getImageLink($product['link_rewrite'], $id_image, $type_image));
             }
         }
@@ -3715,7 +4153,7 @@ public function getTagsByIdPost($id_post, $id_lang = false)
 {
     if(!$id_lang)
         $id_lang = $this->context->language->id;
-    $req = "SELECT * FROM "._DB_PREFIX_."ybc_blog_tag
+    $req = "SELECT * FROM `"._DB_PREFIX_."ybc_blog_tag`
             WHERE id_lang = ".(int)$id_lang." AND id_post = ".(int)$id_post."
             ORDER by tag asc";
     $tags = Db::getInstance()->executeS($req);
@@ -3730,7 +4168,7 @@ public function getTagsByIdPost($id_post, $id_lang = false)
 }
 public function increasTagViews($tag)
 {
-    $sql = "UPDATE "._DB_PREFIX_."ybc_blog_tag
+    $sql = "UPDATE `"._DB_PREFIX_."ybc_blog_tag`
             SET click_number = click_number + 1
             WHERE tag = '".pSQL($tag)."'";
     return Db::getInstance()->execute($sql);
@@ -3739,7 +4177,10 @@ public function getTags($limit = 20, $id_lang = false)
 {
     if(!$id_lang)
         $id_lang = $this->context->language->id;
-    $req = "SELECT DISTINCT ROUND(SUM(t.click_number)/COUNT(t.id_tag)) as viewed, t.tag FROM "._DB_PREFIX_."ybc_blog_tag t
+    $req = "SELECT DISTINCT ROUND(SUM(t.click_number)/COUNT(t.id_tag)) as viewed, t.tag 
+            FROM `"._DB_PREFIX_."ybc_blog_tag` t
+            INNER JOIN `"._DB_PREFIX_."ybc_blog_post` p ON (t.id_post = p.id_post)
+            INNER JOIN `"._DB_PREFIX_."ybc_blog_post_shop` ps ON (p.id_post = ps.id_post AND ps.id_shop='".(int)$this->context->shop->id."')
             WHERE id_lang = ".(int)$id_lang."
             GROUP BY  t.tag
             ORDER BY viewed desc, tag asc
@@ -3768,20 +4209,20 @@ public function updateTags($id_post, $tags)
                   $tag = Tools::strtolower($tag);
                   if($tag && !$this->checkTagLang($id_post, $id_lang, $tag))
                   {
-                   $req = "INSERT INTO "._DB_PREFIX_."ybc_blog_tag(id_tag,id_post, id_lang, tag, click_number)
+                   $req = "INSERT INTO `"._DB_PREFIX_."ybc_blog_tag`(id_tag,id_post, id_lang, tag, click_number)
                                         VALUES(null, ".(int)$id_post.", ".(int)$id_lang.", '".pSQL($tag)."',0)";
                    Db::getInstance()->execute($req);
                   }
                   $str .= $tag.',';
              }
              $str = explode(',',Tools::rtrimString($str, ','));
-             $req = "DELETE FROM "._DB_PREFIX_."ybc_blog_tag 
+             $req = "DELETE FROM `"._DB_PREFIX_."ybc_blog_tag` 
                                     WHERE id_post = ".(int)$id_post." AND id_lang = ".(int)$id_lang." AND tag NOT IN ('".implode("','",array_map('pSQL',$str))."')";
              Db::getInstance()->execute($req);
         }
         else
         {
-             $req = "DELETE FROM "._DB_PREFIX_."ybc_blog_tag 
+             $req = "DELETE FROM `"._DB_PREFIX_."ybc_blog_tag` 
                                     WHERE id_post = ".(int)$id_post." AND id_lang = ".(int)$id_lang;
              Db::getInstance()->execute($req);
         }
@@ -3790,7 +4231,7 @@ public function updateTags($id_post, $tags)
 }
 public function checkTagLang($id_post, $id_lang, $tag)
 {       
-    $req = "SELECT * FROM "._DB_PREFIX_."ybc_blog_tag
+    $req = "SELECT * FROM `"._DB_PREFIX_."ybc_blog_tag`
             WHERE id_lang = ".(int)$id_lang." AND id_post = ".(int)$id_post." AND tag = '".pSQL($tag)."'";
     return Db::getInstance()->getRow($req);
 }
@@ -3798,7 +4239,7 @@ public function getTagStr($id_post, $id_lang)
 {
     if(!$id_post || !$id_lang)
         return '';
-    $req = "SELECT tag FROM "._DB_PREFIX_."ybc_blog_tag WHERE id_post = ".(int)$id_post." AND id_lang = ".(int)$id_lang;
+    $req = "SELECT tag FROM `"._DB_PREFIX_."ybc_blog_tag` WHERE id_post = ".(int)$id_post." AND id_lang = ".(int)$id_lang;
     $tags = Db::getInstance()->executeS($req);
     $tagStr = '';
     if($tags)
@@ -4005,16 +4446,19 @@ public function getTagStr($id_post, $id_lang)
         $list[] = array(
                     'label' => $this->l('Other modules'),
                     'subtitle' => $this->l('Made by ETS-Soft'),
-                    'url' => $this->baseAdminPath.'&othermodules=1',
+                    'url' => isset($this->refs) ? $this->refs.$this->context->language->iso_code : $this->baseAdminPath.'&othermodules=1',
                     'id' => 'ybc_tab_other_modules',
+                    'hasRefs' => isset($this->refs) ? true : false,
                     'hasAccess' => true,
                 );
+    $control = Tools::getValue('control');
+    $controller = Tools::getValue('controller');
     $this->context->smarty->assign(
 		array(
 			'link' => $this->context->link,
 			'list' => $list,
             'admin_path' => $this->baseAdminPath,
-            'active' => 'ybc_tab_'.(trim(Tools::getValue('control')) ? trim(Tools::getValue('control')) : (Tools::getValue('controller')=='AdminYbcBlogStatistics' ? 'statistics'  :'post'))			
+            'active' => 'ybc_tab_'.($control && in_array($control,$this->controls) ? $control : ($controller=='AdminYbcBlogStatistics' ? 'statistics'  :'post'))			
 		)
 	);
     return $this->display(__FILE__, 'sidebar.tpl');
@@ -4047,7 +4491,8 @@ public function getMaxOrder($tbl)
 public function getFieldsCustomerValues()
 {
     $fields=array();
-    if($id_employee_post=(int)Db::getInstance()->getValue('SELECT id_employee_post FROM '._DB_PREFIX_.'ybc_blog_employee WHERE id_employee='.(int)Tools::getValue('id_customer').' AND is_customer=1'))
+    $id_customer = (int)Tools::getValue('id_customer');
+    if($id_employee_post=(int)Db::getInstance()->getValue('SELECT id_employee_post FROM `'._DB_PREFIX_.'ybc_blog_employee` WHERE id_employee='.(int)$id_customer.' AND is_customer=1'))
     {
         $blogEmployee = new Ybc_blog_post_employee_class($id_employee_post);
         $fields['status'] =(int)$blogEmployee->status;
@@ -4058,7 +4503,7 @@ public function getFieldsCustomerValues()
         $fields['status'] = 1; 
     }
         
-    $customer = new Customer(Tools::getValue('id_customer'));
+    $customer = new Customer($id_customer);
     $fields['id_customer'] = $customer->id;
     $fields['name'] =$blogEmployee->name?$blogEmployee->name:$customer->firstname.' '.$customer->lastname;
     $languages= Language::getLanguages(false);
@@ -4066,13 +4511,14 @@ public function getFieldsCustomerValues()
     {
         $fields['description'][$language['id_lang']] =$blogEmployee->description[$language['id_lang']];
     }
-    $fields['control'] =trim(Tools::getValue('control')) ? trim(Tools::getValue('control')) : '';  
+    $fields['control'] =trim(Tools::getValue('control')) ? : '';  
     return $fields;
 }
 public function getFieldsEmployeeValues()
 {
     $fields=array();
-    if($id_employee_post=(int)Db::getInstance()->getValue('SELECT id_employee_post FROM '._DB_PREFIX_.'ybc_blog_employee WHERE id_employee='.(int)Tools::getValue('id_employee').' AND is_customer=0'))
+    $id_employee = (int)Tools::getValue('id_employee');
+    if($id_employee_post=(int)Db::getInstance()->getValue('SELECT id_employee_post FROM `'._DB_PREFIX_.'ybc_blog_employee` WHERE id_employee='.(int)$id_employee.' AND is_customer=0'))
     {
         $blogEmployee = new Ybc_blog_post_employee_class($id_employee_post);
         $fields['status'] = $blogEmployee->status;
@@ -4082,16 +4528,16 @@ public function getFieldsEmployeeValues()
         $blogEmployee = new Ybc_blog_post_employee_class();
         $fields['status'] = 1;
     }
-    $employee = new Employee(Tools::getValue('id_employee'));
+    $employee = new Employee($id_employee);
     $fields['id_employee'] = $employee->id;
-    $fields['name'] =$blogEmployee->name?$blogEmployee->name:$employee->firstname.' '.$employee->lastname;
+    $fields['name'] = Tools::getValue('name',$blogEmployee->name? $blogEmployee->name:$employee->firstname.' '.$employee->lastname);
     $languages= Language::getLanguages(false);
-    $fields['profile_employee'] =$blogEmployee->profile_employee;
+    $fields['profile_employee'] = Tools::getValue('profile_employee',$blogEmployee->profile_employee);
     foreach($languages as $language)
     {
-        $fields['description'][$language['id_lang']] =$blogEmployee->description[$language['id_lang']];
+        $fields['description'][$language['id_lang']] = Tools::getValue('description_'.$language['id_lang'],$blogEmployee->description[$language['id_lang']]);
     }
-    $fields['control'] =trim(Tools::getValue('control')) ? trim(Tools::getValue('control')) : '';
+    $fields['control'] =trim(Tools::getValue('control')) ? : '';
     
     return $fields;
 }
@@ -4129,7 +4575,7 @@ public function getFieldsValues($formFields, $primaryKey, $objClass, $saveBtnNam
             if(isset($field['default']) && !isset($field['multi_lang']))
             {
                 if(isset($field['default_submit']))
-                    $fields[$field['name']] = (int)Tools::getValue($field['name']) ? (int)Tools::getValue($field['name']) : $field['default'];
+                    $fields[$field['name']] = Tools::getValue($field['name']) ? : $field['default'];
                 else
                     $fields[$field['name']] = $field['default'];
             }
@@ -4169,21 +4615,22 @@ public function getFieldsValues($formFields, $primaryKey, $objClass, $saveBtnNam
             }                
         }
 	}
-    $fields['control'] = trim(Tools::getValue('control')) ? trim(Tools::getValue('control')) : '';
+    $fields['control'] = trim(Tools::getValue('control')) ? : '';
     
     /**
      * Tags 
      */
      if($primaryKey=='id_post')
      {
+        $id_post = (int)Tools::getValue('id_post');
         foreach ($languages as $lang)
         {
             if(Tools::isSubmit('savePost'))
             {                    
-                $fields['tags'][$lang['id_lang']] = trim(trim(Tools::getValue('tags_'.(int)$lang['id_lang'])),',') ? trim(trim(Tools::getValue('tags_'.(int)$lang['id_lang'])),',') : '';
+                $fields['tags'][$lang['id_lang']] = trim(trim(Tools::getValue('tags_'.(int)$lang['id_lang'])),',') ? : '';
             }
             else
-                $fields['tags'][$lang['id_lang']] = $this->getTagStr((int)Tools::getValue('id_post'), (int)$lang['id_lang']);                
+                $fields['tags'][$lang['id_lang']] = $this->getTagStr((int)$id_post, (int)$lang['id_lang']);                
             
         }            
      }
@@ -4195,16 +4642,17 @@ public function renderList($listData)
     {
         foreach($listData['fields_list'] as $key => &$val)
         {
+            $control = Tools::getValue('control');
             if(isset($val['filter']) && $val['filter'] && $val['type']=='int')
             {
                 $val['active']['max'] =  trim(Tools::getValue($key.'_max'));   
                 $val['active']['min'] =  trim(Tools::getValue($key.'_min'));   
             }  
-            elseif($listData['name']=='ybc_blog_employee' && Tools::getValue('control')!='employees')
+            elseif($listData['name']=='ybc_blog_employee' && $control!='employees')
             {
                 $val['active']='';
             }
-            elseif($listData['name']=='ybc_blog_customer' && Tools::getValue('control')!='customer')
+            elseif($listData['name']=='ybc_blog_customer' && $control!='customer')
             {
                 $val['active']='';
             }
@@ -4244,17 +4692,21 @@ public function renderListPostByCustomer($listData)
 public function getUrlExtra($field_list)
 {
     $params = '';
-    if(trim(Tools::getValue('sort')) && isset($field_list[trim(Tools::getValue('sort'))]))
+    $sort = Tools::strtolower(Tools::getValue('sort'));
+    $sort_type = Tools::strtolower(Tools::getValue('sort_type','desc'));
+    if(!in_array($sort_type,array('desc','asc')))
+        $sort_type = 'desc';
+    if($sort && isset($field_list[trim($sort)]))
     {
-        $params .= '&sort='.trim(Tools::getValue('sort')).'&sort_type='.(trim(Tools::getValue('sort_type')) =='asc' ? 'asc' : 'desc');
+        $params .= '&sort='.trim($sort).'&sort_type='.(trim($sort_type) =='asc' ? 'asc' : 'desc');
     }
     if($field_list)
     {
         foreach($field_list as $key => $val)
         {
-            if(Tools::getValue($key)!='')
+            if(($value = Tools::getValue($key))!='' && Validate::isCleanHtml($value))
             {
-                $params .= '&'.$key.'='.urlencode(Tools::getValue($key));
+                $params .= '&'.$key.'='.urlencode($value);
             }
         }
         unset($val);
@@ -4264,18 +4716,22 @@ public function getUrlExtra($field_list)
 public function getUrlExtraFrontEnd($field_list,$submit)
 {
     $params = '';
-    if(trim(Tools::getValue('sort')) && isset($field_list[trim(Tools::getValue('sort'))]))
+    $sort = Tools::strtolower(Tools::getValue('sort'));
+    $sort_type = Tools::strtolower(Tools::getValue('sort_type','desc'));
+    if(!in_array($sort_type,array('desc','asc')))
+        $sort_type = 'desc';
+    if($sort && isset($field_list[trim($sort)]))
     {
-        $params .= '&sort='.trim(Tools::getValue('sort')).'&sort_type='.(trim(Tools::getValue('sort_type')) =='asc' ? 'asc' : 'desc');
+        $params .= '&sort='.trim($sort).'&sort_type='.(trim($sort_type) =='asc' ? 'asc' : 'desc');
     }
     if($field_list)
     {
         $ok=false;
         foreach($field_list as $key => $val)
         {
-            if(Tools::getValue($key)!='')
+            if(($value = Tools::getValue($key))!='' && Validate::isCleanHtml($value))
             {
-                $params .= '&'.$key.'='.urlencode(Tools::getValue($key));
+                $params .= '&'.$key.'='.urlencode($value);
                 $ok=true;
             }
         }
@@ -4292,9 +4748,9 @@ public function getFilterParams($field_list)
     {
         foreach($field_list as $key => $val)
         {
-            if(Tools::getValue($key)!='')
+            if(($value = Tools::getValue($key))!='' && Validate::isCleanHtml($value))
             {
-                $params .= '&'.$key.'='.urlencode(Tools::getValue($key));
+                $params .= '&'.$key.'='.urlencode($value);
             }
         }
         unset($val);
@@ -4308,9 +4764,9 @@ public function getFilterParamsFontEnd($field_list,$submit)
     {
         foreach($field_list as $key => $val)
         {
-            if(Tools::getValue($key)!='')
+            if(($value = Tools::getValue($key))!='' && Validate::isCleanHtml($value))
             {
-                $params .= '&'.$key.'='.urlencode(Tools::getValue($key));
+                $params .= '&'.$key.'='.urlencode($value);
             }
         }
         unset($val);
@@ -4321,13 +4777,13 @@ public function getFilterParamsFontEnd($field_list,$submit)
 }
 public function getEmployeesFilter($filter = false, $sort = false, $start = false, $limit = false,$having='')
 {
-    $sql ="SELECT e.*,CONCAT(e.firstname, ' ', e.lastname) as employee, be.name,bel.description,be.profile_employee,be.avata,pl.name as profile_name,IFNULL(be.status,1) as status,count(bp.id_post) as total_post FROM "._DB_PREFIX_."employee e
-        LEFT JOIN "._DB_PREFIX_."ybc_blog_employee be ON (e.id_employee = be.id_employee AND be.is_customer=0)
-        LEFT JOIN "._DB_PREFIX_."ybc_blog_employee_lang bel ON (bel.id_employee_post=be.id_employee_post AND bel.id_lang='".(int)$this->context->language->id."')
-        LEFT JOIN "._DB_PREFIX_."profile p ON (e.id_profile=p.id_profile)
-        LEFT JOIN "._DB_PREFIX_."profile_lang pl ON (p.id_profile=pl.id_profile AND pl.id_lang='".(int)$this->context->language->id."')
-        LEFT JOIN "._DB_PREFIX_."ybc_blog_post bp ON (bp.added_by=e.id_employee AND bp.is_customer=0)
-        LEFT JOIN "._DB_PREFIX_."ybc_blog_post_shop bps ON (bps.id_post=bp.id_post AND bps.id_shop='".(int)$this->context->shop->id."')
+    $sql ="SELECT e.*,CONCAT(e.firstname, ' ', e.lastname) as employee, be.name,bel.description,be.profile_employee,be.avata,pl.name as profile_name,IFNULL(be.status,1) as status,count(bp.id_post) as total_post FROM `"._DB_PREFIX_."employee` e
+        LEFT JOIN `"._DB_PREFIX_."ybc_blog_employee` be ON (e.id_employee = be.id_employee AND be.is_customer=0)
+        LEFT JOIN `"._DB_PREFIX_."ybc_blog_employee_lang` bel ON (bel.id_employee_post=be.id_employee_post AND bel.id_lang='".(int)$this->context->language->id."')
+        LEFT JOIN `"._DB_PREFIX_."profile` p ON (e.id_profile=p.id_profile)
+        LEFT JOIN `"._DB_PREFIX_."profile_lang` pl ON (p.id_profile=pl.id_profile AND pl.id_lang='".(int)$this->context->language->id."')
+        LEFT JOIN `"._DB_PREFIX_."ybc_blog_post` bp ON (bp.added_by=e.id_employee AND bp.is_customer=0)
+        LEFT JOIN `"._DB_PREFIX_."ybc_blog_post_shop` bps ON (bps.id_post=bp.id_post AND bps.id_shop='".(int)$this->context->shop->id."')
         WHERE 1 ".($filter ? $filter: '')."
         GROUP BY e.id_employee
         HAVING (1 ".($having ? $having :' ')." )
@@ -4339,13 +4795,13 @@ public function getCustomersFilter($filter = false, $sort = false, $start = fals
     $group_author= explode(',',Configuration::get('YBC_BLOG_GROUP_CUSTOMER_AUTHOR'));
     if($group_author)
     {
-        $sql ="SELECT c.*,CONCAT(c.firstname, ' ', c.lastname) as customer, be.name,bel.description,be.profile_employee,be.avata,IFNULL(be.status,1) as status,count(bps.id_post) as total_post FROM "._DB_PREFIX_."customer c
-            INNER JOIN "._DB_PREFIX_."customer_group cg ON (cg.id_customer=c.id_customer)
-            INNER JOIN "._DB_PREFIX_."group g ON (cg.id_group=g.id_group)
-            LEFT JOIN "._DB_PREFIX_."ybc_blog_employee be ON (c.id_customer = be.id_employee AND be.is_customer=1)
-            LEFT JOIN "._DB_PREFIX_."ybc_blog_employee_lang bel ON (bel.id_employee_post=be.id_employee_post AND bel.id_lang='".(int)$this->context->language->id."')
-            LEFT JOIN "._DB_PREFIX_."ybc_blog_post bp ON (bp.added_by=c.id_customer AND bp.is_customer=1)
-            LEFT JOIN "._DB_PREFIX_."ybc_blog_post_shop bps ON (bp.id_post=bps.id_post AND bps.id_shop='".(int)$this->context->shop->id."')
+        $sql ="SELECT c.*,CONCAT(c.firstname, ' ', c.lastname) as customer, be.name,bel.description,be.profile_employee,be.avata,IFNULL(be.status,1) as status,count(bps.id_post) as total_post FROM `"._DB_PREFIX_."customer` c
+            INNER JOIN `"._DB_PREFIX_."customer_group` cg ON (cg.id_customer=c.id_customer)
+            INNER JOIN `"._DB_PREFIX_."group` g ON (cg.id_group=g.id_group)
+            LEFT JOIN `"._DB_PREFIX_."ybc_blog_employee` be ON (c.id_customer = be.id_employee AND be.is_customer=1)
+            LEFT JOIN `"._DB_PREFIX_."ybc_blog_employee_lang` bel ON (bel.id_employee_post=be.id_employee_post AND bel.id_lang='".(int)$this->context->language->id."')
+            LEFT JOIN `"._DB_PREFIX_."ybc_blog_post` bp ON (bp.added_by=c.id_customer AND bp.is_customer=1)
+            LEFT JOIN `"._DB_PREFIX_."ybc_blog_post_shop` bps ON (bp.id_post=bps.id_post AND bps.id_shop='".(int)$this->context->shop->id."')
             WHERE c.id_shop='".(int)$this->context->shop->id."' AND  g.id_group in (".implode(',',array_map('intval',$group_author)).") ".($filter ? $filter: '')."
             GROUP BY c.id_customer
             HAVING (1 ".($having ? $having :' ')." )
@@ -4356,16 +4812,17 @@ public function getCustomersFilter($filter = false, $sort = false, $start = fals
 }
 public function getPostsWithFilter($filter = false, $sort = false, $start = false, $limit = false,$fontend=true)
 { 
-    $req = "SELECT p.*,pc.id_category, pl.title, pl.description, pl.short_description, pl.meta_keywords, pl.meta_description,pc.position,count(pcm.id_comment) as total_comment,IFNULL(ybe.status,1) as status
-            FROM "._DB_PREFIX_."ybc_blog_post p
-            INNER JOIN "._DB_PREFIX_."ybc_blog_post_shop ps ON (p.id_post=ps.id_post AND ps.id_shop='".(int)$this->context->shop->id."')
-            LEFT JOIN "._DB_PREFIX_."ybc_blog_post_lang pl ON p.id_post = pl.id_post
-            LEFT JOIN "._DB_PREFIX_."ybc_blog_post_category pc ON (p.id_post = pc.id_post ".(Tools::getValue('id_category')? ' AND pc.id_category="'.(int)Tools::getValue('id_category').'"' :'').") 
-            LEFT JOIN "._DB_PREFIX_."ybc_blog_post_related_categories rpc ON (p.id_post = rpc.id_post)
-            LEFT JOIN "._DB_PREFIX_."customer c ON (c.id_customer=p.added_by AND p.is_customer=1)
-            LEFT JOIN "._DB_PREFIX_."employee e ON (e.id_employee=p.added_by AND p.is_customer=0)
-            LEFT JOIN "._DB_PREFIX_."ybc_blog_employee ybe ON ((ybe.id_employee=c.id_customer AND ybe.is_customer=1) OR (ybe.id_employee=e.id_employee AND ybe.is_customer=0))
-            LEFT JOIN "._DB_PREFIX_."ybc_blog_comment pcm on (pcm.id_post=p.id_post)
+    $id_category = (int)Tools::getValue('id_category');
+    $req = "SELECT p.*,pc.id_category, pl.image,pl.thumb, pl.title, pl.description, pl.short_description, pl.meta_keywords, pl.meta_description,pc.position,count(pcm.id_comment) as total_comment,IFNULL(ybe.status,1) as status
+            FROM `"._DB_PREFIX_."ybc_blog_post` p
+            INNER JOIN `"._DB_PREFIX_."ybc_blog_post_shop` ps ON (p.id_post=ps.id_post AND ps.id_shop='".(int)$this->context->shop->id."')
+            LEFT JOIN `"._DB_PREFIX_."ybc_blog_post_lang` pl ON p.id_post = pl.id_post
+            LEFT JOIN `"._DB_PREFIX_."ybc_blog_post_category` pc ON (p.id_post = pc.id_post ".($id_category? ' AND pc.id_category="'.(int)$id_category.'"' :'').") 
+            LEFT JOIN `"._DB_PREFIX_."ybc_blog_post_related_categories` rpc ON (p.id_post = rpc.id_post)
+            LEFT JOIN `"._DB_PREFIX_."customer` c ON (c.id_customer=p.added_by AND p.is_customer=1)
+            LEFT JOIN `"._DB_PREFIX_."employee` e ON (e.id_employee=p.added_by AND p.is_customer=0)
+            LEFT JOIN `"._DB_PREFIX_."ybc_blog_employee` ybe ON ((ybe.id_employee=c.id_customer AND ybe.is_customer=1) OR (ybe.id_employee=e.id_employee AND ybe.is_customer=0))
+            LEFT JOIN `"._DB_PREFIX_."ybc_blog_comment` pcm on (pcm.id_post=p.id_post)
             WHERE ".($fontend ? " (p.enabled=1 OR p.enabled=-1) AND (ybe.status>=0 OR ybe.status is NULL OR e.id_profile=1) AND ":"")." pl.id_lang = ".(int)$this->context->language->id.($filter ? $filter : '')."  
             GROUP BY p.id_post
             ORDER BY ".($sort ? $sort : '')." p.id_post DESC " . ($start !== false && $limit ? " LIMIT ".(int)$start.", ".(int)$limit : "");
@@ -4374,14 +4831,14 @@ public function getPostsWithFilter($filter = false, $sort = false, $start = fals
     {
         foreach($posts as &$post)
         {
-            $post['thumb_link'] = $post['thumb'] && file_exists(dirname(__FILE__).'/views/img/post/thumb/'.$post['thumb']) ? '<img src="'.$this->_path.'views/img/post/thumb/'.$post['thumb'].'" style="width:40px;"/>':'';
+            $post['thumb_link'] = $post['thumb'] && file_exists(_PS_YBC_BLOG_IMG_DIR_.'post/thumb/'.$post['thumb']) ? '<img src="'._PS_YBC_BLOG_IMG_.'post/thumb/'.$post['thumb'].'" style="width:40px;"/>':'';
             $post['description'] = $post['description'];
             $post['short_description'] = $post['short_description'];
-            $author= Db::getInstance()->getRow('SELECT name,IFNULL(status,1) as status FROM '._DB_PREFIX_.'ybc_blog_employee WHERE is_customer="'.(int)$post['is_customer'].'" AND id_employee="'.(int)$post['added_by'].'"');
+            $author= Db::getInstance()->getRow('SELECT name,IFNULL(status,1) as status FROM `'._DB_PREFIX_.'ybc_blog_employee` WHERE is_customer="'.(int)$post['is_customer'].'" AND id_employee="'.(int)$post['added_by'].'"');
             
             if($post['is_customer'])
             {
-                if($customer=Db::getInstance()->getValue('SELECT concat(firstname," ",lastname) as fullname  FROM '._DB_PREFIX_.'customer WHERE id_shop="'.(int)$this->context->shop->id.'" AND id_customer="'.(int)$post['added_by'].'"'))
+                if($customer=Db::getInstance()->getValue('SELECT concat(firstname," ",lastname) as fullname  FROM `'._DB_PREFIX_.'customer` WHERE id_shop="'.(int)$this->context->shop->id.'" AND id_customer="'.(int)$post['added_by'].'"'))
                 {
                     $link_author= $this->getlink('blog',array('id_author'=>$post['added_by'],'is_customer'=>$post['is_customer']));
                     if(!$author['name'])
@@ -4397,19 +4854,19 @@ public function getPostsWithFilter($filter = false, $sort = false, $start = fals
             }
             else
             {
-                if($employee=Db::getInstance()->getValue('SELECT concat(firstname," ",lastname) as fullname FROM '._DB_PREFIX_.'employee WHERE id_employee="'.(int)$post['added_by'].'"'))
+                if($employee=Db::getInstance()->getValue('SELECT concat(firstname," ",lastname) as fullname FROM `'._DB_PREFIX_.'employee` WHERE id_employee="'.(int)$post['added_by'].'"'))
                 {
                     $link_author=$this->getlink('blog',array('id_author'=>$post['added_by']));
                     if(!$author['name'])
                         $post['name_author'] = $employee;
                     else 
                         $post['name_author']=$author['name'];
-                    $id_profile= Db::getInstance()->getValue('SELECT id_profile FROM '._DB_PREFIX_.'employee WHERE id_employee='.(int)$post['added_by']);
+                    $id_profile= Db::getInstance()->getValue('SELECT id_profile FROM `'._DB_PREFIX_.'employee` WHERE id_employee='.(int)$post['added_by']);
                     if($id_profile==1)
                         $post['status_author']=1;
                     else
                         $post['status_author']=$author['status'];
-                    $profile= Db::getInstance()->getValue('SELECT name from '._DB_PREFIX_.'profile_lang WHERE id_lang="'.$this->context->language->id.'" AND id_profile='.(int)$id_profile);
+                    $profile= Db::getInstance()->getValue('SELECT name from `'._DB_PREFIX_.'profile_lang` WHERE id_lang="'.$this->context->language->id.'" AND id_profile='.(int)$id_profile);
                     $post['name_author'] = '<a href="'.$link_author.'" title="'.$post['name_author'].'" > '.$post['name_author'].'</a> ('.$this->l('Role: ').$profile.($author && $author['status'] <=0 && $id_profile!=1 ? ', suspend':'').')';
                 }
                 else
@@ -4423,26 +4880,26 @@ public function getPostsWithFilter($filter = false, $sort = false, $start = fals
 public function countPostsWithFilter($filter,$fontend=true)
 {
     $req = "SELECT DISTINCT p.*, pl.title, pl.description
-            FROM "._DB_PREFIX_."ybc_blog_post p
-            INNER JOIN "._DB_PREFIX_."ybc_blog_post_shop ps ON (p.id_post=ps.id_post AND ps.id_shop='".(int)$this->context->shop->id."')
-            LEFT JOIN "._DB_PREFIX_."ybc_blog_post_lang pl ON p.id_post = pl.id_post
-            LEFT JOIN "._DB_PREFIX_."ybc_blog_post_category pc ON p.id_post = pc.id_post
-            LEFT JOIN "._DB_PREFIX_."customer c ON (c.id_customer=p.added_by AND p.is_customer=1)
-            LEFT JOIN "._DB_PREFIX_."employee e ON (e.id_employee=p.added_by AND p.is_customer=0)
-            LEFT JOIN "._DB_PREFIX_."ybc_blog_employee ybe ON ((ybe.id_employee=c.id_customer AND ybe.is_customer=1) OR (ybe.id_employee=e.id_employee AND ybe.is_customer=0))
-            LEFT JOIN "._DB_PREFIX_."ybc_blog_comment pcm on (pcm.id_post=p.id_post)
+            FROM `"._DB_PREFIX_."ybc_blog_post` p
+            INNER JOIN `"._DB_PREFIX_."ybc_blog_post_shop` ps ON (p.id_post=ps.id_post AND ps.id_shop='".(int)$this->context->shop->id."')
+            LEFT JOIN `"._DB_PREFIX_."ybc_blog_post_lang` pl ON p.id_post = pl.id_post
+            LEFT JOIN `"._DB_PREFIX_."ybc_blog_post_category` pc ON p.id_post = pc.id_post
+            LEFT JOIN `"._DB_PREFIX_."customer` c ON (c.id_customer=p.added_by AND p.is_customer=1)
+            LEFT JOIN `"._DB_PREFIX_."employee` e ON (e.id_employee=p.added_by AND p.is_customer=0)
+            LEFT JOIN `"._DB_PREFIX_."ybc_blog_employee` ybe ON ((ybe.id_employee=c.id_customer AND ybe.is_customer=1) OR (ybe.id_employee=e.id_employee AND ybe.is_customer=0))
+            LEFT JOIN `"._DB_PREFIX_."ybc_blog_comment` pcm on (pcm.id_post=p.id_post)
             WHERE ".($fontend ? "(p.enabled=1 OR p.enabled=-1) AND (ybe.status>=0 OR ybe.status is NULL OR e.id_profile=1) AND ":"")."pl.id_lang = ".(int)$this->context->language->id.($filter ? $filter : '');     
     $res = Db::getInstance()->executeS($req);
     return $res ? count($res) : 0;
 }   
 public function countEmployeesFilter($filter,$having='')
 {
-    $sql ="SELECT e.*,CONCAT(e.firstname, ' ', e.lastname) as employee, be.name,bel.description,be.profile_employee,be.avata,pl.name as profile_name,count(bp.id_post) as total_post FROM "._DB_PREFIX_."employee e
-        LEFT JOIN "._DB_PREFIX_."ybc_blog_employee be ON (e.id_employee = be.id_employee AND be.is_customer=0)
-        LEFT JOIN "._DB_PREFIX_."ybc_blog_employee_lang bel ON (bel.id_employee_post=be.id_employee_post AND bel.id_lang='".(int)$this->context->language->id."')
-        LEFT JOIN "._DB_PREFIX_."profile p ON (e.id_profile=p.id_profile)
-        LEFT JOIN "._DB_PREFIX_."profile_lang pl ON (p.id_profile=pl.id_profile AND pl.id_lang='".(int)$this->context->language->id."')
-        LEFT JOIN "._DB_PREFIX_."ybc_blog_post bp ON (bp.added_by=e.id_employee AND bp.is_customer=0)
+    $sql ="SELECT e.*,CONCAT(e.firstname, ' ', e.lastname) as employee, be.name,bel.description,be.profile_employee,be.avata,pl.name as profile_name,count(bp.id_post) as total_post FROM `"._DB_PREFIX_."employee` e
+        LEFT JOIN `"._DB_PREFIX_."ybc_blog_employee` be ON (e.id_employee = be.id_employee AND be.is_customer=0)
+        LEFT JOIN `"._DB_PREFIX_."ybc_blog_employee_lang` bel ON (bel.id_employee_post=be.id_employee_post AND bel.id_lang='".(int)$this->context->language->id."')
+        LEFT JOIN `"._DB_PREFIX_."profile` p ON (e.id_profile=p.id_profile)
+        LEFT JOIN `"._DB_PREFIX_."profile_lang` pl ON (p.id_profile=pl.id_profile AND pl.id_lang='".(int)$this->context->language->id."')
+        LEFT JOIN `"._DB_PREFIX_."ybc_blog_post` bp ON (bp.added_by=e.id_employee AND bp.is_customer=0)
         WHERE 1 ".($filter ? $filter: '')."
         GROUP BY e.id_employee
         HAVING (1 ".($having ? $having :' ').")";
@@ -4453,12 +4910,12 @@ public function countCustomersFilter($filter,$having='')
     $group_author= explode(',',Configuration::get('YBC_BLOG_GROUP_CUSTOMER_AUTHOR'));
     if($group_author)
     {
-        $sql ="SELECT c.*,CONCAT(c.firstname, ' ', c.lastname) as customer, be.name,bel.description,be.profile_employee,be.avata,count(bp.id_post) as total_post FROM "._DB_PREFIX_."customer c
-            INNER JOIN "._DB_PREFIX_."customer_group cg ON (cg.id_customer=c.id_customer)
-            INNER JOIN "._DB_PREFIX_."group g ON (cg.id_group=g.id_group)
-            LEFT JOIN "._DB_PREFIX_."ybc_blog_employee be ON (c.id_customer = be.id_employee AND be.is_customer=1)
-            LEFT JOIN "._DB_PREFIX_."ybc_blog_employee_lang bel ON (bel.id_employee_post=be.id_employee_post AND bel.id_lang='".(int)$this->context->language->id."')
-            LEFT JOIN "._DB_PREFIX_."ybc_blog_post bp ON (bp.added_by=c.id_customer AND bp.is_customer=1)
+        $sql ="SELECT c.*,CONCAT(c.firstname, ' ', c.lastname) as customer, be.name,bel.description,be.profile_employee,be.avata,count(bp.id_post) as total_post FROM `"._DB_PREFIX_."customer` c
+            INNER JOIN `"._DB_PREFIX_."customer_group` cg ON (cg.id_customer=c.id_customer)
+            INNER JOIN `"._DB_PREFIX_."group` g ON (cg.id_group=g.id_group)
+            LEFT JOIN `"._DB_PREFIX_."ybc_blog_employee` be ON (c.id_customer = be.id_employee AND be.is_customer=1)
+            LEFT JOIN `"._DB_PREFIX_."ybc_blog_employee_lang` bel ON (bel.id_employee_post=be.id_employee_post AND bel.id_lang='".(int)$this->context->language->id."')
+            LEFT JOIN `"._DB_PREFIX_."ybc_blog_post` bp ON (bp.added_by=c.id_customer AND bp.is_customer=1)
             WHERE c.id_shop = '".(int)$this->context->shop->id."' AND g.id_group in (".implode(',',array_map('intval',$group_author)).") ".($filter ? $filter: '')."
             GROUP BY c.id_customer
             HAVING (1 ".($having ? $having :' ')." )";        
@@ -4471,8 +4928,8 @@ public function getCategoriesStrByIdPost($id_post)
 {
     $categories = Db::getInstance()->executeS("
         SELECT DISTINCT cl.id_category, cl.title
-        FROM "._DB_PREFIX_."ybc_blog_post_category pc
-        LEFT JOIN "._DB_PREFIX_."ybc_blog_category_lang cl ON pc.id_category = cl.id_category AND cl.id_lang=".(int)$this->context->language->id."
+        FROM `"._DB_PREFIX_."ybc_blog_post_category` pc
+        LEFT JOIN `"._DB_PREFIX_."ybc_blog_category_lang` cl ON pc.id_category = cl.id_category AND cl.id_lang=".(int)$this->context->language->id."
         WHERE pc.id_post=".(int)$id_post."
     ");
     $this->smarty->assign(array('categories' => $categories));
@@ -4480,7 +4937,7 @@ public function getCategoriesStrByIdPost($id_post)
 }
 public function changeStatus($tbl, $field, $id , $status)
 {
-    $req = "UPDATE "._DB_PREFIX_."ybc_blog_".pSQL($tbl)." SET `".pSQL($field)."`=".(int)$status." WHERE id_".pSQL($tbl)."=".(int)$id;
+    $req = "UPDATE `"._DB_PREFIX_."ybc_blog_".pSQL($tbl)."` SET `".pSQL($field)."`=".(int)$status." WHERE id_".pSQL($tbl)."=".(int)$id;
     return Db::getInstance()->execute($req);
 }
 public function getPostsByIdCategory($id_category, $id_lang = false, $enabled = false)
@@ -4503,12 +4960,12 @@ public function getPostById($id_post, $id_lang = false)
     if(!$id_lang)    
         $id_lang = $this->context->language->id;
     $req = "SELECT p.*, pl.*, e.firstname, e.lastname
-            FROM "._DB_PREFIX_."ybc_blog_post p
-            INNER JOIN "._DB_PREFIX_."ybc_blog_post_shop ps ON (p.id_post=ps.id_post AND ps.id_shop='".(int)$this->context->shop->id."')
-            LEFT JOIN "._DB_PREFIX_."ybc_blog_post_lang pl ON p.id_post = pl.id_post AND pl.id_lang=".(int)$id_lang."
-            LEFT JOIN "._DB_PREFIX_."customer c ON (c.id_customer=p.added_by AND p.is_customer=1)
-            LEFT JOIN "._DB_PREFIX_."employee e ON (e.id_employee=p.added_by AND p.is_customer=0)
-            LEFT JOIN "._DB_PREFIX_."ybc_blog_employee ybe ON ((ybe.id_employee=c.id_customer AND ybe.is_customer=1) OR (ybe.id_employee=e.id_employee AND ybe.is_customer=0))
+            FROM `"._DB_PREFIX_."ybc_blog_post` p
+            INNER JOIN `"._DB_PREFIX_."ybc_blog_post_shop` ps ON (p.id_post=ps.id_post AND ps.id_shop='".(int)$this->context->shop->id."')
+            LEFT JOIN `"._DB_PREFIX_."ybc_blog_post_lang` pl ON p.id_post = pl.id_post AND pl.id_lang=".(int)$id_lang."
+            LEFT JOIN `"._DB_PREFIX_."customer` c ON (c.id_customer=p.added_by AND p.is_customer=1)
+            LEFT JOIN `"._DB_PREFIX_."employee` e ON (e.id_employee=p.added_by AND p.is_customer=0)
+            LEFT JOIN `"._DB_PREFIX_."ybc_blog_employee` ybe ON ((ybe.id_employee=c.id_customer AND ybe.is_customer=1) OR (ybe.id_employee=e.id_employee AND ybe.is_customer=0))
             WHERE (ybe.status>=0 OR ybe.status is NULL OR e.id_profile=1) AND p.id_post = ".(int)$id_post;
     $post= Db::getInstance()->getRow($req);
     if($post)
@@ -4526,10 +4983,10 @@ public function getCategoriesByIdPost($id_post, $id_lang = false, $enabled = fal
     if(!$id_lang)    
         $id_lang = $this->context->language->id;
     $req = "SELECT c.*, cl.* 
-            FROM "._DB_PREFIX_."ybc_blog_category c
-            INNER JOIN "._DB_PREFIX_."ybc_blog_category_shop cs ON (c.id_category=cs.id_category AND cs.id_shop ='".(int)$this->context->shop->id."')
-            LEFT JOIN "._DB_PREFIX_."ybc_blog_category_lang cl ON c.id_category = cl.id_category AND cl.id_lang=".(int)$id_lang."
-            WHERE c.id_category IN (SELECT id_category FROM "._DB_PREFIX_."ybc_blog_post_category WHERE id_post = ".(int)$id_post.")
+            FROM `"._DB_PREFIX_."ybc_blog_category` c
+            INNER JOIN `"._DB_PREFIX_."ybc_blog_category_shop` cs ON (c.id_category=cs.id_category AND cs.id_shop ='".(int)$this->context->shop->id."')
+            LEFT JOIN `"._DB_PREFIX_."ybc_blog_category_lang` cl ON c.id_category = cl.id_category AND cl.id_lang=".(int)$id_lang."
+            WHERE c.id_category IN (SELECT id_category FROM `"._DB_PREFIX_."ybc_blog_post_category` WHERE id_post = ".(int)$id_post.")
             ".($enabled ? " AND c.enabled = 1" : '');
     $categories = Db::getInstance()->executeS($req);
     if($categories)
@@ -4672,6 +5129,7 @@ public function renderSettingCustomer()
                     $fields[$key] = Tools::getValue($key,isset($config['default']) ? $config['default'] : '');                    
             }
         }
+        
     }
     else
     {
@@ -4708,7 +5166,7 @@ public function renderSettingCustomer()
 		'id_language' => $this->context->language->id,
         'cancel_url' => $this->baseAdminPath.'&control=post&list=true',
         'isConfigForm' => true,
-        'image_baseurl' => $this->_path.'views/img/',
+        'image_baseurl' => _PS_YBC_BLOG_IMG_,
         'name_controller' => 'ybc-blog-panel-settings',
     );
     
@@ -4834,7 +5292,7 @@ public function renderSettingCustomer()
         'cancel_url' => $this->baseAdminPath.'&control=post&list=true',
         'isConfigForm' => true,
         'urls_rss' => $urls_rss,
-        'image_baseurl' => $this->_path.'views/img/',
+        'image_baseurl' => _PS_YBC_BLOG_IMG_,
     );
     $this->_html .= $helper->generateForm(array($fields_form));
  }
@@ -4844,7 +5302,7 @@ public function renderSettingCustomer()
 		'form' => array(
 			'legend' => array(
 				'title' => $title,
-				'icon' => $icon
+				'icon' => $icon!='icon-email' ? $icon:'icon-AdminAdmin',
 			),
 			'input' => array(),
             'submit' => array(
@@ -4873,13 +5331,17 @@ public function renderSettingCustomer()
                 'suffix' => isset($config['suffix']) && $config['suffix'] ? $config['suffix'] : false,
                 'html_content' => isset($config['html_content']) ? $config['html_content']:false,
                 'categories' => isset($config['categories']) ? $config['categories']:false,
+                'col' => isset($config['col']) ? $config['col']:9,
                 'selected_categories' => isset($config['selected_categories']) ? $config['selected_categories']:false,
             );
             if(isset($arg['suffix']) && !$arg['suffix'])
                 unset($arg['suffix']);
             $fields_form['form']['input'][] = $arg;
         }
-    }        
+    }  
+    $control = Tools::getValue('control');    
+    if(!in_array($control,$this->controls))
+        $control = 'config';  
     $helper = new HelperForm();
 	$helper->show_toolbar = false;
 	$helper->table = $this->table;
@@ -4890,7 +5352,7 @@ public function renderSettingCustomer()
 	$helper->module = $this;
 	$helper->identifier = $this->identifier;
 	$helper->submit_action = 'saveConfig';
-	$helper->currentIndex = $this->context->link->getAdminLink('AdminModules', false).'&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&control='.Tools::getValue('control');
+	$helper->currentIndex = $this->context->link->getAdminLink('AdminModules', false).'&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&control='.$control;
 	$helper->token = Tools::getAdminTokenLite('AdminModules');
 	$language = new Language((int)Configuration::get('PS_LANG_DEFAULT'));        
     $fields = array();        
@@ -4938,12 +5400,12 @@ public function renderSettingCustomer()
                     {    
                         if(Configuration::get($key))
                         {
-                            $display_img = $this->getBaseLink().'modules/'.$this->name.'/views/img/avata/'.Configuration::get($key);
+                            $display_img = $this->context->link->getMediaLink(_PS_YBC_BLOG_IMG_.'avata/'.Configuration::get($key));
                             $img_del_link = $this->baseAdminPath.'&deldefaultavataimage=true&control=image';
                         }
                         else
                         {
-                            $display_img = $this->getBaseLink().'modules/'.$this->name.'/views/img/avata/default_customer.png';
+                            $display_img = $this->context->link->getMediaLink(_PS_YBC_BLOG_IMG_.'avata/default_customer.png');
                         }             
                     }    
                     else
@@ -5043,7 +5505,7 @@ public function renderSettingCustomer()
 		'fields_value' => $fields,
 		'languages' => $this->context->controller->getLanguages(),
 		'id_language' => $this->context->language->id,
-        'cancel_url' => $this->baseAdminPath.'&control=post&list=true',
+        'cancel_url' => $icon!='icon-email' ? $this->baseAdminPath.'&control=post&list=true':false,
         'isConfigForm' => true,
         'sidebars'=>$sidebars,
         'position_sidebar'=>$position_sidebar,
@@ -5051,8 +5513,8 @@ public function renderSettingCustomer()
         'urls_sitemap' => $urls_sitemap,
         'homepages' => $homepages,
         'position_homepages'=>$position_homepages,
-        'configTabs' =>Tools::getValue('control')=='config'? $this->configTabs:array(),
-        'image_baseurl' => $this->_path.'views/img/',
+        'configTabs' => $control=='config'? $this->configTabs:array(),
+        'image_baseurl' => _PS_YBC_BLOG_IMG_,
         'display_img' => isset($display_img)? $display_img : '',
         'img_del_link' => isset($img_del_link) ? $img_del_link :'',
         'link_module_blog' => $this->_path,
@@ -5066,6 +5528,8 @@ public function renderSettingCustomer()
     $errors = array();
     $languages = Language::getLanguages(false);
     $id_lang_default = (int)Configuration::get('PS_LANG_DEFAULT');
+    $key_values = array();
+    $aliasArg = array('YBC_BLOG_ALIAS','YBC_BLOG_ALIAS_POST','YBC_BLOG_ALIAS_CATEGORY','YBC_BLOG_ALIAS_GALLERY','YBC_BLOG_ALIAS_LATEST','YBC_BLOG_ALIAS_POPULAR','YBC_BLOG_ALIAS_FEATURED','YBC_BLOG_ALIAS_SEARCH','YBC_BLOG_ALIAS_AUTHOR','YBC_BLOG_ALIAS_AUTHOR2','YBC_BLOG_ALIAS_TAG');
     if(Tools::isSubmit('saveConfig'))
     { 
         Hook::exec('actionUpdateBlog', array());
@@ -5073,117 +5537,97 @@ public function renderSettingCustomer()
         {
             foreach($configs as $key => $config)
             {
+                $label = $config['label'];
                 if(isset($config['lang']) && $config['lang'])
                 {
-                    if(isset($config['required']) && $config['required'] && $config['type']!='switch' && trim(Tools::getValue($key.'_'.$id_lang_default) == ''))
+                    $key_lang_default = trim(Tools::getValue($key.'_'.$id_lang_default));
+                    if(isset($config['required']) && $config['required'] && $config['type']!='switch' && $key_lang_default=='')
                     {
-                        $errors[] = $config['label'].' '.$this->l('is required');
-                    }                        
+                        $errors[] = sprintf($this->l('%s is required'),$config['label']);
+                    }
+                    if($key_lang_default && in_array($key,$aliasArg) && !Validate::isLinkRewrite($key_lang_default))
+                        $errors[] = sprintf($this->l('%s is not valid'),$config['label']);  
+                    elseif($key_lang_default && !Validate::isCleanHtml($key_lang_default))
+                        $errors[] = sprintf($this->l('%s is not valid'),$config['label']);   
+                    $key_values[$key][$id_lang_default] = $key_lang_default;  
+                    foreach($languages as $language)
+                    {
+                        $id_lang = (int)$language['id_lang'];
+                        if($id_lang!=$id_lang_default)
+                        {
+                            $key_lang = trim(Tools::getValue($key.'_'.$id_lang));
+                            if($key_lang && in_array($key,$aliasArg) && !Validate::isLinkRewrite($key_lang))
+                                $errors[] = sprintf($this->l('%s is not valid in %s'),$config['label'],$language['iso_code']);  
+                            elseif($key_lang && !Validate::isCleanHtml($key_lang))
+                                $errors[] = sprintf($this->l('%s is not valid in %s'),$config['label'],$language['iso_code']); 
+                            $key_values[$key][$id_lang] = $key_lang;  
+                        }
+                    }                   
                 }
                 elseif($config['type']=='image')
                 {
-                    if(!Tools::getValue($key.'_WIDTH'))
-                        $errors[] = $config['label'].' '.$this->l('width is required');
-                    if(Tools::getValue($key.'_WIDTH') && ((int)Tools::getValue($key.'_WIDTH') <50 || (int)Tools::getValue($key.'_WIDTH') >3000))
-                        $errors[] = $config['label'].' '.$this->l('The width needs to be from 50 to 3000');
-                    if(!Tools::getValue($key.'_HEIGHT'))
-                        $errors[] = $config['label'].' '.$this->l('height is required');
-                    if(Tools::getValue($key.'_HEIGHT') && ((int)Tools::getValue($key.'_HEIGHT')<50 || (int)Tools::getValue($key.'_HEIGHT')>3000) )
-                        $errors[] = $config['label'].' '.$this->l('The height needs to be from 50 to 3000');
+                    $key_width = Tools::getValue($key.'_WIDTH');
+                    if(!$key_width)
+                        $errors[] = sprintf($this->l('%s width is required'),$label);
+                    elseif(!Validate::isFloat($key_width))
+                        $errors[] = sprintf($this->l('%s width is not valid'),$label);
+                    elseif($key_width && ($key_width <50 ||$key_width >3000))
+                        $errors[] = sprintf($this->l('%s width needs to be from 50 to 3000'),$label);
+                    $key_height = Tools::getValue($key.'_HEIGHT');
+                    if(!$key_height)
+                        $errors[] = sprintf($this->l('%s height is required'),$label);
+                    elseif(!Validate::isFloat($key_height))
+                        $errors[] = sprintf($this->l('%s height is not valid'),$label);
+                    elseif($key_height && ($key_height<50 || $key_height>3000) )
+                        $errors[] = sprintf($this->l('%s height needs to be from 50 to 3000'),$label);
+                    $key_values[$key.'_WIDTH'] = $key_width;
+                    $key_values[$key.'_HEIGHT'] = $key_height;
                 }
                 else
                 {
-                    if(isset($config['required']) && $config['required'] && $config['type']!='switch' && trim(Tools::getValue($key) == ''))
+                    $key_value = Tools::getValue($key);
+                    if(isset($config['required']) && $config['required'] && $config['type']!='switch' && trim($key_value) == '')
                     {
-                        $errors[] = $config['label'].' '.$this->l('is required');
+                        $errors[] = sprintf($this->l('%s is required'),$config['label']);
                     }
-                    if(isset($config['validate']) && method_exists('Validate',$config['validate']))
+                    if(trim($key_value) && isset($config['validate']) && method_exists('Validate',$config['validate']))
                     {
                         $validate = $config['validate'];
-                        if(!Validate::$validate(trim(Tools::getValue($key))))
-                            $errors[] = $config['label'].' '.$this->l('is invalid');
+                        if(!Validate::$validate(trim($key_value)))
+                            $errors[] = sprintf($this->l('%s is not valid'),$config['label']); 
                         unset($validate);
                     }
-                    elseif(!Validate::isCleanHtml(trim(Tools::getValue($key))))
+                    elseif($key_value && !is_array($key_value) && !Validate::isCleanHtml(trim($key_value)))
                     {
-                        $errors[] = $config['label'].' '.$this->l('is invalid');
-                    }   
+                        $errors[] = sprintf($this->l('%s is not valid'),$config['label']); 
+                    }
+                    elseif($key_value && is_array($key_value) && !Ybc_blog::validateArray($key_value))
+                        $errors[] = sprintf($this->l('%s is not valid'),$config['label']); 
+                    $key_values[$key] = $key_value;
                 }                    
             }
         }
-        if(Tools::getValue('YBC_BLOG_CAPTCHA_TYPE')=='google' && !Tools::getValue('YBC_BLOG_CAPTCHA_SITE_KEY'))
+        $YBC_BLOG_CAPTCHA_TYPE = Tools::getValue('YBC_BLOG_CAPTCHA_TYPE');
+        if($YBC_BLOG_CAPTCHA_TYPE=='google' && !$key_values['YBC_BLOG_CAPTCHA_SITE_KEY'])
         {
             $errors[] = $this->l('Site key is required');
         }
-        if(Tools::getValue('YBC_BLOG_CAPTCHA_TYPE')=='google2' && !Tools::getValue('YBC_BLOG_CAPTCHA_SITE_KEY3'))
+        if($YBC_BLOG_CAPTCHA_TYPE=='google3' && !$key_values['YBC_BLOG_CAPTCHA_SITE_KEY3'])
         {
             $errors[] = $this->l('Site key is required');
         }
-        if(Tools::getValue('YBC_BLOG_CAPTCHA_TYPE')=='google' && !Tools::getValue('YBC_BLOG_CAPTCHA_SECRET_KEY'))
+        if($YBC_BLOG_CAPTCHA_TYPE=='google' && !$key_values['YBC_BLOG_CAPTCHA_SECRET_KEY'])
         {
             $errors[] = $this->l('Secret key is required');
         }
-        if(Tools::getValue('YBC_BLOG_CAPTCHA_TYPE')=='google3' && !Tools::getValue('YBC_BLOG_CAPTCHA_SECRET_KEY3'))
+        if($YBC_BLOG_CAPTCHA_TYPE=='google3' && !$key_values['YBC_BLOG_CAPTCHA_SECRET_KEY3'])
         {
             $errors[] = $this->l('Secret key is required');
         }
         //Custom validation
-        if(Tools::getValue('control')=='seo')
+        $control = Tools::getValue('control');
+        if($control=='seo')
         {
-            foreach($languages as $lang)
-            {
-                if($lang['id_lang']==$id_lang_default)
-                {
-                    if(!Validate::isLinkRewrite(Tools::getValue('YBC_BLOG_ALIAS_'.$lang['id_lang'])))
-                        $errors[] = $this->l('Blog alias is not valid in ').$lang['iso_code'];
-                    if(!Validate::isLinkRewrite(Tools::getValue('YBC_BLOG_ALIAS_POST_'.$lang['id_lang'])))
-                        $errors[] = $this->l('Single post page alias is not valid in ').$lang['iso_code'];
-                    if(!Validate::isLinkRewrite(Tools::getValue('YBC_BLOG_ALIAS_CATEGORY_'.$lang['id_lang'])))
-                        $errors[] = $this->l('Category page alias is not valid in ').$lang['iso_code'];
-                    if(!Validate::isLinkRewrite(Tools::getValue('YBC_BLOG_ALIAS_GALLERY_'.$lang['id_lang'])))
-                        $errors[] = $this->l('Gallery page alias is not valid in ').$lang['iso_code'];
-                    if(!Validate::isLinkRewrite(Tools::getValue('YBC_BLOG_ALIAS_LATEST_'.$lang['id_lang'])))
-                        $errors[] = $this->l('Latest posts page alias is not valid in ').$lang['iso_code'];
-                    if(!Validate::isLinkRewrite(Tools::getValue('YBC_BLOG_ALIAS_POPULAR_'.$lang['id_lang'])))
-                        $errors[] = $this->l('Popular posts page alias is not valid in ').$lang['iso_code'];
-                    if(!Validate::isLinkRewrite(Tools::getValue('YBC_BLOG_ALIAS_FEATURED_'.$lang['id_lang'])))
-                        $errors[] = $this->l('Featured posts page alias is not valid in ').$lang['iso_code'];
-                    if(!Validate::isLinkRewrite(Tools::getValue('YBC_BLOG_ALIAS_SEARCH_'.$lang['id_lang'])))
-                        $errors[] = $this->l('Search page alias is not valid in ').$lang['iso_code'];
-                    if(!Validate::isLinkRewrite(Tools::getValue('YBC_BLOG_ALIAS_AUTHOR2_'.$lang['id_lang'])))
-                        $errors[] = $this->l('Community author page alias is not valid in ').$lang['iso_code'];
-                    if(!Validate::isLinkRewrite(Tools::getValue('YBC_BLOG_ALIAS_AUTHOR_'.$lang['id_lang'])))
-                        $errors[] = $this->l('Author page alias is not valid in ').$lang['iso_code'];
-                    if(!Validate::isLinkRewrite(Tools::getValue('YBC_BLOG_ALIAS_TAG_'.$lang['id_lang'])))
-                        $errors[] = $this->l('Tag page alias is not valid in').$lang['iso_code'];
-                }
-                else
-                {
-                    if(Tools::getValue('YBC_BLOG_ALIAS_'.$lang['id_lang']) && !Validate::isLinkRewrite(Tools::getValue('YBC_BLOG_ALIAS_'.$lang['id_lang'])))
-                        $errors[] = $this->l('Blog alias is not valid in ').$lang['iso_code'];
-                    if(Tools::getValue('YBC_BLOG_ALIAS_POST_'.$lang['id_lang']) && !Validate::isLinkRewrite(Tools::getValue('YBC_BLOG_ALIAS_POST_'.$lang['id_lang'])))
-                        $errors[] = $this->l('Single post page alias is not valid in ').$lang['iso_code'];
-                    if(Tools::getValue('YBC_BLOG_ALIAS_CATEGORY_'.$lang['id_lang'])&&!Validate::isLinkRewrite(Tools::getValue('YBC_BLOG_ALIAS_CATEGORY_'.$lang['id_lang'])))
-                        $errors[] = $this->l('Category page alias is not valid in ').$lang['iso_code'];
-                    if(Tools::getValue('YBC_BLOG_ALIAS_GALLERY_'.$lang['id_lang'])&&!Validate::isLinkRewrite(Tools::getValue('YBC_BLOG_ALIAS_GALLERY_'.$lang['id_lang'])))
-                        $errors[] = $this->l('Gallery page alias is not valid in ').$lang['iso_code'];
-                    if(Tools::getValue('YBC_BLOG_ALIAS_LATEST_'.$lang['id_lang'])&&!Validate::isLinkRewrite(Tools::getValue('YBC_BLOG_ALIAS_LATEST_'.$lang['id_lang'])))
-                        $errors[] = $this->l('Latest posts page alias is not valid in ').$lang['iso_code'];
-                    if(Tools::getValue('YBC_BLOG_ALIAS_POPULAR_'.$lang['id_lang'])&&!Validate::isLinkRewrite(Tools::getValue('YBC_BLOG_ALIAS_LATEST_'.$lang['id_lang'])))
-                        $errors[] = $this->l('Popular posts page alias is not valid in ').$lang['iso_code'];
-                    if(Tools::getValue('YBC_BLOG_ALIAS_FEATURED_'.$lang['id_lang'])&&!Validate::isLinkRewrite(Tools::getValue('YBC_BLOG_ALIAS_LATEST_'.$lang['id_lang'])))
-                        $errors[] = $this->l('Featured posts page alias is not valid in ').$lang['iso_code'];
-                    if(Tools::getValue('YBC_BLOG_ALIAS_SEARCH_'.$lang['id_lang'])&&!Validate::isLinkRewrite(Tools::getValue('YBC_BLOG_ALIAS_SEARCH_'.$lang['id_lang'])))
-                        $errors[] = $this->l('Search page alias is not valid in ').$lang['iso_code'];
-                    if(Tools::getValue('YBC_BLOG_ALIAS_AUTHOR2_'.$lang['id_lang'])&&!Validate::isLinkRewrite(Tools::getValue('YBC_BLOG_ALIAS_AUTHOR2_'.$lang['id_lang'])))
-                        $errors[] = $this->l('Community author page alias is not valid in ').$lang['iso_code'];
-                    if(Tools::getValue('YBC_BLOG_ALIAS_AUTHOR_'.$lang['id_lang'])&&!Validate::isLinkRewrite(Tools::getValue('YBC_BLOG_ALIAS_AUTHOR_'.$lang['id_lang'])))
-                        $errors[] = $this->l('Author page alias is not valid in ').$lang['iso_code'];
-                    if(Tools::getValue('YBC_BLOG_ALIAS_TAG_'.$lang['id_lang'])&&!Validate::isLinkRewrite(Tools::getValue('YBC_BLOG_ALIAS_TAG_'.$lang['id_lang'])))
-                        $errors[] = $this->l('Tag page alias is not valid in ').$lang['iso_code'];
-                }
-            }
-            
             if(!$errors)
             {
                 $aliasArg = array('YBC_BLOG_ALIAS','YBC_BLOG_ALIAS_POST','YBC_BLOG_ALIAS_CATEGORY','YBC_BLOG_ALIAS_GALLERY','YBC_BLOG_ALIAS_LATEST','YBC_BLOG_ALIAS_POPULAR','YBC_BLOG_ALIAS_FEATURED','YBC_BLOG_ALIAS_SEARCH','YBC_BLOG_ALIAS_AUTHOR','YBC_BLOG_ALIAS_AUTHOR2','YBC_BLOG_ALIAS_TAG');
@@ -5197,7 +5641,7 @@ public function renderSettingCustomer()
                         
                         if($postedAlias && in_array($postedAlias,$alias[$lang['id_lang']]))
                         {
-                            $errors[] = $this->l('Alias need to be unique in ').$lang['iso_code'];
+                            $errors[] = sprintf($this->l('Alias needs to be unique in %s'),$lang['iso_code']);
                             break;                        
                         }
                         elseif($postedAlias){
@@ -5208,48 +5652,71 @@ public function renderSettingCustomer()
                 
             }
         }
-        if(Tools::isSubmit('YBC_BLOG_SHOW_AUTHOR_BLOCK') && (int)Tools::getValue('YBC_BLOG_AUTHOR_NUMBER') <= 0)
-            $errors[] = $this->l('Maximum number of positive authors need to be greater than 0');
-        if(Tools::isSubmit('YBC_BLOG_SHOW_COMMENT_BLOCK') && (int)Tools::getValue('YBC_BLOG_COMMENT_LENGTH') <= 0)
-            $errors[] = $this->l('Maximum comment length of latest comments displayed need to be greater than 0');
-        if(Tools::isSubmit('YBC_BLOG_SHOW_COMMENT_BLOCK') && (int)Tools::getValue('YBC_BLOG_COMMENT_NUMBER') <= 0)
-            $errors[] = $this->l('Maximum number of latest comments displayed in sidebar need to be greater than 0');
-        if(Tools::isSubmit('YBC_BLOG_GALLERY_BLOCK_SIDEBAR_SLIDER_ENABLED') && (int)Tools::getValue('YBC_BLOG_GALLERY_POST_NUMBER') <= 0)
-            $errors[] = $this->l('Maximum number of featured gallery images displayed need to be greater than 0');
-        if(Tools::isSubmit('YBC_BLOG_SHOW_LATEST_NEWS_BLOCK') && (int)Tools::getValue('YBC_BLOG_LATES_POST_NUMBER') <= 0)
-            $errors[] = $this->l('Number of latest posts displayed need to be greater than 0');
-        if(Tools::isSubmit('YBC_BLOG_SHOW_POPULAR_POST_BLOCK') && (int)Tools::getValue('YBC_BLOG_PUPULAR_POST_NUMBER') <= 0)
-            $errors[] = $this->l('Number of popular posts displayed need to be greater than 0');
-        if(Tools::isSubmit('YBC_BLOG_SHOW_FEATURED_BLOCK') && (int)Tools::getValue('YBC_BLOG_FEATURED_POST_NUMBER') <= 0)
-            $errors[] = $this->l('Maximum number of featured posts displayed need to be greater than 0');            
-        if(Tools::isSubmit('YBC_BLOG_LATES_POST_NUMBER') && (int)Tools::getValue('YBC_BLOG_MAX_COMMENT') < 0)
-            $errors[] = $this->l('Maximum number of latest comments displayed need to be from 0');     
-        if(Tools::isSubmit('YBC_BLOG_DEFAULT_RATING') && (int)Tools::getValue('YBC_BLOG_DEFAULT_RATING') < 1 || (int)Tools::getValue('YBC_BLOG_DEFAULT_RATING') >5)
+        if(Tools::isSubmit('YBC_BLOG_SHOW_AUTHOR_BLOCK') && isset($key_values['YBC_BLOG_AUTHOR_NUMBER']) &&  (int)$key_values['YBC_BLOG_AUTHOR_NUMBER'] <= 0)
+            $errors[] = $this->l('Maximum number of positive authors needs to be greater than 0');
+        if(Tools::isSubmit('YBC_BLOG_SHOW_COMMENT_BLOCK') && isset($key_values['YBC_BLOG_COMMENT_LENGTH']) && (int)$key_values['YBC_BLOG_COMMENT_LENGTH'] <= 0)
+            $errors[] = $this->l('Maximum comment length of latest comments displayed needs to be greater than 0');
+        if(Tools::isSubmit('YBC_BLOG_SHOW_COMMENT_BLOCK') && isset($key_values['YBC_BLOG_COMMENT_NUMBER']) &&  (int)$key_values['YBC_BLOG_COMMENT_NUMBER'] <= 0)
+            $errors[] = $this->l('Maximum number of latest comments displayed in sidebar needs to be greater than 0');
+        if(Tools::isSubmit('YBC_BLOG_GALLERY_BLOCK_SIDEBAR_SLIDER_ENABLED') && $key_values['YBC_BLOG_GALLERY_POST_NUMBER'] && (int)$key_values['YBC_BLOG_GALLERY_POST_NUMBER'] <= 0)
+            $errors[] = $this->l('Maximum number of featured gallery images displayed needs to be greater than 0');
+        if(Tools::isSubmit('YBC_BLOG_SHOW_LATEST_NEWS_BLOCK') && isset($key_values['YBC_BLOG_LATES_POST_NUMBER']) &&  (int)$key_values['YBC_BLOG_LATES_POST_NUMBER'] <= 0)
+            $errors[] = $this->l('Number of latest posts displayed needs to be greater than 0');
+        if(Tools::isSubmit('YBC_BLOG_SHOW_POPULAR_POST_BLOCK') && isset($key_values['YBC_BLOG_PUPULAR_POST_NUMBER']) &&  (int)$key_values['YBC_BLOG_PUPULAR_POST_NUMBER'] <= 0)
+            $errors[] = $this->l('Number of popular posts displayed needs to be greater than 0');
+        if(Tools::isSubmit('YBC_BLOG_SHOW_FEATURED_BLOCK') && isset($key_values['YBC_BLOG_FEATURED_POST_NUMBER']) &&  (int)$key_values['YBC_BLOG_FEATURED_POST_NUMBER'] <= 0)
+            $errors[] = $this->l('Maximum number of featured posts displayed needs to be greater than 0');
+        if(Tools::isSubmit('YBC_BLOG_LATES_POST_NUMBER') && isset($key_values['YBC_BLOG_MAX_COMMENT']) &&  (int)$key_values['YBC_BLOG_MAX_COMMENT'] < 0)
+            $errors[] = $this->l('Maximum number of latest comments displayed needs to be greater than 0');
+        if(Tools::isSubmit('YBC_BLOG_DEFAULT_RATING') && (int)$key_values['YBC_BLOG_DEFAULT_RATING'] < 1 || (int)$key_values['YBC_BLOG_DEFAULT_RATING'] >5)
             $errors[] = $this->l('Default rating must be between 1 - 5');     
-        if(Tools::isSubmit('YBC_BLOG_ITEMS_PER_PAGE') && (int)Tools::getValue('YBC_BLOG_ITEMS_PER_PAGE') <= 0)
-            $errors[] = $this->l('Number of items per page need to be greater than 0');     
-        if(Tools::isSubmit('YBC_BLOG_SHOW_TAGS_BLOCK') && (int)Tools::getValue('YBC_BLOG_TAGS_NUMBER') <= 0)
-            $errors[] = $this->l('Maximum number of tags displayed on Tags block need to be greater than 0');     
-        if(Tools::isSubmit('YBC_BLOG_POST_EXCERPT_LENGTH') && (int)Tools::getValue('YBC_BLOG_POST_EXCERPT_LENGTH') < 0)
+        if(Tools::isSubmit('YBC_BLOG_ITEMS_PER_PAGE') && $key_values['YBC_BLOG_ITEMS_PER_PAGE']!='' && Validate::isInt($key_values['YBC_BLOG_ITEMS_PER_PAGE']) && (int)$key_values['YBC_BLOG_ITEMS_PER_PAGE'] <= 0)
+            $errors[] = $this->l('Number of posts per page on main page needs to be greater than 0');
+        if(Tools::isSubmit('YBC_BLOG_SHOW_TAGS_BLOCK') && isset($key_values['YBC_BLOG_TAGS_NUMBER']) &&  (int)$key_values['YBC_BLOG_TAGS_NUMBER'] <= 0)
+            $errors[] = $this->l('Maximum number of tags displayed on Tags block needs to be greater than 0');
+        if(Tools::isSubmit('YBC_BLOG_POST_EXCERPT_LENGTH') && (int)$key_values['YBC_BLOG_POST_EXCERPT_LENGTH'] < 0)
             $errors[] = $this->l('Post excerpt length cannot be smaller than 0');
-        if(Tools::isSubmit('YBC_BLOG_GALLERY_PER_PAGE') && (int)Tools::getValue('YBC_BLOG_GALLERY_PER_PAGE') <= 0)
-            $errors[] = $this->l('Number of image per page need to be greater than 0');
-       // if(Tools::isSubmit('YBC_BLOG_CATEGORY_PER_PAGE') && (int)Tools::getValue('YBC_BLOG_CATEGORY_PER_PAGE') <= 0)
-//            $errors[] = $this->l('Number of category per page need to be greater than 0');
-        if(Tools::isSubmit('YBC_BLOG_COMMENT_PER_PAGE') && (int)Tools::getValue('YBC_BLOG_COMMENT_PER_PAGE') <= 0)
-            $errors[] = $this->l('Number of comment per page need to be greater than 0');
-        if(Tools::getValue('control')=='homepage')
+        if(Tools::isSubmit('YBC_BLOG_GALLERY_PER_PAGE') && (int)$key_values['YBC_BLOG_GALLERY_PER_PAGE'] <= 0)
+            $errors[] = $this->l('Number of image per page needs to be greater than 0');
+        if(Tools::isSubmit('YBC_BLOG_COMMENT_PER_PAGE') && (int)$key_values['YBC_BLOG_COMMENT_PER_PAGE'] <= 0)
+            $errors[] = $this->l('Number of comment per page needs to be greater than 0');
+        if($control=='homepage')
         {
-            if(Tools::getValue('YBC_BLOG_SHOW_LATEST_BLOCK_HOME') && Tools::getValue('YBC_BLOG_LATEST_POST_NUMBER_HOME')<=0)
-                $errors[] = $this->l('Maximum number of latest posts displayed need to be greater than 0');
-            if(Tools::getValue('YBC_BLOG_SHOW_POPULAR_BLOCK_HOME') && Tools::getValue('YBC_BLOG_POPULAR_POST_NUMBER_HOME')<=0)
-                $errors[] = $this->l('Maximum number of popular posts displayed need to be greater than 0');
-            if(Tools::getValue('YBC_BLOG_SHOW_FEATURED_BLOCK_HOME') && Tools::getValue('YBC_BLOG_FEATURED_POST_NUMBER_HOME')<=0)
-                $errors[] = $this->l('Maximum number of featured posts displayed need to be greater than 0');
-            if(Tools::getValue('YBC_BLOG_SHOW_GALLERY_BLOCK_HOME') && Tools::getValue('YBC_BLOG_GALLERY_POST_NUMBER_HOME')<=0)
-                $errors[] = $this->l('Maximum number of featured gallery images displayed need to be greater than 0');
-            if(Tools::getValue('YBC_BLOG_SHOW_CATEGORY_BLOCK_HOME') && Tools::getValue('YBC_BLOG_CATEGORY_POST_NUMBER_HOME')<=0)
-                $errors[] = $this->l('Maximum number of post categories displayed need to be greater than 0');    
+            if(isset($key_values['YBC_BLOG_SHOW_LATEST_BLOCK_HOME']) && $key_values['YBC_BLOG_SHOW_LATEST_BLOCK_HOME'] && Validate::isUnsignedInt($key_values['YBC_BLOG_LATEST_POST_NUMBER_HOME']))
+            {
+                if($key_values['YBC_BLOG_LATEST_POST_NUMBER_HOME']=='')
+                    $errors[] = $this->l('Maximum number of latest posts displayed is required');
+                elseif($key_values['YBC_BLOG_LATEST_POST_NUMBER_HOME']<=0)
+                    $errors[] = $this->l('Maximum number of latest posts displayed needs to be greater than 0');
+            }
+            if(isset($key_values['YBC_BLOG_SHOW_POPULAR_BLOCK_HOME']) && $key_values['YBC_BLOG_SHOW_POPULAR_BLOCK_HOME'] && Validate::isUnsignedInt($key_values['YBC_BLOG_POPULAR_POST_NUMBER_HOME']))
+            {
+                if($key_values['YBC_BLOG_POPULAR_POST_NUMBER_HOME']=='')
+                    $errors[] = $errors[] = $this->l('Maximum number of popular posts displayed is required');
+                elseif($key_values['YBC_BLOG_POPULAR_POST_NUMBER_HOME']<=0)
+                    $errors[] = $this->l('Maximum number of popular posts displayed needs to be greater than 0');
+            }
+            if(isset($key_values['YBC_BLOG_SHOW_FEATURED_BLOCK_HOME']) && $key_values['YBC_BLOG_SHOW_FEATURED_BLOCK_HOME'] && Validate::isUnsignedInt($key_values['YBC_BLOG_FEATURED_POST_NUMBER_HOME']))
+            {
+                if($key_values['YBC_BLOG_FEATURED_POST_NUMBER_HOME']=='')
+                    $errors[] = $this->l('Maximum number of featured posts displayed is required');
+                elseif($key_values['YBC_BLOG_FEATURED_POST_NUMBER_HOME'] <=0)
+                    $errors[] = $this->l('Maximum number of featured posts displayed needs to be greater than 0');
+            }
+            if(isset($key_values['YBC_BLOG_SHOW_GALLERY_BLOCK_HOME']) && $key_values['YBC_BLOG_SHOW_GALLERY_BLOCK_HOME'] && Validate::isUnsignedInt($key_values['YBC_BLOG_GALLERY_POST_NUMBER_HOME']))
+            {
+                if($key_values['YBC_BLOG_GALLERY_POST_NUMBER_HOME']=='')
+                    $errors[] = $this->l('Maximum number of featured gallery images displayed is required');
+                elseif($key_values['YBC_BLOG_GALLERY_POST_NUMBER_HOME']<=0)
+                    $errors[] = $this->l('Maximum number of featured gallery images displayed needs to be greater than 0');
+            }
+            if(isset($key_values['YBC_BLOG_SHOW_CATEGORY_BLOCK_HOME']) && $key_values['YBC_BLOG_SHOW_CATEGORY_BLOCK_HOME'] && Validate::isUnsignedInt($key_values['YBC_BLOG_CATEGORY_POST_NUMBER_HOME']))
+            {
+                if($key_values['YBC_BLOG_CATEGORY_POST_NUMBER_HOME']=='')
+                    $errors[] = $this->l('Maximum number of post categories displayed is required');
+                elseif($key_values['YBC_BLOG_CATEGORY_POST_NUMBER_HOME']<=0)
+                    $errors[] = $this->l('Maximum number of post categories displayed needs to be greater than 0');
+            }    
         }
         if($emailsStr = Tools::getValue('YBC_BLOG_ALERT_EMAILS'))
         {
@@ -5278,9 +5745,9 @@ public function renderSettingCustomer()
                         foreach($languages as $lang)
                         {
                             if($config['type']=='switch')                                                           
-                                $valules[$lang['id_lang']] = (int)trim(Tools::getValue($key.'_'.$lang['id_lang'])) ? 1 : 0;                                
+                                $valules[$lang['id_lang']] = (int)$key_values[$key][$lang['id_lang']] ? 1 : 0;                                
                             else
-                                $valules[$lang['id_lang']] = trim(Tools::getValue($key.'_'.$lang['id_lang'])) ? trim(Tools::getValue($key.'_'.$lang['id_lang'])) : trim(Tools::getValue($key.'_'.$id_lang_default));
+                                $valules[$lang['id_lang']] = $key_values[$key][$lang['id_lang']] ? : $key_values[$key][$id_lang_default];
                         }
                         Configuration::updateValue($key,$valules,true);
                     }
@@ -5288,26 +5755,27 @@ public function renderSettingCustomer()
                     {
                         if($config['type']=='switch')
                         {                           
-                            Configuration::updateValue($key,(int)trim(Tools::getValue($key)) ? 1 : 0);
+                            Configuration::updateValue($key,(int)$key_values[$key] ? 1 : 0);
                         }
                         elseif($config['type']=='checkbox')
-                            Configuration::updateValue($key,implode(',',Tools::getValue($key))); 
+                            Configuration::updateValue($key,implode(',',$key_values[$key])); 
                         elseif($config['type']=='image')
                         {
-                            Configuration::updateValue($key.'_WIDTH',Tools::getValue($key.'_WIDTH'));
-                            Configuration::updateValue($key.'_HEIGHT',Tools::getValue($key.'_HEIGHT'));
+                            Configuration::updateValue($key.'_WIDTH',$key_values[$key.'_WIDTH']);
+                            Configuration::updateValue($key.'_HEIGHT',$key_values[$key.'_HEIGHT']);
                         }
-                        elseif($config['type']=='blog_categories')
+                        elseif($config['type']=='blog_categories' && ($blog_categories  = Tools::getValue('blog_categories')) && is_array($blog_categories) && Ybc_blog::validateArray($blog_categories))
                         {
-                            Configuration::updateValue($key,implode(',',Tools::getValue('blog_categories')));
+                            Configuration::updateValue($key,implode(',',$blog_categories));
                         }
                         elseif($config['type']=='file')
                         {      
                             if(isset($_FILES[$key]['tmp_name']) && isset($_FILES[$key]['name']) && $_FILES[$key]['name'])
                             {
+                                $_FILES[$key]['name'] = str_replace(' ','-',$_FILES[$key]['name']);
                                 if(file_exists($dirImg.$_FILES[$key]['name']))
                                 {
-                                    $_FILES[$key]['name'] = Tools::substr(sha1(microtime()),0,10).'-'.$_FILES[$key]['name'];
+                                    $_FILES[$key]['name'] = $this->createNewFileName($dirImg,$_FILES[$key]['name']);
                                 }
                                 $type = Tools::strtolower(Tools::substr(strrchr($_FILES[$key]['name'], '.'), 1));
                     			$imagesize = @getimagesize($_FILES[$key]['tmp_name']);
@@ -5321,7 +5789,7 @@ public function renderSettingCustomer()
                     				if ($error = ImageManager::validateUpload($_FILES[$key]))
                     					$errors[] = $error;
                     				elseif (!$temp_name || !move_uploaded_file($_FILES[$key]['tmp_name'], $temp_name))
-                    					$errors[] = $this->l('Can not upload the file');
+                    					$errors[] = $this->l('Cannot upload the file');
                     				elseif(!ImageManager::resize($temp_name, $dirImg.$_FILES[$key]['name'], $width_image, $height_image, $type))
                     					$errors[] = $this->displayError($this->l('An error occurred during the image upload process.'));
                     				if (isset($temp_name))
@@ -5336,16 +5804,17 @@ public function renderSettingCustomer()
                             }
                         }
                         else
-                            Configuration::updateValue($key,trim(Tools::getValue($key)));   
+                            Configuration::updateValue($key,trim($key_values[$key]));   
                     }                        
                 }
             }
+            $this->refreshCssCustom();
         }
         if (count($errors))
         {
            $this->errorMessage = $this->displayError($errors);  
         }
-        if(Tools::getValue('control')=='sidebar')
+        if($control=='sidebar')
         {
             $config_values=array(
                 'YBC_BLOG_SHOW_CATEGORIES_BLOCK' => Configuration::get('YBC_BLOG_SHOW_CATEGORIES_BLOCK'),
@@ -5362,7 +5831,7 @@ public function renderSettingCustomer()
                 'YBC_BLOG_SHOW_FEATURED_BLOCK' => Configuration::get('YBC_BLOG_SHOW_FEATURED_BLOCK'),
             );
         }
-        if(Tools::getValue('control')=='homepage')
+        if($control=='homepage')
         {
             $config_values=array(
                 'YBC_BLOG_SHOW_LATEST_BLOCK_HOME' => Configuration::get('YBC_BLOG_SHOW_LATEST_BLOCK_HOME'),
@@ -5385,8 +5854,21 @@ public function renderSettingCustomer()
         }
         
         if(!count($errors))
-           Tools::redirectAdmin($this->context->link->getAdminLink('AdminModules', true).'&conf=4&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&control='+Tools::getValue('control'));            
+           Tools::redirectAdmin($this->context->link->getAdminLink('AdminModules', true).'&conf=4&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&control='.$control);            
     }
+ }
+ public function refreshCssCustom()
+ {
+    $color = Configuration::get('YBC_BLOG_CUSTOM_COLOR');
+    if(!$color) 
+        $color = '#FF4C65';
+    $color_hover= Configuration::get('YBC_BLOG_CUSTOM_COLOR_HOVER');
+    if(!$color_hover)
+        $color_hover='#FF4C65';
+    $css = file_exists(dirname(__FILE__).'/views/css/dynamic_style.css') ? Tools::file_get_contents(dirname(__FILE__).'/views/css/dynamic_style.css') : ''; 
+    if($css)
+        $css = str_replace(array('[color]','[color_hover]'),array($color,$color_hover),$css);
+    file_put_contents(dirname(__FILE__).'/views/css/custom.css',$css);
  }
  public function getLink($controller = 'blog', $params = array(),$id_lang=0)
  {
@@ -5424,7 +5906,7 @@ public function renderSettingCustomer()
         elseif($controller=='rss')
         {
             $url .= (($subAlias = Configuration::get('YBC_BLOG_ALIAS_RSS',$id_lang)) ? $subAlias : 'rss');
-            if(isset($params['id_category']) && $categoryAlias = $this->getCategoryAlias((int)$params['id_category']))
+            if(isset($params['id_category']) && $categoryAlias = $this->getCategoryAlias((int)$params['id_category'],$id_lang))
             {
                 $url .= '/'.(($subAlias = Configuration::get('YBC_BLOG_ALIAS_CATEGORY',$id_lang)) ? $subAlias : 'category').'/'.(int)$params['id_category'].'-'.$categoryAlias.$subfix;
             }
@@ -5452,22 +5934,22 @@ public function renderSettingCustomer()
         }
         elseif($controller=='blog')
         {
-            if(isset($params['edit_comment']) && (int)$params['edit_comment'] && isset($params['id_post']) && $params['id_post'] && $postAlias = $this->getPostAlias((int)$params['id_post']))
+            if(isset($params['edit_comment']) && (int)$params['edit_comment'] && isset($params['id_post']) && $params['id_post'] && $postAlias = $this->getPostAlias((int)$params['id_post'],$id_lang))
             {
                 $url .= (($subAlias = Configuration::get('YBC_BLOG_ALIAS_POST',$id_lang)) ? $subAlias : 'post').'/'.(int)$params['id_post'].'-'.(int)$params['edit_comment'].'-'.$postAlias.$subfix;
             }
-            elseif( isset($params['all_comment']) && $params['all_comment'] &&  isset($params['id_post']) && $postAlias = $this->getPostAlias((int)$params['id_post']))
+            elseif( isset($params['all_comment']) && $params['all_comment'] &&  isset($params['id_post']) && $postAlias = $this->getPostAlias((int)$params['id_post'],$id_lang))
             {
                 $url .= (($subAlias = Configuration::get('YBC_BLOG_ALIAS_POST',$id_lang)) ? $subAlias : 'post').'/allcomments/'.(int)$params['id_post'].'-'.$postAlias.$subfix;
             }
-            elseif(isset($params['id_post']) && $postAlias = $this->getPostAlias((int)$params['id_post']))
+            elseif(isset($params['id_post']) && $postAlias = $this->getPostAlias((int)$params['id_post'],$id_lang))
             {
                 if(Configuration::get('YBC_BLOG_URL_NO_ID'))
                     $url .= (($subAlias = Configuration::get('YBC_BLOG_ALIAS_POST',$id_lang)) ? $subAlias : 'post').'/'.$postAlias.$subfix;
                 else
                     $url .= (($subAlias = Configuration::get('YBC_BLOG_ALIAS_POST',$id_lang)) ? $subAlias : 'post').'/'.$params['id_post'].'-'.$postAlias.$subfix;
             }
-            elseif(isset($params['id_category']) && $categoryAlias = $this->getCategoryAlias((int)$params['id_category']))
+            elseif(isset($params['id_category']) && $categoryAlias = $this->getCategoryAlias((int)$params['id_category'],$id_lang))
             {
                  if(Configuration::get('YBC_BLOG_URL_NO_ID'))
                     $url .= (($subAlias = Configuration::get('YBC_BLOG_ALIAS_CATEGORY',$id_lang)) ? $subAlias : 'category').($page ? '/'.rtrim($page) : '/').$categoryAlias.$subfix;
@@ -5527,27 +6009,27 @@ public function renderSettingCustomer()
             return $url;
         }            
     }
-    $extra='';
-    if($params)
-        foreach($params as $key=> $param)
-            $extra ='&'.$key.'='.$param;
-    return Tools::getShopDomainSsl(true).__PS_BASE_URI__.'index.php?fc=module&module='.$this->name.'&controller='.$controller.'&id_lang='.$this->context->language->id.$extra;
+    return $this->context->link->getModuleLink($this->name,$controller,$params,null,$id_lang);
  }
- private function getCategoryAlias($id_category)
+ private function getCategoryAlias($id_category,$id_lang=0)
  {
+    if(!$id_lang)
+        $id_lang = $this->context->language->id;
     $req = "SELECT cl.url_alias
-            FROM "._DB_PREFIX_."ybc_blog_category_lang cl
-            WHERE cl.id_category = ".(int)$id_category.' AND cl.id_lang='.(int)$this->context->language->id;
+            FROM `"._DB_PREFIX_."ybc_blog_category_lang` cl
+            WHERE cl.id_category = ".(int)$id_category.' AND cl.id_lang='.(int)$id_lang;
     $row = Db::getInstance()->getRow($req);
     if(isset($row['url_alias']))
         return $row['url_alias'];
     return false;
  }
- private function getPostAlias($id_post)
+ private function getPostAlias($id_post,$id_lang=0)
  {
+    if(!$id_lang)
+        $id_lang = $this->context->language->id;
     $req = "SELECT pl.url_alias
-            FROM "._DB_PREFIX_."ybc_blog_post_lang pl
-            WHERE pl.id_post = ".(int)$id_post.' AND pl.id_lang='.(int)$this->context->language->id;
+            FROM `"._DB_PREFIX_."ybc_blog_post_lang` pl
+            WHERE pl.id_post = ".(int)$id_post.' AND pl.id_lang='.(int)$id_lang;
     $row = Db::getInstance()->getRow($req);
     if(isset($row['url_alias']))
         return $row['url_alias'];
@@ -5555,14 +6037,14 @@ public function renderSettingCustomer()
  }
  public function getPollsWithFilter($filter = false, $sort = false, $start = false, $limit = false,$fontend=true)
  {
-    $req = "SELECT po.*,pl.description,pl.short_description,p.thumb,pl.title
-            FROM "._DB_PREFIX_."ybc_blog_polls po
-            INNER JOIN "._DB_PREFIX_."ybc_blog_post_shop ps on (po.id_post=ps.id_post)
-            INNER JOIN "._DB_PREFIX_."ybc_blog_post p ON (p.id_post=ps.id_post)
-            LEFT JOIN "._DB_PREFIX_."ybc_blog_post_lang pl ON (p.id_post=pl.id_post AND pl.id_lang='".(int)$this->context->language->id."')
-            LEFT JOIN "._DB_PREFIX_."customer c ON (c.id_customer=p.added_by AND p.is_customer=1)
-            LEFT JOIN "._DB_PREFIX_."employee e ON (e.id_employee=p.added_by AND p.is_customer=0)
-            LEFT JOIN "._DB_PREFIX_."ybc_blog_employee ybe ON ((ybe.id_employee=c.id_customer AND ybe.is_customer=1) OR (ybe.id_employee=e.id_employee AND ybe.is_customer=0))
+    $req = "SELECT po.*,pl.description,pl.short_description,pl.thumb,pl.title
+            FROM `"._DB_PREFIX_."ybc_blog_polls` po
+            INNER JOIN `"._DB_PREFIX_."ybc_blog_post_shop` ps on (po.id_post=ps.id_post)
+            INNER JOIN `"._DB_PREFIX_."ybc_blog_post` p ON (p.id_post=ps.id_post)
+            LEFT JOIN `"._DB_PREFIX_."ybc_blog_post_lang` pl ON (p.id_post=pl.id_post AND pl.id_lang='".(int)$this->context->language->id."')
+            LEFT JOIN `"._DB_PREFIX_."customer` c ON (c.id_customer=p.added_by AND p.is_customer=1)
+            LEFT JOIN `"._DB_PREFIX_."employee` e ON (e.id_employee=p.added_by AND p.is_customer=0)
+            LEFT JOIN `"._DB_PREFIX_."ybc_blog_employee` ybe ON ((ybe.id_employee=c.id_customer AND ybe.is_customer=1) OR (ybe.id_employee=e.id_employee AND ybe.is_customer=0))
             WHERE ".($fontend ? "(ybe.status>=0 OR ybe.status is NULL OR e.id_profile=1) AND p.enabled=1 AND ":"")." ps.id_shop=".(int)$this->context->shop->id." ".($filter ? $filter : '')."
             ORDER BY ".($sort ? $sort : '')." po.id_polls desc " . ($start !== false && $limit ? " LIMIT ".(int)$start.", ".(int)$limit : "");
     $polls= Db::getInstance()->executeS($req);
@@ -5570,29 +6052,30 @@ public function renderSettingCustomer()
  }
  public function countPollsWithFilter($filter,$fontend=true)
  {
-    $req = "SELECT po.*,pl.description,pl.short_description,p.thumb,pl.title
-            FROM "._DB_PREFIX_."ybc_blog_polls po
-            INNER JOIN "._DB_PREFIX_."ybc_blog_post_shop ps on (po.id_post=ps.id_post)
-            INNER JOIN "._DB_PREFIX_."ybc_blog_post p ON (p.id_post=ps.id_post)
-            LEFT JOIN "._DB_PREFIX_."ybc_blog_post_lang pl ON (p.id_post=pl.id_post AND pl.id_lang='".(int)$this->context->language->id."')
-            LEFT JOIN "._DB_PREFIX_."customer c ON (c.id_customer=p.added_by AND p.is_customer=1)
-            LEFT JOIN "._DB_PREFIX_."employee e ON (e.id_employee=p.added_by AND p.is_customer=0)
-            LEFT JOIN "._DB_PREFIX_."ybc_blog_employee ybe ON ((ybe.id_employee=c.id_customer AND ybe.is_customer=1) OR (ybe.id_employee=e.id_employee AND ybe.is_customer=0))
+    $req = "SELECT po.*,pl.description,pl.short_description,pl.thumb,pl.title
+            FROM `"._DB_PREFIX_."ybc_blog_polls` po
+            INNER JOIN `"._DB_PREFIX_."ybc_blog_post_shop` ps on (po.id_post=ps.id_post)
+            INNER JOIN `"._DB_PREFIX_."ybc_blog_post` p ON (p.id_post=ps.id_post)
+            LEFT JOIN `"._DB_PREFIX_."ybc_blog_post_lang` pl ON (p.id_post=pl.id_post AND pl.id_lang='".(int)$this->context->language->id."')
+            LEFT JOIN `"._DB_PREFIX_."customer` c ON (c.id_customer=p.added_by AND p.is_customer=1)
+            LEFT JOIN `"._DB_PREFIX_."employee` e ON (e.id_employee=p.added_by AND p.is_customer=0)
+            LEFT JOIN `"._DB_PREFIX_."ybc_blog_employee` ybe ON ((ybe.id_employee=c.id_customer AND ybe.is_customer=1) OR (ybe.id_employee=e.id_employee AND ybe.is_customer=0))
             WHERE ".($fontend ? "(ybe.status>=0 OR ybe.status is NULL OR e.id_profile=1) AND p.enabled=1 AND ":"")." ps.id_shop=".(int)$this->context->shop->id." ".($filter ? $filter : '');
     $polls= Db::getInstance()->executeS($req);
     return count($polls);
  }
  public function getCommentsWithFilter($filter = false, $sort = false, $start = false, $limit = false,$fontend=true)
  {          
-    $req = "SELECT bc.*,pl.description,pl.short_description,p.thumb,pl.title
-            FROM "._DB_PREFIX_."ybc_blog_comment bc
-            INNER JOIN "._DB_PREFIX_."ybc_blog_post_shop ps on (bc.id_post=ps.id_post)
-            INNER JOIN "._DB_PREFIX_."ybc_blog_post p ON (p.id_post=ps.id_post)
-            LEFT JOIN "._DB_PREFIX_."ybc_blog_post_lang pl ON (p.id_post=pl.id_post AND pl.id_lang='".(int)$this->context->language->id."')
-            LEFT JOIN "._DB_PREFIX_."customer c ON (c.id_customer=p.added_by AND p.is_customer=1)
-            LEFT JOIN "._DB_PREFIX_."employee e ON (e.id_employee=p.added_by AND p.is_customer=0)
-            LEFT JOIN "._DB_PREFIX_."ybc_blog_employee ybe ON ((ybe.id_employee=c.id_customer AND ybe.is_customer=1) OR (ybe.id_employee=e.id_employee AND ybe.is_customer=0))
+    $req = "SELECT bc.*,pl.description,pl.short_description,pl.thumb,pl.title
+            FROM `"._DB_PREFIX_."ybc_blog_comment` bc
+            INNER JOIN `"._DB_PREFIX_."ybc_blog_post_shop` ps on (bc.id_post=ps.id_post)
+            INNER JOIN `"._DB_PREFIX_."ybc_blog_post` p ON (p.id_post=ps.id_post)
+            LEFT JOIN `"._DB_PREFIX_."ybc_blog_post_lang` pl ON (p.id_post=pl.id_post AND pl.id_lang='".(int)$this->context->language->id."')
+            LEFT JOIN `"._DB_PREFIX_."customer` c ON (c.id_customer=p.added_by AND p.is_customer=1)
+            LEFT JOIN `"._DB_PREFIX_."employee` e ON (e.id_employee=p.added_by AND p.is_customer=0)
+            LEFT JOIN `"._DB_PREFIX_."ybc_blog_employee` ybe ON ((ybe.id_employee=c.id_customer AND ybe.is_customer=1) OR (ybe.id_employee=e.id_employee AND ybe.is_customer=0))
             WHERE ".($fontend ? "(ybe.status>=0 OR ybe.status is NULL OR e.id_profile=1) AND p.enabled=1 AND ":"")." ps.id_shop=".(int)$this->context->shop->id." ".($filter ? $filter : '')."
+            GROUP BY bc.id_comment
             ORDER BY ".($sort ? $sort : '')." bc.id_comment desc " . ($start !== false && $limit ? " LIMIT ".(int)$start.", ".(int)$limit : "");
     $comments= Db::getInstance()->executeS($req);
     if($comments)
@@ -5601,13 +6084,13 @@ public function renderSettingCustomer()
         {
             if($comment['customer_reply']==1)
             {
-                $customer= Db::getInstance()->getRow('SELECT * FROM '._DB_PREFIX_.'customer WHERE id_shop="'.(int)$this->context->shop->id.'" AND  id_customer='.(int)$comment['replied_by']);
+                $customer= Db::getInstance()->getRow('SELECT * FROM `'._DB_PREFIX_.'customer` WHERE id_shop="'.(int)$this->context->shop->id.'" AND  id_customer='.(int)$comment['replied_by']);
                 $comment['efirstname']= $customer['firstname'];
                 $comment['elastname']= $customer['lastname'];
             }
             else
             {
-                $employee= Db::getInstance()->getRow('SELECT * FROM '._DB_PREFIX_.'employee WHERE id_employee='.(int)$comment['replied_by']);
+                $employee= Db::getInstance()->getRow('SELECT * FROM `'._DB_PREFIX_.'employee` WHERE id_employee='.(int)$comment['replied_by']);
                 $comment['efirstname']= $employee['firstname'];
                 $comment['elastname']= $employee['lastname'];
             }
@@ -5615,7 +6098,7 @@ public function renderSettingCustomer()
                 $comment['url_edit'] = $this->getLink('blog',array('id_post'=>$comment['id_post'],'edit_comment'=>$comment['id_comment']));
             if($this->checkPermisionComment('delete',$comment['id_comment']))
                 $comment['url_delete'] = $this->context->link->getModuleLink('ybc_blog','managementcomments',array('deletecomment'=>1,'id_comment'=>$comment['id_comment']));
-            $sql = 'SELECT * FROM '._DB_PREFIX_.'ybc_blog_reply WHERE id_comment='.(int)$comment['id_comment'].' AND approved=1';
+            $sql = 'SELECT * FROM `'._DB_PREFIX_.'ybc_blog_reply` WHERE id_comment='.(int)$comment['id_comment'].' AND approved=1';
             $comment['replies'] = Db::getInstance()->executeS($sql);
             if($comment['replies'])
             {
@@ -5624,16 +6107,16 @@ public function renderSettingCustomer()
                     $reply['reply']= str_replace("\n",'<'.'b'.'r'.'>',$reply['reply']);
                     if($reply['id_employee'])
                     {
-                        if($name= Db::getInstance()->getValue('SELECT name FROM '._DB_PREFIX_.'ybc_blog_employee WHERE id_employee="'.(int)$reply['id_employee'].'" AND is_customer=0'))
+                        if($name= Db::getInstance()->getValue('SELECT name FROM `'._DB_PREFIX_.'ybc_blog_employee` WHERE id_employee="'.(int)$reply['id_employee'].'" AND is_customer=0'))
                             $reply['name']= $name;
-                        elseif($name = Db::getInstance()->getValue('SELECT CONCAT(firstname," ",lastname) FROM '._DB_PREFIX_.'employee WHERE id_employee='.(int)$reply['id_employee']))
+                        elseif($name = Db::getInstance()->getValue('SELECT CONCAT(firstname," ",lastname) FROM `'._DB_PREFIX_.'employee` WHERE id_employee='.(int)$reply['id_employee']))
                             $reply['name']= $name;
                     }
                     if($reply['id_user'])
                     {
-                        if($name= Db::getInstance()->getValue('SELECT name FROM '._DB_PREFIX_.'ybc_blog_employee WHERE id_employee="'.(int)$reply['id_user'].'" AND is_customer=1'))
+                        if($name= Db::getInstance()->getValue('SELECT name FROM `'._DB_PREFIX_.'ybc_blog_employee` WHERE id_employee="'.(int)$reply['id_user'].'" AND is_customer=1'))
                             $reply['name']= $name;
-                        elseif($name = Db::getInstance()->getValue('SELECT CONCAT(firstname," ",lastname) FROM '._DB_PREFIX_.'customer WHERE id_customer='.(int)$reply['id_user']))
+                        elseif($name = Db::getInstance()->getValue('SELECT CONCAT(firstname," ",lastname) FROM `'._DB_PREFIX_.'customer` WHERE id_customer='.(int)$reply['id_user']))
                             $reply['name']= $name;
                     }
                 }
@@ -5647,22 +6130,22 @@ public function renderSettingCustomer()
  public function getCommentById($id_comment)
  {          
     return Db::getInstance()->getRow("SELECT bc.*, e.firstname as efirstname, e.lastname as elastname,pl.title as post_title
-            FROM "._DB_PREFIX_."ybc_blog_comment bc
-            LEFT JOIN "._DB_PREFIX_."employee e ON e.id_employee = bc.replied_by
-            LEFT JOIN "._DB_PREFIX_."ybc_blog_post_lang pl ON bc.id_post = pl.id_post AND pl.id_lang=".(int)$this->context->language->id."
+            FROM `"._DB_PREFIX_."ybc_blog_comment` bc
+            LEFT JOIN `"._DB_PREFIX_."employee` e ON e.id_employee = bc.replied_by
+            LEFT JOIN `"._DB_PREFIX_."ybc_blog_post_lang` pl ON bc.id_post = pl.id_post AND pl.id_lang=".(int)$this->context->language->id."
             WHERE bc.id_comment=".(int)$id_comment."
             ");
  }
  public function countCommentsWithFilter($filter = false,$fontend=true)
  { 
     $req = "SELECT COUNT(bc.id_comment) as total_comment
-            FROM "._DB_PREFIX_."ybc_blog_comment bc
-            INNER JOIN "._DB_PREFIX_."ybc_blog_post_shop ps on (bc.id_post=ps.id_post)
-            INNER JOIN "._DB_PREFIX_."ybc_blog_post p ON (p.id_post=ps.id_post)
-            LEFT JOIN "._DB_PREFIX_."ybc_blog_post_lang pl ON (p.id_post=pl.id_post AND pl.id_lang='".(int)$this->context->language->id."')
-            LEFT JOIN "._DB_PREFIX_."customer c ON (c.id_customer=p.added_by AND p.is_customer=1)
-            LEFT JOIN "._DB_PREFIX_."employee e ON (e.id_employee=p.added_by AND p.is_customer=0)
-            LEFT JOIN "._DB_PREFIX_."ybc_blog_employee ybe ON ((ybe.id_employee=c.id_customer AND ybe.is_customer=1) OR (ybe.id_employee=e.id_employee AND ybe.is_customer=0))
+            FROM `"._DB_PREFIX_."ybc_blog_comment` bc
+            INNER JOIN `"._DB_PREFIX_."ybc_blog_post_shop` ps on (bc.id_post=ps.id_post)
+            INNER JOIN `"._DB_PREFIX_."ybc_blog_post` p ON (p.id_post=ps.id_post)
+            LEFT JOIN `"._DB_PREFIX_."ybc_blog_post_lang` pl ON (p.id_post=pl.id_post AND pl.id_lang='".(int)$this->context->language->id."')
+            LEFT JOIN `"._DB_PREFIX_."customer` c ON (c.id_customer=p.added_by AND p.is_customer=1)
+            LEFT JOIN `"._DB_PREFIX_."employee` e ON (e.id_employee=p.added_by AND p.is_customer=0)
+            LEFT JOIN `"._DB_PREFIX_."ybc_blog_employee` ybe ON ((ybe.id_employee=c.id_customer AND ybe.is_customer=1) OR (ybe.id_employee=e.id_employee AND ybe.is_customer=0))
             WHERE ".($fontend ? "(ybe.status>=0 OR ybe.status is NULL OR e.id_profile=1) AND p.enabled=1 AND ":"")."  ps.id_shop=".(int)$this->context->shop->id." ".($filter ? $filter : '');
      $row = Db::getInstance()->getRow($req);
      return isset($row['total_comment']) ?  (int)$row['total_comment'] : 0;
@@ -5688,7 +6171,7 @@ public function renderSettingCustomer()
  public function getTotalReviewsWithRating($id_post)
  {
     $req = "SELECT SUM(rating) as total_rating
-            FROM "._DB_PREFIX_."ybc_blog_comment
+            FROM `"._DB_PREFIX_."ybc_blog_comment`
             WHERE id_post = ".(int)$id_post." AND rating > 0 AND approved = 1";
     $row = Db::getInstance()->getRow($req);
     if(isset($row['total_rating']))
@@ -5698,7 +6181,7 @@ public function renderSettingCustomer()
  public function countTotalReviewsWithRating($id_post)
  {
     $req = "SELECT COUNT(rating) as num_rating
-            FROM "._DB_PREFIX_."ybc_blog_comment
+            FROM `"._DB_PREFIX_."ybc_blog_comment`
             WHERE id_post = ".(int)$id_post." AND rating > 0 AND approved = 1";
     $row = Db::getInstance()->getRow($req);
     if(isset($row['num_rating']))
@@ -5711,7 +6194,9 @@ public function renderSettingCustomer()
   */
  public function hookDisplayLeftColumn()
  {
-    if(Configuration::get('YBC_BLOG_DISPLAY_BLOG_ONLY') && (Tools::getValue('fc')!='module' || Tools::getValue('module')!=$this->name))
+    $fc = Tools::getValue('fc');
+    $module = Tools::getValue('module');
+    if(Configuration::get('YBC_BLOG_DISPLAY_BLOG_ONLY') && ($fc!='module' || $module!=$this->name))
         return '';
     $params=array();
     $sidebars=array(
@@ -5731,10 +6216,25 @@ public function renderSettingCustomer()
     $sidebars_postion= explode(',',Configuration::get('YBC_BLOG_POSITION_SIDEBAR') ? Configuration::get('YBC_BLOG_POSITION_SIDEBAR') :'sidebar_categories,sidebar_search,sidebar_new,sidebar_popular,sidebar_featured,sidebar_tags,sidebar_gallery,sidebar_archived,sidebar_comments,sidebar_authors,sidebar_htmlbox,sidebar_rss');
     if(!in_array('sidebar_htmlbox',$sidebars_postion))
         $sidebars_postion[] = 'sidebar_htmlbox';
+    $display_slidebar = false;
+    if($sidebars)
+    {
+        foreach($sidebars as $sidebar)
+        {
+            if($sidebar)
+            {
+                $display_slidebar = true;
+                break;
+            }    
+        }
+    }
+    if(!$display_slidebar)
+        return '';
     $this->context->smarty->assign(
         array(
             'sidebars_postion' => $sidebars_postion,
-            'sidebars'=>$sidebars
+            'sidebars'=>$sidebars,
+            'display_slidebar' => $display_slidebar,
         )
     );
     return $this->display(__FILE__, 'blocks.tpl');
@@ -5764,11 +6264,11 @@ public function renderSettingCustomer()
   }      
   public function hookDisplayBackOfficeHeader()
   {
-        $this->context->controller->addCSS($this->_path.'views/css/font-awesome.css');
         $this->context->controller->addCSS($this->_path.'views/css/admin_all.css');
-        if((Tools::getValue('controller')=='AdminModules' && Tools::getValue('configure')==$this->name) || Tools::getValue('controller')=='AdminYbcBlogStatistics')
+        $controller = Tools::getValue('controller');
+        $configure = Tools::getValue('configure');
+        if(($controller=='AdminModules' && $configure==$this->name) || $controller=='AdminYbcBlogStatistics')
         {
-            $this->context->controller->addCSS($this->_path.'views/css/font-awesome.css');
             $this->context->controller->addCSS($this->_path.'views/css/admin.css');
             $this->context->controller->addCSS($this->_path.'views/css/other.css');
             if(!$this->is17)
@@ -5776,7 +6276,7 @@ public function renderSettingCustomer()
                 $this->context->controller->addCSS($this->_path.'views/css/admin_fix16.css'); 
             }
         }
-        if(Tools::getValue('controller')=='AdminYbcBlogStatistics')
+        if($controller=='AdminYbcBlogStatistics')
         {
             $this->context->controller->addJquery();
             $this->context->controller->addJqueryPlugin('autocomplete');
@@ -5799,67 +6299,87 @@ public function renderSettingCustomer()
         return $this->display(__FILE__, 'footer.tpl');
   }
   public function hookDisplayHeader()
+  {
+    return $this->hookHeader();
+  }
+  public function hookHeader()
   { 
         $this->assignConfig();
-        if($this->is17)
-        {
-            $this->context->controller->addCSS($this->_path.'views/css/fix17.css');
-        }                
-        else
-            $this->context->controller->addCSS($this->_path.'views/css/fix16.css');
-        if(Tools::getValue('controller')=='myaccount'){
-            $this->context->controller->addCSS($this->_path.'views/css/font-awesome.css');
+        $controller = Tools::getValue('controller'); 
+        $fc = Tools::getValue('fc');
+        $module = Tools::getValue('module');
+        if($controller=='myaccount'){
             $this->context->controller->addCSS($this->_path.'views/css/material-icons.css');
             $this->context->controller->addCSS($this->_path.'views/css/blog.css');
             return '';
         }
-        
-        if(Tools::getValue('controller')=='index'  && Configuration::get('YBC_BLOG_DISPLAY_BLOG_ONLY') && !Configuration::get('YBC_BLOG_SHOW_GALLERY_BLOCK_HOME') && !Configuration::get('YBC_BLOG_SHOW_CATEGORY_BLOCK_HOME') && !Configuration::get('YBC_BLOG_SHOW_FEATURED_BLOCK_HOME') && !Configuration::get('YBC_BLOG_SHOW_POPULAR_BLOCK_HOME') && !Configuration::get('YBC_BLOG_SHOW_LATEST_BLOCK_HOME')) 
+        if($controller=='index'  && Configuration::get('YBC_BLOG_DISPLAY_BLOG_ONLY') && !Configuration::get('YBC_BLOG_SHOW_GALLERY_BLOCK_HOME') && !Configuration::get('YBC_BLOG_SHOW_CATEGORY_BLOCK_HOME') && !Configuration::get('YBC_BLOG_SHOW_FEATURED_BLOCK_HOME') && !Configuration::get('YBC_BLOG_SHOW_POPULAR_BLOCK_HOME') && !Configuration::get('YBC_BLOG_SHOW_LATEST_BLOCK_HOME')) 
             return '';
-        if(Tools::getValue('controller')=='index'  && !Configuration::get('YBC_BLOG_DISPLAY_BLOG_ONLY') && !Configuration::get('YBC_BLOG_SHOW_GALLERY_BLOCK_HOME') && !Configuration::get('YBC_BLOG_SHOW_CATEGORY_BLOCK_HOME') && !Configuration::get('YBC_BLOG_SHOW_FEATURED_BLOCK_HOME') && !Configuration::get('YBC_BLOG_SHOW_POPULAR_BLOCK_HOME') && !Configuration::get('YBC_BLOG_SHOW_LATEST_BLOCK_HOME') && !Configuration::get('YBC_BLOG_ENABLE_RSS') && !Configuration::get('YBC_BLOG_SHOW_AUTHOR_BLOCK') && !Configuration::get('YBC_BLOG_SHOW_COMMENT_BLOCK') && !Configuration::get('YBC_BLOG_SHOW_TAGS_BLOCK') && !Configuration::get('YBC_BLOG_SHOW_SEARCH_BLOCK') && !Configuration::get('YBC_BLOG_SHOW_CATEGORIES_BLOCK') && !Configuration::get('YBC_BLOG_SHOW_ARCHIVES_BLOCK') && !Configuration::get('YBC_BLOG_SHOW_GALLERY_BLOCK') && !Configuration::get('YBC_BLOG_SHOW_FEATURED_BLOCK') && !Configuration::get('YBC_BLOG_SHOW_POPULAR_POST_BLOCK') && !Configuration::get('YBC_BLOG_SHOW_LATEST_NEWS_BLOCK')) 
+        if($controller=='index'  && !Configuration::get('YBC_BLOG_DISPLAY_BLOG_ONLY') && !Configuration::get('YBC_BLOG_SHOW_GALLERY_BLOCK_HOME') && !Configuration::get('YBC_BLOG_SHOW_CATEGORY_BLOCK_HOME') && !Configuration::get('YBC_BLOG_SHOW_FEATURED_BLOCK_HOME') && !Configuration::get('YBC_BLOG_SHOW_POPULAR_BLOCK_HOME') && !Configuration::get('YBC_BLOG_SHOW_LATEST_BLOCK_HOME') && !Configuration::get('YBC_BLOG_ENABLE_RSS') && !Configuration::get('YBC_BLOG_SHOW_AUTHOR_BLOCK') && !Configuration::get('YBC_BLOG_SHOW_COMMENT_BLOCK') && !Configuration::get('YBC_BLOG_SHOW_TAGS_BLOCK') && !Configuration::get('YBC_BLOG_SHOW_SEARCH_BLOCK') && !Configuration::get('YBC_BLOG_SHOW_CATEGORIES_BLOCK') && !Configuration::get('YBC_BLOG_SHOW_ARCHIVES_BLOCK') && !Configuration::get('YBC_BLOG_SHOW_GALLERY_BLOCK') && !Configuration::get('YBC_BLOG_SHOW_FEATURED_BLOCK') && !Configuration::get('YBC_BLOG_SHOW_POPULAR_POST_BLOCK') && !Configuration::get('YBC_BLOG_SHOW_LATEST_NEWS_BLOCK')) 
             return '';
-        if( (Tools::getValue('fc')!='module' || Tools::getValue('module')!=$this->name) && Tools::getValue('controller')!='index' && Tools::getValue('controller')!='product' &&  Tools::getValue('controller')!='category'  && !Configuration::get('YBC_BLOG_DISPLAY_BLOG_ONLY') && !Configuration::get('YBC_BLOG_ENABLE_RSS') && !Configuration::get('YBC_BLOG_SHOW_AUTHOR_BLOCK') && !Configuration::get('YBC_BLOG_SHOW_COMMENT_BLOCK') && !Configuration::get('YBC_BLOG_SHOW_TAGS_BLOCK') && !Configuration::get('YBC_BLOG_SHOW_SEARCH_BLOCK') && !Configuration::get('YBC_BLOG_SHOW_CATEGORIES_BLOCK') && !Configuration::get('YBC_BLOG_SHOW_ARCHIVES_BLOCK') && !Configuration::get('YBC_BLOG_SHOW_GALLERY_BLOCK') && !Configuration::get('YBC_BLOG_SHOW_FEATURED_BLOCK') && !Configuration::get('YBC_BLOG_SHOW_POPULAR_POST_BLOCK') && !Configuration::get('YBC_BLOG_SHOW_LATEST_NEWS_BLOCK'))
+        if( ($fc!='module' || $module!=$this->name) && $controller!='index' && $controller!='product' &&  $controller!='category'  && !Configuration::get('YBC_BLOG_DISPLAY_BLOG_ONLY') && !Configuration::get('YBC_BLOG_ENABLE_RSS') && !Configuration::get('YBC_BLOG_SHOW_AUTHOR_BLOCK') && !Configuration::get('YBC_BLOG_SHOW_COMMENT_BLOCK') && !Configuration::get('YBC_BLOG_SHOW_TAGS_BLOCK') && !Configuration::get('YBC_BLOG_SHOW_SEARCH_BLOCK') && !Configuration::get('YBC_BLOG_SHOW_CATEGORIES_BLOCK') && !Configuration::get('YBC_BLOG_SHOW_ARCHIVES_BLOCK') && !Configuration::get('YBC_BLOG_SHOW_GALLERY_BLOCK') && !Configuration::get('YBC_BLOG_SHOW_FEATURED_BLOCK') && !Configuration::get('YBC_BLOG_SHOW_POPULAR_POST_BLOCK') && !Configuration::get('YBC_BLOG_SHOW_LATEST_NEWS_BLOCK'))
             return '';
-        elseif((Tools::getValue('fc')!='module' || Tools::getValue('module')!=$this->name) && Tools::getValue('controller')!='index' && Tools::getValue('controller')!='product' &&  Tools::getValue('controller')!='category'  && Configuration::get('YBC_BLOG_DISPLAY_BLOG_ONLY'))
+        elseif(($fc!='module' || $module!=$this->name) && $controller!='index' && $controller!='product' && $controller!='category'  && Configuration::get('YBC_BLOG_DISPLAY_BLOG_ONLY'))
             return '';
-        if(Tools::getValue('controller')=='category' && Tools::getValue('fc')!='module'  && Configuration::get('YBC_BLOG_DISPLAY_BLOG_ONLY') && !Configuration::get('YBC_BLOG_DISPLAY_CATEGORY_PAGE')) 
+        if($controller=='category' && $fc!='module'  && Configuration::get('YBC_BLOG_DISPLAY_BLOG_ONLY') && !Configuration::get('YBC_BLOG_DISPLAY_CATEGORY_PAGE')) 
             return '';
-        if(Tools::getValue('controller')=='product'  && Configuration::get('YBC_BLOG_DISPLAY_BLOG_ONLY') && !Configuration::get('YBC_BLOG_DISPLAY_PRODUCT_PAGE')) 
+        if($controller=='product'  && Configuration::get('YBC_BLOG_DISPLAY_BLOG_ONLY') && !Configuration::get('YBC_BLOG_DISPLAY_PRODUCT_PAGE')) 
             return '';
-        if(Tools::getValue('controller')=='product'  && !Configuration::get('YBC_BLOG_DISPLAY_BLOG_ONLY') && !Configuration::get('YBC_BLOG_DISPLAY_PRODUCT_PAGE')&& !Configuration::get('YBC_BLOG_ENABLE_RSS') && !Configuration::get('YBC_BLOG_SHOW_AUTHOR_BLOCK') && !Configuration::get('YBC_BLOG_SHOW_COMMENT_BLOCK') && !Configuration::get('YBC_BLOG_SHOW_TAGS_BLOCK') && !Configuration::get('YBC_BLOG_SHOW_SEARCH_BLOCK') && !Configuration::get('YBC_BLOG_SHOW_CATEGORIES_BLOCK') && !Configuration::get('YBC_BLOG_SHOW_ARCHIVES_BLOCK') && !Configuration::get('YBC_BLOG_SHOW_GALLERY_BLOCK') && !Configuration::get('YBC_BLOG_SHOW_FEATURED_BLOCK') && !Configuration::get('YBC_BLOG_SHOW_POPULAR_POST_BLOCK') && !Configuration::get('YBC_BLOG_SHOW_LATEST_NEWS_BLOCK')) 
+        if($controller=='product'  && !Configuration::get('YBC_BLOG_DISPLAY_BLOG_ONLY') && !Configuration::get('YBC_BLOG_DISPLAY_PRODUCT_PAGE')&& !Configuration::get('YBC_BLOG_ENABLE_RSS') && !Configuration::get('YBC_BLOG_SHOW_AUTHOR_BLOCK') && !Configuration::get('YBC_BLOG_SHOW_COMMENT_BLOCK') && !Configuration::get('YBC_BLOG_SHOW_TAGS_BLOCK') && !Configuration::get('YBC_BLOG_SHOW_SEARCH_BLOCK') && !Configuration::get('YBC_BLOG_SHOW_CATEGORIES_BLOCK') && !Configuration::get('YBC_BLOG_SHOW_ARCHIVES_BLOCK') && !Configuration::get('YBC_BLOG_SHOW_GALLERY_BLOCK') && !Configuration::get('YBC_BLOG_SHOW_FEATURED_BLOCK') && !Configuration::get('YBC_BLOG_SHOW_POPULAR_POST_BLOCK') && !Configuration::get('YBC_BLOG_SHOW_LATEST_NEWS_BLOCK')) 
             return '';
-        if(Tools::getValue('controller')=='category' && Tools::getValue('fc')!='module'  && !Configuration::get('YBC_BLOG_DISPLAY_BLOG_ONLY') && !Configuration::get('YBC_BLOG_DISPLAY_CATEGORY_PAGE')&& !Configuration::get('YBC_BLOG_ENABLE_RSS') && !Configuration::get('YBC_BLOG_SHOW_AUTHOR_BLOCK') && !Configuration::get('YBC_BLOG_SHOW_COMMENT_BLOCK') && !Configuration::get('YBC_BLOG_SHOW_TAGS_BLOCK') && !Configuration::get('YBC_BLOG_SHOW_SEARCH_BLOCK') && !Configuration::get('YBC_BLOG_SHOW_CATEGORIES_BLOCK') && !Configuration::get('YBC_BLOG_SHOW_ARCHIVES_BLOCK') && !Configuration::get('YBC_BLOG_SHOW_GALLERY_BLOCK') && !Configuration::get('YBC_BLOG_SHOW_FEATURED_BLOCK') && !Configuration::get('YBC_BLOG_SHOW_POPULAR_POST_BLOCK') && !Configuration::get('YBC_BLOG_SHOW_LATEST_NEWS_BLOCK')) 
+        if($controller=='category' && $fc!='module'  && !Configuration::get('YBC_BLOG_DISPLAY_BLOG_ONLY') && !Configuration::get('YBC_BLOG_DISPLAY_CATEGORY_PAGE')&& !Configuration::get('YBC_BLOG_ENABLE_RSS') && !Configuration::get('YBC_BLOG_SHOW_AUTHOR_BLOCK') && !Configuration::get('YBC_BLOG_SHOW_COMMENT_BLOCK') && !Configuration::get('YBC_BLOG_SHOW_TAGS_BLOCK') && !Configuration::get('YBC_BLOG_SHOW_SEARCH_BLOCK') && !Configuration::get('YBC_BLOG_SHOW_CATEGORIES_BLOCK') && !Configuration::get('YBC_BLOG_SHOW_ARCHIVES_BLOCK') && !Configuration::get('YBC_BLOG_SHOW_GALLERY_BLOCK') && !Configuration::get('YBC_BLOG_SHOW_FEATURED_BLOCK') && !Configuration::get('YBC_BLOG_SHOW_POPULAR_POST_BLOCK') && !Configuration::get('YBC_BLOG_SHOW_LATEST_NEWS_BLOCK')) 
             return '';
-        
         if(Module::isInstalled('ybc_blog')&& Module::isEnabled('ybc_blog'))
         {
             if($this->checkCreatedColumn('ybc_blog_post','datetime_active'))
-                Db::getInstance()->execute('UPDATE '._DB_PREFIX_.'ybc_blog_post SET enabled=1 WHERE datetime_active!="0000-00-00" AND datetime_active!="" AND enabled=2 AND datetime_active<=NOW()');
+                Db::getInstance()->execute('UPDATE `'._DB_PREFIX_.'ybc_blog_post` SET enabled=1 WHERE datetime_active!="0000-00-00" AND datetime_active is not NULL AND enabled=2 AND datetime_active<=NOW()');
         }
-        $this->context->controller->addJS($this->_path.'views/js/owl.carousel.js');
-        $this->context->controller->addJS($this->_path.'views/js/jquery.prettyPhoto.js');
-        $this->context->controller->addJS($this->_path.'views/js/prettyPhoto.inc.js');
-        $this->context->controller->addJS($this->_path.'views/js/slick.js');
-        $this->context->controller->addJS($this->_path.'views/js/jquery.lazyload.min.js'); 
-        $this->context->controller->addJS($this->_path.'views/js/blog.js');           
-        $this->context->controller->addCSS($this->_path.'views/css/prettyPhoto.css');
-        $this->context->controller->addCSS($this->_path.'views/css/font-awesome.css');
-        $this->context->controller->addCSS($this->_path.'views/css/material-icons.css');
-        $this->context->controller->addCSS($this->_path.'views/css/owl.carousel.css');
-        $this->context->controller->addCSS($this->_path.'views/css/owl.theme.css');
-        $this->context->controller->addCSS($this->_path.'views/css/slick.css');
-        $this->context->controller->addCSS($this->_path.'views/css/owl.transitions.css');
-        $this->context->controller->addCSS($this->_path.'views/css/blog.css');
+        if($controller!='index'){
+            $this->context->controller->addJS($this->_path.'views/js/slick.js');
+            $this->context->controller->addCSS($this->_path.'views/css/slick.css');
+            $this->context->controller->addJS($this->_path.'views/js/owl.carousel.js');
+            $this->context->controller->addJS($this->_path.'views/js/jquery.prettyPhoto.js');
+            $this->context->controller->addJS($this->_path.'views/js/prettyPhoto.inc.js');
+            $this->context->controller->addJS($this->_path.'views/js/jquery.lazyload.min.js'); 
+            $this->context->controller->addJS($this->_path.'views/js/blog.js');           
+            $this->context->controller->addCSS($this->_path.'views/css/prettyPhoto.css');
+            $this->context->controller->addCSS($this->_path.'views/css/material-icons.css');
+            $this->context->controller->addCSS($this->_path.'views/css/owl.carousel.css');
+            $this->context->controller->addCSS($this->_path.'views/css/owl.theme.css');
+            $this->context->controller->addCSS($this->_path.'views/css/owl.transitions.css');
+            $this->context->controller->addCSS($this->_path.'views/css/blog.css');
+            
+        }       
+        if($controller=='index') {
+            if(Configuration::get('YBC_BLOG_SHOW_GALLERY_BLOCK_HOME'))
+            {
+                $this->context->controller->addJS($this->_path.'views/js/jquery.prettyPhoto.js');
+                $this->context->controller->addJS($this->_path.'views/js/prettyPhoto.inc.js');
+                $this->context->controller->addCSS($this->_path.'views/css/prettyPhoto.css');
+            }
+            if(Configuration::get('YBC_BLOG_HOME_POST_TYPE')=='carousel' || (Configuration::get('YBC_BLOG_SHOW_GALLERY_BLOCK_HOME') && Configuration::get('YBC_BLOG_GALLERY_BLOCK_HOME_SLIDER_ENABLED')))
+            {
+                $this->context->controller->addJS($this->_path.'views/js/owl.carousel.js');
+                $this->context->controller->addCSS($this->_path.'views/css/owl.carousel.css');
+                $this->context->controller->addCSS($this->_path.'views/css/owl.theme.css');
+                $this->context->controller->addCSS($this->_path.'views/css/owl.transitions.css');
+            }
+            $this->context->controller->addJS($this->_path.'views/js/home_blog.js');
+            //$this->context->controller->addJS($this->_path.'views/js/blog.js');
+            if(!$this->is17)           
+                $this->context->controller->addCSS($this->_path.'views/css/material-icons.css');
+            $this->context->controller->addCSS($this->_path.'views/css/blog_home.css');
+        }
               
         if(Configuration::get('YBC_BLOG_RTL_MODE')=='auto' && isset($this->context->language->is_rtl) && $this->context->language->is_rtl || Configuration::get('YBC_BLOG_RTL_MODE')=='rtl')
             $this->context->controller->addCSS($this->_path.'views/css/rtl.css'); 
-        if(trim(Tools::getValue('fc'))=='module' && trim(Tools::getValue('module'))=='ybc_blog')
+        if($fc=='module' && $module=='ybc_blog')
         {
             $this->context->controller->addJS($this->_path.'views/js/jquery.nivo.slider.js');
             $this->context->controller->addCSS($this->_path.'views/css/nivo-slider.css');
             $this->context->controller->addCSS($this->_path.'views/css/themes/default/default.css');                
         }
-        if(Tools::getValue('controller')=='category' && Configuration::get('YBC_BLOG_DISPLAY_CATEGORY_PAGE') && $id_category=Tools::getValue('id_category'))
+        if($controller=='category' && Configuration::get('YBC_BLOG_DISPLAY_CATEGORY_PAGE') && $id_category=(int)Tools::getValue('id_category'))
         {
             if(Tools::isSubmit('displayPostRelatedCategories'))
             {
@@ -5944,20 +6464,26 @@ public function renderSettingCustomer()
         $rtl = false;
       $assign['YBC_BLOG_RTL_CLASS'] = $rtl ? 'ybc_blog_rtl_mode' : 'ybc_blog_ltr_mode'; 
       $assign['YBC_BLOG_SHOP_URI'] = _PS_BASE_URL_.__PS_BASE_URI__;  
-      if(trim(Tools::getValue('fc'))=='module' && trim(Tools::getValue('module'))=='ybc_blog' && Tools::getValue('controller')=='managementblog' && Tools::getValue('tabmanagament')=='post')
+      $fc = Tools::getValue('fc');
+      $module = Tools::getValue('module');
+      $controller = Tools::getValue('controller');
+      $tabmanagament = Tools::getValue('tabmanagament');
+      if($fc=='module' && $module=='ybc_blog' && $controller=='managementblog' && $tabmanagament=='post')
       {
             $this->context->smarty->assign('add_tmce',true);
       }
+      $rating = (int)Tools::getValue('rating');
+      $id_post = (int)Tools::getValue('id_post');
       $this->context->smarty->assign(
             array(
                 'allowComments' => (int)Configuration::get('YBC_BLOG_ALLOW_COMMENT'),
                 'allowGuestsComments' => (int)Configuration::get('YBC_BLOG_ALLOW_GUEST_COMMENT') ? true : false,
-                'blogCommentAction' => $this->getLink('blog',array('id_post'=>(int)Tools::getValue('id_post'))),
+                'blogCommentAction' => $this->getLink('blog',array('id_post'=>(int)$id_post)),
                 'hasLoggedIn' => $this->context->customer->isLogged(true), 
                 'allow_report_comment' =>(int)Configuration::get('YBC_BLOG_ALLOW_REPORT') ? true : false,
                 'display_related_products' =>(int)Configuration::get('YBC_BLOG_SHOW_RELATED_PRODUCTS') ? true : false,
                 'allow_rating' => (int)Configuration::get('YBC_BLOG_ALLOW_RATING') ? true : false,
-                'default_rating' => (int)Tools::getValue('rating') > 0 && (int)Tools::getValue('rating') <=5 ? (int)Tools::getValue('rating')  :(int)Configuration::get('YBC_BLOG_DEFAULT_RATING'),
+                'default_rating' => (int)$rating > 0 && (int)$rating <=5 ? (int)$rating  :(int)Configuration::get('YBC_BLOG_DEFAULT_RATING'),
                 'use_capcha' => (int)Configuration::get('YBC_BLOG_USE_CAPCHA') ? true : false,
                 'use_facebook_share' => (int)Configuration::get('YBC_BLOG_ENABLE_FACEBOOK_SHARE') ? true : false,
                 'use_google_share' => (int)Configuration::get('YBC_BLOG_ENABLE_GOOGLE_SHARE') ? true : false,
@@ -5975,7 +6501,7 @@ public function renderSettingCustomer()
                 'blog_related_product_type' => Tools::strtolower(Configuration::get('YBC_RELATED_PRODUCTS_TYPE')),
                 'blog_related_posts_type' => Tools::strtolower(Configuration::get('YBC_RELATED_POSTS_TYPE')),
                 'blog_dir' => $this->blogDir,
-                'image_folder' => $this->blogDir.'views/img/',
+                'image_folder' => _PS_YBC_BLOG_IMG_,
             )
       );          
       $this->context->smarty->assign(array('blog_config' => $assign));
@@ -6008,10 +6534,11 @@ public function renderSettingCustomer()
             )
         );
         $this->assignConfig();
+        $list_blog = $this->context->smarty ->fetch(_PS_MODULE_DIR_.$this->name.'/views/templates/hook/blog_list.tpl');
         die(
             Tools::jsonEncode(
                 array(
-                     'list_blog'=> $this->display(__FILE__,'blog_list.tpl'),   
+                     'list_blog'=> $list_blog,   
                      'blog_paggination'=>$postData['paggination'],            
                 )
             )
@@ -6058,7 +6585,7 @@ public function renderSettingCustomer()
                 'breadcrumb' => $this->is17 ? $this->getBreadCrumb() : false,
                 'show_date' => (int)Configuration::get('YBC_BLOG_SHOW_POST_DATE') ? true : false,
                 'date_format' => trim((string)Configuration::get('YBC_BLOG_DATE_FORMAT')),
-                'image_folder' => $this->blogDir.'views/img/category/',
+                'image_folder' => _PS_YBC_BLOG_IMG_.'category/',
             )
         );
         $this->assignConfig();
@@ -6086,7 +6613,7 @@ public function renderSettingCustomer()
                 'blog_layout' => Tools::strtolower(Configuration::get('YBC_BLOG_LAYOUT')),
                 'comment_paggination' => $paggination->render(),          
                 'show_date' => (int)Configuration::get('YBC_BLOG_SHOW_POST_DATE') ? true : false,
-                'image_folder' => $this->_path.'views/img/avata/',
+                'image_folder' => _PS_YBC_BLOG_IMG_.'avata/',
             )
         );
         $this->assignConfig();
@@ -6103,16 +6630,17 @@ public function renderSettingCustomer()
   {
         if(!Configuration::get('YBC_BLOG_SHOW_SEARCH_BLOCK'))
             return;
+        $search = trim(Tools::getValue('search'));
         $this->smarty->assign(
             array(
                 'action' => $this->getLink('blog'),
-                'search' => urldecode(trim(Tools::getValue('search'))),
+                'search' => Validate::isCleanHtml($search) ? urldecode($search):'',
                 'id_lang' => $this->context->language->id
             )
         );
-        if(trim(Tools::getValue('blog_search'))!='')
+        if(($blog_search = trim(Tools::getValue('blog_search')))!='' && Validate::isCleanHtml($blog_search))
         {
-            Tools::redirect($this->getLink('blog',array('search'=>urlencode(trim(Tools::getValue('blog_search'))))));
+            Tools::redirect($this->getLink('blog',array('search'=> urlencode($blog_search))));
         }
         return $this->display(__FILE__, 'search_block.tpl');
   }
@@ -6140,24 +6668,24 @@ public function renderSettingCustomer()
             {
                 $post['link'] = $this->getLink('blog',array('id_post' => $post['id_post']));
                 if($post['thumb'])
-                    $post['thumb'] = $this->_path.'views/img/post/thumb/'.$post['thumb'];
+                    $post['thumb'] = $this->context->link->getMediaLink(_PS_YBC_BLOG_IMG_.'post/thumb/'.$post['thumb']);
                 $post['comments_num'] = $this->countCommentsWithFilter(' AND bc.id_post='.$post['id_post'].' AND approved=1');
                 $post['liked'] = $this->isLikedPost($post['id_post']);
                 if($post['id_user'] && !$post['name'])
-                    $post['name']=  Db::getInstance()->getValue('SELECT CONCAT(firstname, " ", lastname) FROM '._DB_PREFIX_.'customer WHERE id_shop ="'.(int)$this->context->shop->id.'" AND id_customer="'.(int)$post['id_user'].'"');
+                    $post['name']=  Db::getInstance()->getValue('SELECT CONCAT(firstname, " ", lastname) FROM `'._DB_PREFIX_.'customer` WHERE id_shop ="'.(int)$this->context->shop->id.'" AND id_customer="'.(int)$post['id_user'].'"');
                 if($post['id_user'])
                 {
-                    $customerinfo = Db::getInstance()->getRow('SELECT * FROM '._DB_PREFIX_.'ybc_blog_employee WHERE id_employee="'.(int)$post['id_user'].'" AND is_customer=1');
+                    $customerinfo = Db::getInstance()->getRow('SELECT * FROM `'._DB_PREFIX_.'ybc_blog_employee` WHERE id_employee="'.(int)$post['id_user'].'" AND is_customer=1');
                     if($customerinfo && $customerinfo['avata'])
                     {
-                        $post['avata'] = $this->getBaseLink().'modules/'.$this->name.'/views/img/avata/'.$customerinfo['avata'];
+                        $post['avata'] = $this->context->link->getMediaLink(_PS_YBC_BLOG_IMG_.'avata/'.$customerinfo['avata']);
                     }
                     else
-                       $post['avata'] = $this->getBaseLink().'modules/'.$this->name.'/views/img/avata/'.(Configuration::get('YBC_BLOG_IMAGE_AVATA_DEFAULT')? Configuration::get('YBC_BLOG_IMAGE_AVATA_DEFAULT') :'default_customer.png'); 
+                       $post['avata'] = $this->context->link->getMediaLink(_PS_YBC_BLOG_IMG_.'avata/'.(Configuration::get('YBC_BLOG_IMAGE_AVATA_DEFAULT')? Configuration::get('YBC_BLOG_IMAGE_AVATA_DEFAULT') :'default_customer.png')); 
                 }
                 else
                 {
-                    $post['avata'] = $this->getBaseLink().'modules/'.$this->name.'/views/img/avata/'.(Configuration::get('YBC_BLOG_IMAGE_AVATA_DEFAULT')? Configuration::get('YBC_BLOG_IMAGE_AVATA_DEFAULT') :'default_customer.png');
+                    $post['avata'] = $this->context->link->getMediaLink(_PS_YBC_BLOG_IMG_.'avata/'.(Configuration::get('YBC_BLOG_IMAGE_AVATA_DEFAULT')? Configuration::get('YBC_BLOG_IMAGE_AVATA_DEFAULT') :'default_customer.png'));
                 }
                 $post['categories'] = $this->getCategoriesByIdPost($post['id_post'],false,true);
             }
@@ -6295,7 +6823,8 @@ public function renderSettingCustomer()
             'enabled' => $enabled,
             'module_name' => $moduleName,
             'categories' => $categories,
-            'img_dir' => $this->_path . 'views/img/',
+            'img_dirs' => $this->_path . 'views/img/',
+            'img_dir' => _PS_YBC_BLOG_IMG_,
             'intro' => $intro,
             'shortlink' => $this->shortlink,
             'ets_profile_url' => isset($profileLinks[$iso]) ? $profileLinks[$iso] : $profileLinks['en'],
@@ -6356,11 +6885,11 @@ public function renderSettingCustomer()
   {
         if(!Configuration::get('YBC_BLOG_SHOW_AUTHOR_BLOCK'))
             return '';
-        $sql ='SELECT COUNT(p.id_post) as total_post, p.added_by,p.is_customer FROM '._DB_PREFIX_.'ybc_blog_post p
-            INNER JOIN '._DB_PREFIX_.'ybc_blog_post_shop ps ON (p.id_post =ps.id_post AND ps.id_shop="'.(int)$this->context->shop->id.'")
-            LEFT JOIN '._DB_PREFIX_.'employee e ON (e.id_employee=p.added_by AND p.is_customer=1)
-            LEFT JOIN '._DB_PREFIX_.'customer c ON (c.id_customer =p.added_by AND p.is_customer=0)
-            LEFT JOIN '._DB_PREFIX_.'ybc_blog_employee ybe ON ((ybe.id_employee=c.id_customer AND ybe.is_customer=1) OR (ybe.id_employee=e.id_employee AND ybe.is_customer=0))
+        $sql ='SELECT COUNT(p.id_post) as total_post, p.added_by,p.is_customer FROM `'._DB_PREFIX_.'ybc_blog_post` p
+            INNER JOIN `'._DB_PREFIX_.'ybc_blog_post_shop` ps ON (p.id_post =ps.id_post AND ps.id_shop="'.(int)$this->context->shop->id.'")
+            LEFT JOIN `'._DB_PREFIX_.'employee` e ON (e.id_employee=p.added_by AND p.is_customer=1)
+            LEFT JOIN `'._DB_PREFIX_.'customer` c ON (c.id_customer =p.added_by AND p.is_customer=0)
+            LEFT JOIN `'._DB_PREFIX_.'ybc_blog_employee` ybe ON ((ybe.id_employee=c.id_customer AND ybe.is_customer=1) OR (ybe.id_employee=e.id_employee AND ybe.is_customer=0))
             WHERE (ybe.status>=0 OR ybe.status is NULL OR e.id_profile=1) AND p.enabled=1 
             GROUP BY p.added_by,p.is_customer ORDER BY total_post DESC LIMIT 0,'.(Configuration::get('YBC_BLOG_AUTHOR_NUMBER') ? Configuration::get('YBC_BLOG_AUTHOR_NUMBER') : 3).'';
         $authors= Db::getInstance()->executeS($sql);
@@ -6371,38 +6900,38 @@ public function renderSettingCustomer()
                 if($author['is_customer'])
                 {
                     $information = Db::getInstance()->getRow('
-                    SELECT * FROM '._DB_PREFIX_.'customer c
-                    LEFT JOIN '._DB_PREFIX_.'ybc_blog_employee be ON (be.id_employee=c.id_customer AND be.is_customer=1)
-                    LEFT JOIN '._DB_PREFIX_.'ybc_blog_employee_lang bel ON (be.id_employee_post=bel.id_employee_post AND bel.id_lang="'.(int)$this->context->language->id.'")
+                    SELECT * FROM `'._DB_PREFIX_.'customer` c
+                    LEFT JOIN `'._DB_PREFIX_.'ybc_blog_employee` be ON (be.id_employee=c.id_customer AND be.is_customer=1)
+                    LEFT JOIN `'._DB_PREFIX_.'ybc_blog_employee_lang` bel ON (be.id_employee_post=bel.id_employee_post AND bel.id_lang="'.(int)$this->context->language->id.'")
                     WHERE c.id_customer="'.(int)$author['added_by'].'"');
                     if(!$information['name'])
                         $information['name']=$information['firstname'].' '.$information['lastname'];
                     $author['information']=$information;
                     $author['link']=$this->getLink('blog',array('id_author'=>$author['added_by'],'is_customer'=>1,'alias'=> Tools::link_rewrite($information['name'])));
                     if(isset($information['avata'])&&$information['avata'])
-                        $author['avata'] = $this->getBaseLink().'modules/ybc_blog/views/img/avata/'.$information['avata'];
+                        $author['avata'] = $this->context->link->getMediaLink(_PS_YBC_BLOG_IMG_.'avata/'.$information['avata']);
                     else
-                       $author['avata']=$this->getBaseLink().'modules/ybc_blog/views/img/avata/'.(Configuration::get('YBC_BLOG_IMAGE_AVATA_DEFAULT')? Configuration::get('YBC_BLOG_IMAGE_AVATA_DEFAULT') :'default_customer.png'); 
+                       $author['avata']= $this->context->link->getMediaLink(_PS_YBC_BLOG_IMG_.'avata/'.(Configuration::get('YBC_BLOG_IMAGE_AVATA_DEFAULT')? Configuration::get('YBC_BLOG_IMAGE_AVATA_DEFAULT') :'default_customer.png')); 
                 }
                 else
                 {
                     $information = Db::getInstance()->getRow('
-                    SELECT * FROM '._DB_PREFIX_.'employee e
-                    LEFT JOIN '._DB_PREFIX_.'ybc_blog_employee be ON (be.id_employee=e.id_employee AND be.is_customer=0)
-                    LEFT JOIN '._DB_PREFIX_.'ybc_blog_employee_lang bel ON (be.id_employee_post=bel.id_employee_post AND bel.id_lang="'.(int)$this->context->language->id.'")
+                    SELECT * FROM `'._DB_PREFIX_.'employee` e
+                    LEFT JOIN `'._DB_PREFIX_.'ybc_blog_employee` be ON (be.id_employee=e.id_employee AND be.is_customer=0)
+                    LEFT JOIN `'._DB_PREFIX_.'ybc_blog_employee_lang` bel ON (be.id_employee_post=bel.id_employee_post AND bel.id_lang="'.(int)$this->context->language->id.'")
                     WHERE e.id_employee="'.(int)$author['added_by'].'"');
                     if(!$information['name'])
                         $information['name']=$information['firstname'].' '.$information['lastname'];
                     $author['information']=$information;
                     $author['link']=$this->getLink('blog',array('id_author'=>$author['added_by'],'is_customer'=>0,'alias'=> Tools::link_rewrite($information['name'])));
                     if(isset($information['avata']) && $information['avata'])
-                        $author['avata'] = $this->getBaseLink().'modules/ybc_blog/views/img/avata/'.$information['avata'];
+                        $author['avata'] = $this->context->link->getMediaLink(_PS_YBC_BLOG_IMG_.'avata/'.$information['avata']);
                     else
-                       $author['avata']=$this->getBaseLink().'modules/ybc_blog/views/img/avata/'.(Configuration::get('YBC_BLOG_IMAGE_AVATA_DEFAULT')? Configuration::get('YBC_BLOG_IMAGE_AVATA_DEFAULT') :'default_customer.png'); 
+                       $author['avata']= $this->context->link->getMediaLink(_PS_YBC_BLOG_IMG_.'avata/'.(Configuration::get('YBC_BLOG_IMAGE_AVATA_DEFAULT')? Configuration::get('YBC_BLOG_IMAGE_AVATA_DEFAULT') :'default_customer.png')); 
                 }
-                $sql ='SELECT * FROM '._DB_PREFIX_.'ybc_blog_post p
-                INNER JOIN '._DB_PREFIX_.'ybc_blog_post_shop ps ON (p.id_post=ps.id_post AND ps.id_shop="'.(int)$this->context->shop->id.'")
-                LEFT JOIN '._DB_PREFIX_.'ybc_blog_post_lang pl ON (p.id_post=pl.id_post AND pl.id_lang="'.(int)$this->context->language->id.'")
+                $sql ='SELECT * FROM `'._DB_PREFIX_.'ybc_blog_post` p
+                INNER JOIN `'._DB_PREFIX_.'ybc_blog_post_shop` ps ON (p.id_post=ps.id_post AND ps.id_shop="'.(int)$this->context->shop->id.'")
+                LEFT JOIN `'._DB_PREFIX_.'ybc_blog_post_lang` pl ON (p.id_post=pl.id_post AND pl.id_lang="'.(int)$this->context->language->id.'")
                 WHERE p.enabled=1 AND  p.added_by ="'.(int)$author['added_by'].'" AND p.is_customer="'.(int)$author['is_customer'].'"';
                 $author['posts'] = Db::getInstance()->executeS($sql);
                 if($author['posts'])
@@ -6433,20 +6962,22 @@ public function renderSettingCustomer()
   {       
         if(!Configuration::get('YBC_BLOG_SHOW_CATEGORIES_BLOCK'))
             return;
-        if((int)Tools::getValue('id_category'))
-            $id_category = (int)Tools::getValue('id_category');
-        elseif(Tools::getValue('category_url_alias'))
+        $id = (int)Tools::getValue('id_category');
+        $module = Tools::getValue('module');
+        if($id && $module==$this->name)
+            $id_category = (int)$id;
+        elseif(($category_url_alias = Tools::getValue('category_url_alias')) && Validate::isLinkRewrite($category_url_alias))
         {
-            $id_category = (int)Db::getInstance()->getValue('SELECT cs.id_category FROM '._DB_PREFIX_.'ybc_blog_category_lang cl,'._DB_PREFIX_.'ybc_blog_category_shop cs WHERE cs.id_category=cl.id_category AND cs.id_shop="'.(int)$this->context->shop->id.'" AND cl.url_alias ="'.pSQL(Tools::getValue('category_url_alias')).'"');
+            $id_category = (int)Db::getInstance()->getValue('SELECT cs.id_category FROM `'._DB_PREFIX_.'ybc_blog_category_lang` cl,`'._DB_PREFIX_.'ybc_blog_category_shop` cs WHERE cs.id_category=cl.id_category AND cs.id_shop="'.(int)$this->context->shop->id.'" AND cl.url_alias ="'.pSQL(Tools::getValue('category_url_alias')).'"');
         }
         elseif($id_post = (int)Tools::getValue('id_post'))
         {
             $post = new Ybc_blog_post_class($id_post);
             $id_category = $post->id_category_default;
         }
-        elseif(Tools::getValue('post_url_alias'))
+        elseif(($post_url_alias = Tools::getValue('post_url_alias')) && Validate::isLinkRewrite($post_url_alias))
         {
-            $id_post = (int)Db::getInstance()->getValue('SELECT ps.id_post FROM '._DB_PREFIX_.'ybc_blog_post_lang pl ,'._DB_PREFIX_.'ybc_blog_post_shop ps  WHERE ps.id_shop="'.(int)$this->context->shop->id.'" AND ps.id_post=pl.id_post AND pl.url_alias ="'.pSQL(Tools::getValue('post_url_alias')).'"');
+            $id_post = (int)Db::getInstance()->getValue('SELECT ps.id_post FROM `'._DB_PREFIX_.'ybc_blog_post_lang` pl ,`'._DB_PREFIX_.'ybc_blog_post_shop` ps  WHERE ps.id_shop="'.(int)$this->context->shop->id.'" AND ps.id_post=pl.id_post AND pl.url_alias ="'.pSQL($post_url_alias).'"');
             if($id_post)
             {
                 $post = new Ybc_blog_post_class($id_post);
@@ -6461,7 +6992,6 @@ public function renderSettingCustomer()
             array(
                 'active' => $id_category,
                 'link_view_all'=> $this->getLink('category'),
-                'preview_link' => $this->getLink('blog')
             )
         );
         $blockCategTree = $this->getBlogCategoriesTree(0);
@@ -6490,10 +7020,10 @@ public function renderSettingCustomer()
   public function hookBlogRssAuthor()
   {
         $employees= Db::getInstance()->executeS(
-            'SELECT e.id_employee, e.firstname,e.lastname,be.name,bel.description FROM '._DB_PREFIX_.'employee e
-            INNER JOIN '._DB_PREFIX_.'ybc_blog_post p ON (p.added_by=e.id_employee AND p.is_customer=0)
-            LEFT JOIN '._DB_PREFIX_.'ybc_blog_employee be ON (e.id_employee=be.id_employee AND be.is_customer=0)
-            LEFT JOIN '._DB_PREFIX_.'ybc_blog_employee_lang bel ON (be.id_employee_post= bel.id_employee_post AND bel.id_lang="'.(int)$this->context->language->id.'") 
+            'SELECT e.id_employee, e.firstname,e.lastname,be.name,bel.description FROM `'._DB_PREFIX_.'employee` e
+            INNER JOIN `'._DB_PREFIX_.'ybc_blog_post` p ON (p.added_by=e.id_employee AND p.is_customer=0)
+            LEFT JOIN `'._DB_PREFIX_.'ybc_blog_employee` be ON (e.id_employee=be.id_employee AND be.is_customer=0)
+            LEFT JOIN `'._DB_PREFIX_.'ybc_blog_employee_lang` bel ON (be.id_employee_post= bel.id_employee_post AND bel.id_lang="'.(int)$this->context->language->id.'") 
             WHERE be.status>=0 OR be.status is NULL OR e.id_profile=1
             GROUP BY e.id_employee
         ');
@@ -6510,11 +7040,11 @@ public function renderSettingCustomer()
         if($group_authors)
         {
             $customers= Db::getInstance()->executeS(
-                'SELECT c.id_customer, c.firstname,c.lastname,be.name,bel.description FROM '._DB_PREFIX_.'customer c
-                INNER JOIN '._DB_PREFIX_.'customer_group gs ON (gs.id_customer=c.id_customer)
-                INNER JOIN '._DB_PREFIX_.'ybc_blog_post p ON (p.added_by=c.id_customer AND p.is_customer=1)
-                LEFT JOIN '._DB_PREFIX_.'ybc_blog_employee be ON (c.id_customer=be.id_employee AND be.is_customer=1)
-                LEFT JOIN '._DB_PREFIX_.'ybc_blog_employee_lang bel ON (be.id_employee_post= bel.id_employee_post AND bel.id_lang="'.(int)$this->context->language->id.'")
+                'SELECT c.id_customer, c.firstname,c.lastname,be.name,bel.description FROM `'._DB_PREFIX_.'customer` c
+                INNER JOIN `'._DB_PREFIX_.'customer_group` gs ON (gs.id_customer=c.id_customer)
+                INNER JOIN `'._DB_PREFIX_.'ybc_blog_post` p ON (p.added_by=c.id_customer AND p.is_customer=1)
+                LEFT JOIN `'._DB_PREFIX_.'ybc_blog_employee` be ON (c.id_customer=be.id_employee AND be.is_customer=1)
+                LEFT JOIN `'._DB_PREFIX_.'ybc_blog_employee_lang` bel ON (be.id_employee_post= bel.id_employee_post AND bel.id_lang="'.(int)$this->context->language->id.'")
                 WHERE (be.status>=0 OR be.status is NULL) AND gs.id_group IN ('.implode(',',array_map('intval',$group_authors)).') GROUP BY c.id_customer
             ');
             if($customers)
@@ -6583,7 +7113,7 @@ public function renderSettingCustomer()
             {
                 $post['link'] = $this->getLink('blog',array('id_post' => $post['id_post']));
                 if($post['thumb'])
-                    $post['thumb'] = $this->_path.'views/img/post/thumb/'.$post['thumb'];
+                    $post['thumb'] = $this->context->link->getMediaLink(_PS_YBC_BLOG_IMG_.'post/thumb/'.$post['thumb']);
                 $post['comments_num'] = $this->countCommentsWithFilter(' AND bc.id_post='.$post['id_post'].' AND approved=1');
                 $post['liked'] = $this->isLikedPost($post['id_post']);
                 $post['categories'] = $this->getCategoriesByIdPost($post['id_post'],false,true);
@@ -6594,7 +7124,7 @@ public function renderSettingCustomer()
         $this->smarty->assign(
             array(
                 'posts' => $posts,
-                'latest_link' => $this->getLink('blog',array('latest' => true)),
+                'latest_link' => $this->getLink('blog',array('latest' => 'true')),
                 'allowComments' => (int)Configuration::get('YBC_BLOG_ALLOW_COMMENT') ? true : false,
                 'show_views' => (int)Configuration::get('YBC_BLOG_SHOW_POST_VIEWS') ? true : false,
                 'allow_like' => (int)Configuration::get('YBC_BLOG_ALLOW_LIKE') ? true : false,
@@ -6625,8 +7155,8 @@ public function renderSettingCustomer()
         );
         return $this->display(__FILE__, 'home_blocks.tpl');
   }
-  public function hookDisplayFullBlogHome()
-  {
+  public function getWidgetVariables($hookName, array $configuration = [])
+    {
         $homepages=array(
             'homepage_new'=>Configuration::get('YBC_BLOG_SHOW_LATEST_BLOCK_HOME') ? $this->hookBlogNewsBlock(array('page'=>'home')):'',
             'homepage_popular' => Configuration::get('YBC_BLOG_SHOW_POPULAR_BLOCK_HOME') ? $this->hookBlogPopularPostsBlock(array('page'=>'home')):'',
@@ -6641,8 +7171,29 @@ public function renderSettingCustomer()
                 'homepages'=>$homepages
             )
         );
+        unset($hookName);
+        unset($configuration);
         return $this->display(__FILE__, 'home_blocks.tpl');
-  }
+    }
+    
+    public function renderWidget($hookName, array $configuration = [])
+    {
+        if ($hookName == null && isset($configuration['hook'])) {
+            $hookName = $configuration['hook'];
+        }
+
+        if (preg_match('/^displayNav\d*$/', $hookName)) {
+            $template_file = $this->templates['light'];
+        } elseif ($hookName == 'displayLeftColumn') {
+            $template_file = $this->templates['rich'];
+        } else {
+            $template_file = $this->templates['default'];
+        }
+
+        $this->smarty->assign($this->getWidgetVariables($hookName, $configuration));
+
+        return $this->fetch('module:'.$this->name.'/'.$template_file);
+    }
   public function hookBlogPopularPostsBlock($params)
   {
         if(isset($params['page']) && $params['page']=='home')
@@ -6670,7 +7221,7 @@ public function renderSettingCustomer()
             {
                 $post['link'] = $this->getLink('blog',array('id_post' => $post['id_post']));
                 if($post['thumb'])
-                    $post['thumb'] = $this->_path.'views/img/post/thumb/'.$post['thumb'];
+                    $post['thumb'] = $this->context->link->getMediaLink(_PS_YBC_BLOG_IMG_.'post/thumb/'.$post['thumb']);
                 $post['comments_num'] = $this->countCommentsWithFilter(' AND bc.id_post='.$post['id_post'].' AND approved=1');
                 $post['liked'] = $this->isLikedPost($post['id_post']);
                 $post['categories'] = $this->getCategoriesByIdPost($post['id_post'],false,true);
@@ -6678,7 +7229,7 @@ public function renderSettingCustomer()
         $this->smarty->assign(
             array(
                 'posts' => $posts,
-                'popular_link' => $this->getLink('blog',array('popular' => true)),
+                'popular_link' => $this->getLink('blog',array('popular' => 'true')),
                 'allowComments' => (int)Configuration::get('YBC_BLOG_ALLOW_COMMENT') ? true : false,
                 'show_views' => (int)Configuration::get('YBC_BLOG_SHOW_POST_VIEWS') ? true : false,
                 'allow_like' => (int)Configuration::get('YBC_BLOG_ALLOW_LIKE') ? true : false,
@@ -6716,7 +7267,7 @@ public function renderSettingCustomer()
             {
                 $post['link'] = $this->getLink('blog',array('id_post' => $post['id_post']));
                 if($post['thumb'])
-                    $post['thumb'] = $this->_path.'views/img/post/thumb/'.$post['thumb'];
+                    $post['thumb'] = $this->context->link->getMediaLink(_PS_YBC_BLOG_IMG_.'post/thumb/'.$post['thumb']);
                 $post['comments_num'] = $this->countCommentsWithFilter(' AND bc.id_post='.$post['id_post'].' AND approved=1');
                 $post['liked'] = $this->isLikedPost($post['id_post']);
                 $post['categories'] = $this->getCategoriesByIdPost($post['id_post'],false,true);
@@ -6724,7 +7275,7 @@ public function renderSettingCustomer()
         $this->smarty->assign(
             array(
                 'posts' => $posts,
-                'featured_link' => $this->getLink('blog',array('featured' => true)),
+                'featured_link' => $this->getLink('blog',array('featured' => 'true')),
                 'allowComments' => (int)Configuration::get('YBC_BLOG_ALLOW_COMMENT') ? true : false,
                 'show_views' => (int)Configuration::get('YBC_BLOG_SHOW_POST_VIEWS') ? true : false,
                 'allow_like' => (int)Configuration::get('YBC_BLOG_ALLOW_LIKE') ? true : false,
@@ -6745,7 +7296,7 @@ public function renderSettingCustomer()
             foreach($slides as &$slide)
             {
                 if($slide['image'])
-                    $slide['image'] = $this->_path.'views/img/slide/'.$slide['image'];
+                    $slide['image'] = $this->context->link->getMediaLink(_PS_YBC_BLOG_IMG_.'slide/'.$slide['image']);
             }
         $this->smarty->assign(
             array(
@@ -6776,12 +7327,12 @@ public function renderSettingCustomer()
             foreach($galleries as &$gallery)
             {
                 if($gallery['thumb'])
-                    $gallery['thumb'] =  $this->_path.'views/img/gallery/thumb/'.$gallery['thumb'];   
+                    $gallery['thumb'] =  $this->context->link->getMediaLink(_PS_YBC_BLOG_IMG_.'gallery/thumb/'.$gallery['thumb']);   
                 else
-                     $gallery['thumb']=$this->_path.'views/img/gallery/'.$gallery['image']; 
+                     $gallery['thumb']= $this->context->link->getMediaLink(_PS_YBC_BLOG_IMG_.'gallery/'.$gallery['image']); 
                 if($gallery['image'])
                 {                       
-                    $gallery['image'] = $this->_path.'views/img/gallery/'.$gallery['image'];    
+                    $gallery['image'] = $this->context->link->getMediaLink(_PS_YBC_BLOG_IMG_.'gallery/'.$gallery['image']);    
                 }  
                       
             }      
@@ -6811,7 +7362,7 @@ public function renderSettingCustomer()
             Hook::exec('actionUpdateBlog', array(
                 'id_post' =>(int)$polls_class->id_post,
             ));	      
-            if($id_polls)
+            if($id_polls && property_exists('Ybc_blog_polls_class', $field))
             {
                 $this->changeStatus('polls',$field,$id_polls,$status);
                 if($status==1)
@@ -6845,14 +7396,14 @@ public function renderSettingCustomer()
                 Hook::exec('actionUpdateBlog', array(
                     'id_post' =>(int)$polls_class->id_post,
                 ));	 
-                Db::getInstance()->execute('DELETE FROM '._DB_PREFIX_.'ybc_blog_polls WHERE id_polls='.(int)$id_polls);
+                Db::getInstance()->execute('DELETE FROM `'._DB_PREFIX_.'ybc_blog_polls` WHERE id_polls='.(int)$id_polls);
                   Tools::redirectAdmin($this->context->link->getAdminLink('AdminModules', true).'&conf=2&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&control=polls&list=true');
             }                   
         }                  
         /**
         * form send mail
         */
-        if(Tools::isSubmit('sendmailform') &&$id_polls=Tools::getValue('id_polls'))
+        if(Tools::isSubmit('sendmailform') && ($id_polls= (int)Tools::getValue('id_polls')))
         {
             $polls_class = new Ybc_blog_polls_class($id_polls);
             $this->context->smarty->assign(
@@ -6861,7 +7412,7 @@ public function renderSettingCustomer()
                     
                 )
             );
-            if(Tools::getValue('ajax'))
+            if(Tools::isSubmit('ajax'))
             {
                 die(
                     Tools::jsonEncode(
@@ -6873,27 +7424,31 @@ public function renderSettingCustomer()
             }
             return $this->display(__FILE__,'form_send_mail_polls.tpl');
         }
-        if(Tools::isSubmit('send_mail_polls') && $id_polls=Tools::getValue('id_polls'))
+        if(Tools::isSubmit('send_mail_polls') && ($id_polls=(int)Tools::getValue('id_polls')))
         {
             $errors=array();
-            if(trim(Tools::getValue('message_email'))=='')
+            if(($message_email = trim(Tools::getValue('message_email')))=='')
             {
-                $errors[]=$this->l('Message is required');
+                $errors[] = $this->l('Message is required');
             }
-            if(trim(Tools::getValue('subject_email'))=='')
+            elseif($message_email && !Validate::isCleanHtml($message_email))
+                $errors[] = $this->l('Message is not valid');
+            if(($subject = trim(Tools::getValue('subject_email')))=='')
                 $errors[]=$this->l('Subject is required');
+            elseif($subject && !Validate::isCleanHtml($subject))
+                $errors[]=$this->l('Subject is not valid');
             if(!$errors)
             {
                 $polls_class = new Ybc_blog_polls_class($id_polls);
                 $template_customer_vars=array(
-                    '{message_email}'  => Tools::getValue('message_email'),
+                    '{message_email}'  => $message_email,
                     '{color_main}'=>Configuration::get('YBC_BLOG_CUSTOM_COLOR'),
                     '{color_hover}'=>Configuration::get('YBC_BLOG_CUSTOM_COLOR_HOVER')
                 );
                 Mail::Send(
         			Context::getContext()->language->id,
         			'reply_polls_customer',
-        			Tools::getValue('subject_email'),
+        			$subject,
         			$template_customer_vars,
     		        $polls_class->email,
         			$polls_class->name,
@@ -6930,13 +7485,14 @@ public function renderSettingCustomer()
   {
         $errors = array();
         $id_comment = (int)Tools::getValue('id_comment');
-        if(Tools::getValue('list')!='true' && ($id_comment && !$this->itemExists('comment','id_comment',$id_comment) || !$id_comment))            
+        $list = Tools::getValue('list');
+        if($list!='true' && ($id_comment && !$this->itemExists('comment','id_comment',$id_comment) || !$id_comment))            
             Tools::redirectAdmin($this->baseAdminPath);
-        if(Tools::getValue('submitBulkActionMessage') && Tools::getValue('message_readed') && $bulk_action_message=Tools::getValue('bulk_action_message'))
+        if(Tools::getValue('submitBulkActionMessage') && ($message_readed =  Tools::getValue('message_readed')) && Ybc_blog::validateArray($message_readed) && $bulk_action_message = Tools::getValue('bulk_action_message'))
         {
             if($bulk_action_message=='delete_selected')
             {
-                foreach(Tools::getValue('message_readed') as $id_comment => $value)
+                foreach($message_readed as $id_comment => $value)
                 {
                     if($value)
                     {
@@ -6975,14 +7531,14 @@ public function renderSettingCustomer()
                     $value_field=0;
                     $field='viewed';
                 }
-                foreach(Tools::getValue('message_readed') as $id_comment => $value)
+                foreach($message_readed as $id_comment => $value)
                 {
                     if($value)
                     {
                         Hook::exec('actionUpdateBlog', array(
                             'id_comment' => (int)$id_comment,
                         ));
-                        Db::getInstance()->execute('UPDATE '._DB_PREFIX_.'ybc_blog_comment SET `'.pSQL($field).'`='.(int)$value_field.' WHERE id_comment='.(int)$id_comment);
+                        Db::getInstance()->execute('UPDATE `'._DB_PREFIX_.'ybc_blog_comment` SET `'.pSQL($field).'`='.(int)$value_field.' WHERE id_comment='.(int)$id_comment);
                     }
                 }
                 die(Tools::jsonEncode(
@@ -7008,12 +7564,16 @@ public function renderSettingCustomer()
             if($field == 'approved' || $field == 'reported' && $id_comment)
             {
                 $this->changeStatus('comment',$field,$id_comment,$status);
-                if($field=='approved' && $status==1 && Configuration::get('YBC_BLOG_ENABLE_MAIL_APPROVED'))
+                if($comment->email && Validate::isEmail($comment->email) && ($id_customer = Customer::customerExists($comment->email,true)) && ($customer = new Customer($id_customer)) && Validate::isLoadedObject($customer))
+                    $idLang = $customer->id_lang;
+                else
+                    $idLang = $this->context->language->id;
+                if($field=='approved' && $status==1 && ($subject = Ybc_blog_email_template_class::getSubjectByTemplate('approved_comment',$idLang)))
                 {
                    Mail::Send(
-                        $this->context->language->id, 
+                        $idLang, 
                         'approved_comment',
-                        Mail::l('Your comment has been approved'),
+                        $subject,
                         array('{customer_name}' => $comment->name, '{email}' => $comment->email,'{rating}' => ' '.($comment->rating != 1 ? $this->l('stars','blog') : $this->l('star','blog')), '{subject}' => $comment->subject, '{comment}'=>$comment->comment,'{post_title}'=>$post->title[$this->context->language->id],'{post_link}' => $this->getLink('blog', array('id_post' => $comment->id_post)),'{color_main}'=>Configuration::get('YBC_BLOG_CUSTOM_COLOR'),'{color_hover}'=>Configuration::get('YBC_BLOG_CUSTOM_COLOR_HOVER')),  
                         $comment->email, null, null, null, null, null, 
                         dirname(__FILE__).'/mails/', 
@@ -7066,7 +7626,25 @@ public function renderSettingCustomer()
             }                
             else
                 $errors[] = $this->l('Could not delete the comment. Please try again');    
-         }                  
+         }  
+         if(Tools::isSubmit('approve'))
+         {
+            $id_comment = (int)Tools::getValue('id_comment');
+            Hook::exec('actionUpdateBlog', array(
+                'id_comment' => (int)$id_comment,
+            ));
+            if(!$this->itemExists('comment','id_comment',$id_comment))
+                $errors[] = $this->l('Comment does not exist');
+            else
+            {     
+                $comment = new Ybc_blog_comment_class($id_comment);
+                $comment->approved =1;
+                if($comment->update())
+                    Tools::redirectAdmin($this->context->link->getAdminLink('AdminModules', true).'&conf=4&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&control=comment&list=true');
+                else
+                    $errors[] = $this->l('Could not approve the comment. Please try again');  
+            }                 
+         }                
         /**
          * Save comment 
          */
@@ -7084,31 +7662,32 @@ public function renderSettingCustomer()
             {
                 $errors[] = $this->l('Comment does not exist');
             }
+            $rating = (int)Tools::getValue('rating');
             $approved = $comment->approved;
             $comment->subject = trim(Tools::getValue('subject',''));
             $comment->comment = trim(Tools::getValue('comment',''));
             $comment->reply = trim(Tools::getValue('reply',''));
-            $comment->rating = trim(Tools::getValue('rating',0)) >=0 && trim(Tools::getValue('rating',0)) <=5 ? trim(Tools::getValue('rating',0)) : 0;
-            $comment->approved = trim(Tools::getValue('approved',1)) ? 1 : 0;
-            $comment->reported = trim(Tools::getValue('reported',0)) ? 1 : 0;
+            $comment->rating = $rating >=0 && $rating <=5 ? $rating : 0;
+            $comment->approved = (int)trim(Tools::getValue('approved',1)) ? 1 : 0;
+            $comment->reported = (int)trim(Tools::getValue('reported',0)) ? 1 : 0;
             $comment->replied_by = (int)$this->context->employee->id;
             if(Tools::strlen($comment->subject) < 10)
-                $errors[] = $this->l('Subject need to be at least 10 characters');
+                $errors[] = $this->l('Subject needs to be at least 10 characters');
             if(Tools::strlen($comment->subject) >300)
-                $errors[] = $this->l('Subject can not be longer than 300 characters');  
+                $errors[] = $this->l('Subject cannot be longer than 300 characters');
             if(!Validate::isCleanHtml($comment->subject,false))
-                $errors[] = $this->l('Subject need to be clean HTML');
+                $errors[] = $this->l('Subject needs to be clean HTML');
             if(Tools::strlen($comment->comment) < 20)
-                $errors[] = $this->l('Comment need to be at least 20 characters');
+                $errors[] = $this->l('Comment needs to be at least 20 characters');
             if(!Validate::isCleanHtml($comment->comment,false))
-                $errors[] = $this->l('Comment need to be clean HTML');
+                $errors[] = $this->l('Comment needs to be clean HTML');
             if(Tools::strlen($comment->comment) >2000)
-                $errors[] = $this->l('Comment can not be longer than 2000 characters');                  
+                $errors[] = $this->l('Comment cannot be longer than 2000 characters');
             
             if(!Validate::isCleanHtml($comment->reply,false))
-                $errors[] = $this->l('Reply need to be clean HTML');
+                $errors[] = $this->l('Reply needs to be clean HTML');
             if(Tools::strlen($comment->reply) >2000)
-                $errors[] = $this->l('Reply can not be longer than 2000 characters');
+                $errors[] = $this->l('Reply cannot be longer than 2000 characters');
             if(!$errors)
             {
                 if(!$comment->update())
@@ -7117,12 +7696,16 @@ public function renderSettingCustomer()
                 }
                 else
                 {
-                    if($approved!=$comment->$approved && $comment->approved==1 && Configuration::get('YBC_BLOG_ENABLE_MAIL_APPROVED'))
+                    if($comment->email && Validate::isEmail($comment->email) && ($id_customer = Customer::customerExists($comment->email)) && ($customer = new Customer($id_customer)) && Validate::isLoadedObject($customer))
+                        $id_lang = $customer->id_lang;
+                    else
+                        $id_lang = $this->context->language->id;
+                    if($approved!=$comment->$approved && $comment->approved==1 && ($subject = Ybc_blog_email_template_class::getSubjects('approved_comment',$id_lang)))
                     {
                         Mail::Send(
-                            $this->context->language->id, 
+                            $id_lang, 
                             'approved_comment',
-                            Mail::l('Your comment has been approved'),
+                            $subject,
                             array('{customer_name}' => $comment->name, '{email}' => $comment->email,'{rating}' => ' '.($comment->rating != 1 ? $this->l('stars','blog') : $this->l('star','blog')), '{subject}' => $comment->subject, '{comment}'=>$comment->comment,'{post_title}'=>$post->title[$this->context->language->id],'{post_link}' => $this->getLink('blog', array('id_post' => $comment->id_post)),'{color_main}'=>Configuration::get('YBC_BLOG_CUSTOM_COLOR'),'{color_hover}'=>Configuration::get('YBC_BLOG_CUSTOM_COLOR_HOVER')),  
                             $comment->email, null, null, null, null, null, 
                             dirname(__FILE__).'/mails/', 
@@ -7145,8 +7728,8 @@ public function renderSettingCustomer()
          {                
             $this->errorMessage = $this->displayError($errors);  
          }
-         elseif (Tools::isSubmit('saveComment') && Tools::isSubmit('id_comment'))
-			Tools::redirectAdmin($this->context->link->getAdminLink('AdminModules', true).'&conf=4&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&id_comment='.Tools::getValue('id_comment').'&control=comment');
+         elseif (Tools::isSubmit('saveComment') && $id_comment)
+			Tools::redirectAdmin($this->context->link->getAdminLink('AdminModules', true).'&conf=4&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&id_comment='.$id_comment.'&control=comment');
 		 elseif (Tools::isSubmit('saveComment'))
          {
             Tools::redirectAdmin($this->baseAdminPath);
@@ -7155,7 +7738,8 @@ public function renderSettingCustomer()
    public function renderPollsForm()
    {
         //List 
-        if(trim(Tools::getValue('list'))=='true')
+        $list = trim(Tools::getValue('list'));
+        if($list=='true')
         {
             $fields_list = array(
                 'id_polls' => array(
@@ -7214,26 +7798,50 @@ public function renderSettingCustomer()
             );
             //Filter
             $filter = "";
-            if(trim(Tools::getValue('id_polls'))!='')
-                $filter .= " AND po.id_polls = ".(int)trim(urldecode(Tools::getValue('id_polls')));
-            if(trim(Tools::getValue('feedback'))!='')
-                $filter .= " AND po.feedback like '%".addslashes(trim(urldecode(Tools::getValue('feedback'))))."%'";             
-            if(trim(Tools::getValue('name'))!='')
-                $filter .= " AND po.name like '%".addslashes(trim(urldecode(Tools::getValue('name'))))."%'";
-            if(trim(Tools::getValue('polls'))!='')
-                $filter .= " AND po.polls = ".(int)trim(urldecode(Tools::getValue('polls')));
-            if(trim(Tools::getValue('title'))!='')
-                $filter .= " AND pl.title like '%".pSQL(Tools::getValue('title'))."%'";
-            //Sort
-            
-            if(trim(Tools::getValue('sort')) && isset($fields_list[Tools::getValue('sort')]))
+            $show_reset = false;
+            if(($id_polls = trim(Tools::getValue('id_polls')))!='' && Validate::isCleanHtml($id_polls))
             {
-                $sort = trim(Tools::getValue('sort'))." ".(Tools::getValue('sort_type')=='asc' ? ' ASC ' :' DESC ')." , ";
+                $filter .= " AND po.id_polls = ".(int)$id_polls;
+                $show_reset = true;
+            }
+            if(($feedback = trim(Tools::getValue('feedback')))!='' && Validate::isCleanHtml($feedback))
+            {
+                $filter .= " AND po.feedback like '%".pSQL(Tools::getValue('feedback'))."%'";
+                $show_reset = true;
+            }             
+            if(($name = trim(Tools::getValue('name')))!='' && Validate::isCleanHtml($name))
+            {
+                $filter .= " AND po.name like '%".pSQL($name)."%'";
+                $show_reset = true;
+            }
+            if(($polls = trim(Tools::getValue('polls')))!='' && Validate::isCleanHtml($polls))
+            {
+                $filter .= " AND po.polls = ".(int)$polls;
+                $show_reset = true;
+            }
+            if(($title = trim(Tools::getValue('title')))!='' && Validate::isCleanHtml($title))
+            {
+                $filter .= " AND pl.title like '%".pSQL($title)."%'";
+                $show_reset = true;
+            }
+            if(($email = trim(Tools::getValue('email')))!='' && Validate::isCleanHtml($email))
+            {
+                $show_reset = true;
+                $filter .= " AND po.email like '%".pSQL($email)."%'";
+            }
+            //Sort
+            $sort_post = Tools::strtolower(Tools::getValue('sort'));
+            $sort_type = Tools::strtolower(Tools::getValue('sort_type','desc'));
+            if($sort_post && isset($fields_list[$sort_post]))
+            {
+                $sort = $sort_post." ".($sort_type=='asc' ? ' ASC ' :' DESC ')." , ";
             }
             else
                 $sort = 'po.id_polls DESC,';
             //Paggination
-            $page = (int)Tools::getValue('page') && (int)Tools::getValue('page') > 0 ? (int)Tools::getValue('page') : 1;
+            $page = (int)Tools::getValue('page');
+            if($page <1)
+                $page =1;
             $totalRecords = (int)$this->countPollsWithFilter($filter,false);
             $paggination = new Ybc_blog_paggination_class();            
             $paggination->total = $totalRecords;
@@ -7252,6 +7860,25 @@ public function renderSettingCustomer()
                 foreach($polls as &$poll)
                 {
                     $poll['title'] = '<a target="_blank" href="'.$this->getLink('blog',array('id_post'=>$poll['id_post'])).'" title="'.$poll['title'].'">'.$poll['title'].'</a>';
+                    if($poll['id_user'])
+                    {
+                        if(version_compare(_PS_VERSION_, '1.7.6', '>='))
+                        {
+                            $sfContainer = call_user_func(array('\PrestaShop\PrestaShop\Adapter\SymfonyContainer','getInstance'));
+                        	if (null !== $sfContainer) {
+                        		$sfRouter = $sfContainer->get('router');
+                        		$link_customer= $sfRouter->generate(
+                        			'admin_customers_view',
+                        			array('customerId' => $poll['id_user'])
+                        		);
+                        	}
+                            else
+                                $link_customer = $this->context->link->getAdminLink('AdminCustomers').'&id_customer='.(int)$poll['id_user'].'&viewcustomer';
+                        }
+                        else
+                            $link_customer = $this->context->link->getAdminLink('AdminCustomers').'&id_customer='.(int)$poll['id_user'].'&viewcustomer';
+                        $poll['link_customer'] = $link_customer;                    
+                    }                    
                 }
             }
             $paggination->text =  $this->l('Showing {start} to {end} of {total} ({pages} Pages)');
@@ -7269,17 +7896,16 @@ public function renderSettingCustomer()
                 'field_values' => $polls,
                 'paggination' => $paggination->render(),
                 'filter_params' => $this->getFilterParams($fields_list),
-                'show_reset' => trim(Tools::getValue('id_polls'))!='' || trim(Tools::getValue('feedback'))!=''|| trim(Tools::getValue('name'))!='' || trim(Tools::getValue('polls'))!='' ? true : false,
+                'show_reset' => $show_reset,
                 'totalRecords' => $totalRecords,
                 'show_add_new' => false,
-                'sort'=>Tools::getValue('sort','id_polls'),
-                'sort_type'=>Tools::getValue('sort_type','desc'),
-                'link_customer' => $this->context->link->getAdminLink('AdminCustomers').'&updatecustomer'
+                'sort'=> $sort_post ? :'id_polls',
+                'sort_type'=> $sort_type,
             );            
             return $this->_html .= $this->renderList($listData);      
         }
         //Form
-        
+        $id_comment = (int)Tools::getValue('id_comment');
         $fields_form = array(
 			'form' => array(
 				'legend' => array(
@@ -7292,7 +7918,7 @@ public function renderSettingCustomer()
 						'name' => 'subject',    					 
                         'required' => true,
                         'hint' => $this->l('Invalid characters:').' &lt;&gt;;=#{}',
-                        'desc' => ($id_comment = (int)Tools::getValue('id_comment')) && ($comment = $this->getCommentById($id_comment)) ? $this->displayCommentInfo($comment,(int)$comment['id_user']?$this->context->link->getAdminLink('AdminCustomers').'&id_customer='.(int)$comment['id_user'].'&updatecustomer':'#',$this->getLink('blog',array('id_post' => (int)$comment['id_post']))) : '',	                    
+                        'desc' => $id_comment && ($comment = $this->getCommentById($id_comment)) ? $this->displayCommentInfo($comment,(int)$comment['id_user'],$this->getLink('blog',array('id_post' => (int)$comment['id_post']))) : '',	                    
 					), 
                     array(
     					'type' => 'select',
@@ -7347,6 +7973,7 @@ public function renderSettingCustomer()
 						'label' => $this->l('Approved'),
 						'name' => 'approved',
                         'is_bool' => true,
+                        'form_group_class' => 'text-center',
 						'values' => array(
 							array(
 								'id' => 'active_on',
@@ -7365,6 +7992,7 @@ public function renderSettingCustomer()
 						'label' => $this->l('Not reported as abused'),
 						'name' => 'reported',
                         'is_bool' => true,
+                        'form_group_class' => 'text-center',
 						'values' => array(
 							array(
 								'id' => 'active_on',
@@ -7411,11 +8039,11 @@ public function renderSettingCustomer()
 			'fields_value' => $this->getFieldsValues(Ybc_blog_defines::$commentFields,'id_comment','Ybc_blog_comment_class','saveComment'),
 			'languages' => $this->context->controller->getLanguages(),
 			'id_language' => $this->context->language->id,
-			'image_baseurl' => $this->_path.'views/img/',
+			'image_baseurl' => _PS_YBC_BLOG_IMG_,
             'link' => $this->context->link,
             'cancel_url' => $this->baseAdminPath.'&control=comment&list=true'
 		);            
-        if(Tools::isSubmit('id_comment') && $this->itemExists('comment','id_comment',(int)Tools::getValue('id_comment')))
+        if(Tools::isSubmit('id_comment') && $this->itemExists('comment','id_comment',(int)$id_comment))
         {
             
             $fields_form['form']['input'][] = array('type' => 'hidden', 'name' => 'id_comment');                
@@ -7427,7 +8055,8 @@ public function renderSettingCustomer()
    public function renderCommentsForm()
    {
         //List 
-        if(trim(Tools::getValue('list'))=='true')
+        $list = Tools::strtolower(Tools::getValue('list'));
+        if($list=='true')
         {
             $fields_list = array(
                 'id_comment' => array(
@@ -7528,6 +8157,7 @@ public function renderSettingCustomer()
                     'sort' => true,
                     'filter' => true,
                     'strip_tag' => false,
+                    'form_group_class' => 'text-center',
                     'filter_list' => array(
                         'id_option' => 'enabled',
                         'value' => 'title',
@@ -7546,32 +8176,62 @@ public function renderSettingCustomer()
             );
             //Filter
             $filter = "";
-            if(trim(Tools::getValue('id_comment'))!='')
-                $filter .= " AND bc.id_comment = ".(int)trim(urldecode(Tools::getValue('id_comment')));
-            if(trim(Tools::getValue('comment'))!='')
-                $filter .= " AND bc.comment like '%".addslashes(trim(urldecode(Tools::getValue('comment'))))."%'";
-            if(trim(Tools::getValue('subject'))!='')
-                $filter .= " AND (bc.subject like '%".addslashes(trim(urldecode(Tools::getValue('subject'))))."%' OR bc.comment like '%".addslashes(trim(urldecode(Tools::getValue('subject'))))."%')";
-            if(trim(Tools::getValue('rating'))!='')
-                $filter .= " AND bc.rating = ".(int)trim(urldecode(Tools::getValue('rating')));                
-            if(trim(Tools::getValue('name'))!='')
-                $filter .= " AND bc.name like '%".addslashes(trim(urldecode(Tools::getValue('name'))))."%'";
-            if(trim(Tools::getValue('approved'))!='')
-                $filter .= " AND bc.approved = ".(int)trim(urldecode(Tools::getValue('approved')));
-            if(trim(Tools::getValue('reported'))!='')
-                $filter .= " AND bc.reported = ".(int)trim(urldecode(Tools::getValue('reported')));
-            if(trim(Tools::getValue('title'))!='')
-                $filter .= " AND pl.title like '%".pSQL(Tools::getValue('title'))."%'";
-            //Sort
-            
-            if(trim(Tools::getValue('sort')) && isset($fields_list[Tools::getValue('sort')]))
+            $show_reset = false;
+            if(($id = trim(Tools::getValue('id_comment')))!='' && Validate::isCleanHtml($id))
             {
-                $sort = trim(Tools::getValue('sort'))." ".(Tools::getValue('sort_type')=='asc' ? ' ASC ' :' DESC ')." , ";
+                $filter .= " AND bc.id_comment = ".(int)$id;
+                $show_reset = true;
+            }
+            if(($com = trim(Tools::getValue('comment')))!='' && Validate::isCleanHtml($com))
+            {
+                $filter .= " AND bc.comment like '%".pSQL($com)."%'";
+                $show_reset = true;
+            }
+            if(($subject = trim(Tools::getValue('subject')))!='' && Validate::isCleanHtml($subject))
+            {
+                $filter .= " AND (bc.subject LIKE '%".pSQL($subject)."%' OR bc.comment LIKE '%".pSQL($subject)."%')";
+                $show_reset = true;
+            }
+            if(($rating = trim(Tools::getValue('rating')))!='' && Validate::isCleanHtml($rating))
+            {
+                $filter .= " AND bc.rating = ".(int)$rating; 
+                $show_reset = true;
+            }                   
+            if(($name = trim(Tools::getValue('name')))!='' && Validate::isCleanHtml($name))
+            {
+                $filter .= " AND bc.name like '%".pSQL($name)."%'";
+                $show_reset = true;
+            }    
+            if(($approved = trim(Tools::getValue('approved')))!='' && Validate::isCleanHtml($approved))
+            {
+                $filter .= " AND bc.approved = ".(int)$approved;
+                $show_reset = true;
+            }
+            if(($reported = trim(Tools::getValue('reported')))!='' && Validate::isCleanHtml($reported))
+            {
+                $filter .= " AND bc.reported = ".(int)$reported;
+                $show_reset = true;
+            }
+            if(($title = trim(Tools::getValue('title')))!='' && Validate::isCleanHtml($title))
+            {
+                $filter .= " AND pl.title like '%".pSQL($title)."%'";
+                $show_reset = true;
+            }    
+            //Sort
+            $sort_post = Tools::strtolower(Tools::getValue('sort'));
+            $sort_type = Tools::strtolower(Tools::getValue('sort_type','desc'));
+            if(!in_array($sort_type,array('desc','asc')))
+                $sort_type ='desc';
+            if($sort_post && isset($fields_list[$sort_post]))
+            {
+                $sort = $sort_post." ".($sort_type=='asc' ? ' ASC ' :' DESC ')." , ";
             }
             else
                 $sort = 'bc.id_comment desc,';
             //Paggination
-            $page = (int)Tools::getValue('page') && (int)Tools::getValue('page') > 0 ? (int)Tools::getValue('page') : 1;
+            $page = (int)Tools::getValue('page');
+            if($page <1)
+                $page=1;
             $totalRecords = (int)$this->countCommentsWithFilter($filter,false);
             $paggination = new Ybc_blog_paggination_class();            
             $paggination->total = $totalRecords;
@@ -7592,8 +8252,8 @@ public function renderSettingCustomer()
                     $comment['view_url'] = $this->getLink('blog', array('id_post' => $comment['id_post'])).'#blog_comment_line_'.$comment['id_comment'];
                     $comment['view_text'] = $this->l('View in post');
                     $comment['child_view_url'] = $this->context->link->getAdminLink('AdminModules', true).'&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&control=comment_reply&id_comment='.(int)$comment['id_comment'];
-                    $replies = Db::getInstance()->getValue('SELECT COUNT(*) FROM '._DB_PREFIX_.'ybc_blog_reply WHERE id_comment='.(int)$comment['id_comment']);
-                    $replies_no_approved = Db::getInstance()->getValue('SELECT COUNT(*) FROM '._DB_PREFIX_.'ybc_blog_reply WHERE approved=0 AND id_comment='.(int)$comment['id_comment']);
+                    $replies = Db::getInstance()->getValue('SELECT COUNT(*) FROM `'._DB_PREFIX_.'ybc_blog_reply` WHERE id_comment='.(int)$comment['id_comment']);
+                    $replies_no_approved = Db::getInstance()->getValue('SELECT COUNT(*) FROM `'._DB_PREFIX_.'ybc_blog_reply` WHERE approved=0 AND id_comment='.(int)$comment['id_comment']);
                     if($replies)
                         $comment['count_reply'] = $replies. ($replies_no_approved ? ' ('.$replies_no_approved.' '.$this->l('pending').')':'');
                     else
@@ -7606,7 +8266,7 @@ public function renderSettingCustomer()
             $paggination->style_results = $this->l('results');
             $listData = array(
                 'name' => 'ybc_comment',
-                'actions' => array('edit', 'delete', 'view'),
+                'actions' => array('edit','approve' ,'delete'),
                 'currentIndex' => $this->context->link->getAdminLink('AdminModules', true).'&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&control=comment',
                 'identifier' => 'id_comment',
                 'show_toolbar' => true,
@@ -7616,16 +8276,16 @@ public function renderSettingCustomer()
                 'field_values' => $comments,
                 'paggination' => $paggination->render(),
                 'filter_params' => $this->getFilterParams($fields_list),
-                'show_reset' => trim(Tools::getValue('id_comment'))!='' || trim(Tools::getValue('comment'))!='' || trim(Tools::getValue('rating'))!='' || trim(Tools::getValue('subject'))!='' || trim(Tools::getValue('customer'))!='' || trim(Tools::getValue('approved'))!='' || trim(Tools::getValue('reported'))!='' ? true : false,
+                'show_reset' => $show_reset,
                 'totalRecords' => $totalRecords,
                 'show_add_new' => false,
-                'sort'=>Tools::getValue('sort','id_comment'),
-                'sort_type'=>Tools::getValue('sort_type','desc'),
+                'sort'=> $sort_post ?: 'id_comment',
+                'sort_type'=> $sort_type,
             );            
             return $this->_html .= $this->renderList($listData);      
         }
         //Form
-        
+        $id_comment = (int)Tools::getValue('id_comment');    
         $fields_form = array(
 			'form' => array(
 				'legend' => array(
@@ -7637,8 +8297,7 @@ public function renderSettingCustomer()
 						'label' => $this->l('Subject'),
 						'name' => 'subject',    					 
                         'required' => true,
-                        'hint' => $this->l('Invalid characters:').' &lt;&gt;;=#{}',
-                        'desc' => ($id_comment = (int)Tools::getValue('id_comment')) && ($comment = $this->getCommentById($id_comment)) ? $this->displayCommentInfo($comment,(int)$comment['id_user']?$this->context->link->getAdminLink('AdminCustomers').'&id_customer='.(int)$comment['id_user'].'&updatecustomer':'#',$this->getLink('blog',array('id_post' => (int)$comment['id_post']))) : '',	                    
+                        'desc' => $id_comment && ($comment = $this->getCommentById($id_comment)) ? $this->displayCommentInfo($comment,(int)$comment['id_user'],$this->getLink('blog',array('id_post' => (int)$comment['id_post']))) : '',	                    
 					), 
                     array(
     					'type' => 'select',
@@ -7679,7 +8338,6 @@ public function renderSettingCustomer()
 						'type' => 'textarea',
 						'label' => $this->l('Comment'),
 						'name' => 'comment',                            
-                        'hint' => $this->l('Invalid characters:').' &lt;&gt;;=#{}',
                         'required' => true						
 					),
                     //array(
@@ -7711,6 +8369,7 @@ public function renderSettingCustomer()
 						'label' => $this->l('Not reported as abused'),
 						'name' => 'reported',
                         'is_bool' => true,
+                        'form_group_class' => 'text-center',
 						'values' => array(
 							array(
 								'id' => 'active_on',
@@ -7757,11 +8416,11 @@ public function renderSettingCustomer()
 			'fields_value' => $this->getFieldsValues(Ybc_blog_defines::$commentFields,'id_comment','Ybc_blog_comment_class','saveComment'),
 			'languages' => $this->context->controller->getLanguages(),
 			'id_language' => $this->context->language->id,
-			'image_baseurl' => $this->_path.'views/img/',
+			'image_baseurl' => _PS_YBC_BLOG_IMG_,
             'link' => $this->context->link,
             'cancel_url' => $this->baseAdminPath.'&control=comment&list=true'
 		);            
-        if(Tools::isSubmit('id_comment') && $this->itemExists('comment','id_comment',(int)Tools::getValue('id_comment')))
+        if(Tools::isSubmit('id_comment') && $id_comment && $this->itemExists('comment','id_comment',$id_comment))
         {
             
             $fields_form['form']['input'][] = array('type' => 'hidden', 'name' => 'id_comment');                
@@ -7770,8 +8429,28 @@ public function renderSettingCustomer()
 		$helper->override_folder = '/'; 
         $this->_html .= $helper->generateForm(array($fields_form));			
     }
-    public function displayCommentInfo($comment, $customerLink, $postLink)
+    public function displayCommentInfo($comment, $id_customer, $postLink)
     {
+        if($id_customer)
+        {
+            if(version_compare(_PS_VERSION_, '1.7.6', '>='))
+                {
+                    $sfContainer = call_user_func(array('\PrestaShop\PrestaShop\Adapter\SymfonyContainer','getInstance'));
+                	if (null !== $sfContainer) {
+                		$sfRouter = $sfContainer->get('router');
+                		$customerLink= $sfRouter->generate(
+                			'admin_customers_view',
+                			array('customerId' => $id_customer)
+                		);
+                	}
+                    else
+                        $customerLink = $this->context->link->getAdminLink('AdminCustomers').'&id_customer='.(int)$id_customer.'&viewcustomer';
+                }
+                else
+                    $customerLink = $this->context->link->getAdminLink('AdminCustomers').'&id_customer='.(int)$id_customer.'&viewcustomer';
+        }
+        else
+            $customerLink='#';
         $this->smarty->assign(array(
             'comment' => $comment,
             'customerLink' => $customerLink,
@@ -7788,7 +8467,8 @@ public function renderSettingCustomer()
         if(!Configuration::get('YBC_BLOG_ALLOW_CUSTOMER_AUTHOR'))
             return false;
         //List 
-        if(trim(Tools::getValue('list'))=='true' || $list)
+        $list_post = trim(Tools::getValue('list'));
+        if($list_post=='true' || $list)
         {
             $fields_list = array(
                 'id_customer' => array(
@@ -7822,9 +8502,8 @@ public function renderSettingCustomer()
                 ), 
                 'description' => array(
                     'title' => $this->l('Introduction'),
-                    //'width' => 140,
                     'type' => 'text',
-                    'strip_tag' => false,
+                   // 'strip_tag' => false,
                     'filter'=>true  
                 ),
                 'has_post'=> array(
@@ -7889,35 +8568,42 @@ public function renderSettingCustomer()
             $filter = "";
             $sort = "";
             $having='';
-            if(Tools::getValue('control')=='customer')
+            if(($control = Tools::getValue('control')) && $control=='customer')
             {
-                if(trim(Tools::getValue('id_customer'))!='')
-                $filter .= " AND c.id_customer = ".(int)trim(urldecode(Tools::getValue('id_customer')));
-                if(trim(Tools::getValue('name'))!='')
-                    $filter .= " AND (CONCAT(c.firstname,' ',c.lastname) like '".pSQL(Tools::getValue('name'))."%' OR be.name like'".pSQL(Tools::getValue('name'))."%')";                
-                if(trim(Tools::getValue('email'))!='')
-                    $filter .= " AND c.email like '".pSQL(Tools::getValue('email'))."%'";
-                if(trim(Tools::getValue('description'))!='')
-                    $filter .= ' AND bel.description like "%'.pSQL(Tools::getValue('description')).'%"';
-                if(trim(Tools::getValue('total_post_min'))!='')
-                    $having .= ' AND total_post >="'.(int)Tools::getValue('total_post_min').'"';
-                if(trim(Tools::getValue('total_post_max'))!='')
-                    $having .= ' AND total_post <="'.(int)Tools::getValue('total_post_max').'"';
-                if(Tools::isSubmit('status') && trim(Tools::getValue('status'))!='')
-                    $filter .= " AND (be.status= '".(int)Tools::getValue('status')."'".((int)Tools::getValue('status')==1 ? ' or be.status is null':'' )." )";
+                if(($id = trim(Tools::getValue('id_customer')))!='' && Validate::isCleanHtml($id))
+                    $filter .= " AND c.id_customer = ".(int)$id;
+                if(($name = trim(Tools::getValue('name')))!='' && Validate::isCleanHtml($name))
+                    $filter .= " AND (CONCAT(c.firstname,' ',c.lastname) like '".pSQL($name)."%' OR be.name like'".pSQL($name)."%')";                
+                if(($email = trim(Tools::getValue('email')))!='' && Validate::isCleanHtml($email))
+                    $filter .= " AND c.email like '".pSQL($email)."%'";
+                if(($desc = trim(Tools::getValue('description')))!='' && Validate::isCleanHtml($desc))
+                    $filter .= ' AND bel.description like "%'.pSQL($desc).'%"';
+                if(($total_post_min = trim(Tools::getValue('total_post_min')))!='' && Validate::isCleanHtml($total_post_min))
+                    $having .= ' AND total_post >="'.(int)$total_post_min.'"';
+                if(($total_post_max = trim(Tools::getValue('total_post_max')))!='' && Validate::isCleanHtml($total_post_max))
+                    $having .= ' AND total_post <="'.(int)$total_post_max.'"';
+                if(Tools::isSubmit('status') && ($status = trim(Tools::getValue('status')))!='' && Validate::isCleanHtml($status))
+                    $filter .= " AND (be.status= '".(int)$status."'".((int)$status==1 ? ' or be.status is null':'' )." )";
                 //Sort
-                if(trim(Tools::getValue('sort')) && isset($fields_list[Tools::getValue('sort')]))
+                $sort_post  = Tools::strtolower(Tools::getValue('sort'));
+                $sort_type = Tools::strtolower(Tools::getValue('sort_type','desc'));
+                if(!in_array($sort_type,array('desc','asc')))
+                    $sort_type ='desc';
+                if($sort_post && isset($fields_list[$sort_post]))
                 {
-                    $sort .= trim(Tools::getValue('sort'))." ".(Tools::getValue('sort_type')=='asc' ? ' ASC ' :' DESC ')."";
+                    $sort .= $sort_post." ".($sort_type=='asc' ? ' ASC ' :' DESC ')."";
                 }
                 else
                     $sort = false;
             }
-            if(!Tools::isSubmit('has_post') || Tools::getValue('has_post')==1)
+            $has_post = Tools::getValue('has_post');
+            if(!Tools::isSubmit('has_post') || $has_post==1)
                 $having .= ' AND total_post >=1';
-            elseif(Tools::isSubmit('has_post') && Tools::getValue('has_post')!='')
+            elseif(Tools::isSubmit('has_post') && $has_post!='')
                 $having .= ' AND total_post <=0';
-            $page = (int)Tools::getValue('page') && (int)Tools::getValue('page')> 0  && Tools::getValue('control')=='customer' ? (int)Tools::getValue('page') : 1;
+            $page = (int)Tools::getValue('page');
+            if($page <1)
+                $page=1;
             $totalRecords = (int)$this->countCustomersFilter($filter,$having);
             $paggination = new Ybc_blog_paggination_class();            
             $paggination->total = $totalRecords;
@@ -7938,16 +8624,17 @@ public function renderSettingCustomer()
                     if(!$customer['name'])
                         $customer['name']=$customer['firstname'].' '.$customer['lastname'];
                     if($customer['avata'])
-                        $customer['avata']='<div class="avata_img"><img src="'.$this->getBaseLink().'modules/'.$this->name.'/views/img/avata/'.$customer['avata'].'" style="width:40px;"/></div>';
+                        $customer['avata']='<div class="avata_img"><img src="'._PS_YBC_BLOG_IMG_.'avata/'.$customer['avata'].'" style="width:40px;"/></div>';
                     else
-                        $customer['avata']='<div class="avata_img"><img src="'.$this->getBaseLink().'modules/'.$this->name.'/views/img/avata/default_customer.png" style="width:40px;"/></div>';
-                    $customer['name'] ='<a href="'.$this->context->link->getAdminLink('AdminCustomers').'&updatecustomer&id_customer='.(int)$customer['id_customer'].'" title="'.$customer['name'].'">'.$customer['name'].'</a>';
+                        $customer['avata']='<div class="avata_img"><img src="'._PS_YBC_BLOG_IMG_.'avata/default_customer.png" style="width:40px;"/></div>';
+                    
                     $customer['view_post_url'] = $this->getLink('blog',array('id_author'=> $customer['id_customer'],'is_customer'=>1,'alias'=> Tools::link_rewrite($customer['name'],true)));
                     $customer['delete_post_url'] = $this->context->link->getAdminLink('AdminModules', true).'&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&control=customer&list=true&deleteAllPostCustomer&id_author='.(int)$customer['id_customer'];
                     if($customer['total_post']==0)
                         $customer['has_post']=0;
                     else
                         $customer['has_post']=1;
+                    $customer['name'] ='<a href="'.$this->context->link->getAdminLink('AdminCustomers').'&updatecustomer&id_customer='.(int)$customer['id_customer'].'" title="'.$customer['name'].'">'.$customer['name'].'</a>';
                 }
             }
             $paggination->text =  $this->l('Showing {start} to {end} of {total} ({pages} Pages)');
@@ -7968,15 +8655,16 @@ public function renderSettingCustomer()
                 'filter_params' => $this->getFilterParams($fields_list),
                 'show_reset' => $filter || Tools::isSubmit('total_post_min') || Tools::isSubmit('total_post_max') || Tools::isSubmit('has_post') ? true : false,
                 'show_add_new' => false,
-                'sort' => $sort ? Tools::getValue('sort'):'',
-                'sort_type' => $sort ? Tools::getValue('sort_type'):'',
+                'sort' => $sort ? $sort_post:'',
+                'sort_type' => $sort ? $sort_type:'',
             ); 
             if($list)
                return $this->renderList($listData);            
             return $this->_html .= $this->displayTabAuthor().$this->renderList($listData).$this->renderEmployeeFrom(true).$this->renderSettingCustomer();      
         }
         //Form
-        $customer= new Customer(Tools::getValue('id_customer'));
+        $id_customer = (int)Tools::getValue('id_customer');
+        $customer= new Customer($id_customer);
         $fields_form = array(
 			'form' => array(
 				'input' => array(					
@@ -7991,12 +8679,13 @@ public function renderSettingCustomer()
 						'label' => $this->l('Introduction'),
 						'name' => 'description',
                         'lang'=>true,
-                        'autoload_rte'=>true,
+                        //'autoload_rte'=>true,
                     ),                         
                     array(
 						'type' => 'file',
 						'label' => $this->l('Avatar photo'),
 						'name' => 'avata',
+                        'col'=>9,
                         'desc'=> $this->l('Avatar photo should be a square image. Recommended size: ').Configuration::get('YBC_BLOG_IMAGE_AVATA_WIDTH',300).'x'.Configuration::get('YBC_BLOG_IMAGE_AVATA_HEIGHT',300),                 						
 					),
                     array(
@@ -8042,7 +8731,7 @@ public function renderSettingCustomer()
 		$helper->module = $this;
 		$helper->identifier = $this->identifier;
 		$helper->submit_action = 'saveBlogEmployee';
-		$helper->currentIndex = $this->context->link->getAdminLink('AdminModules', false).'&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&control=customer&id_customer='.(int)Tools::getValue('id_customer');
+		$helper->currentIndex = $this->context->link->getAdminLink('AdminModules', false).'&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&control=customer&id_customer='.(int)$id_customer;
 		$helper->token = Tools::getAdminTokenLite('AdminModules');
 		$language = new Language((int)Configuration::get('PS_LANG_DEFAULT'));
 		$helper->tpl_vars = array(
@@ -8055,21 +8744,21 @@ public function renderSettingCustomer()
 			'fields_value' => $this->getFieldsCustomerValues(),
 			'languages' => $this->context->controller->getLanguages(),
 			'id_language' => $this->context->language->id,
-			'image_baseurl' => $this->_path.'views/img/',
+			'image_baseurl' => _PS_YBC_BLOG_IMG_,
             'link' => $this->context->link,
             'post_key' => 'id_customer',
             'cancel_url' => $this->baseAdminPath.'&control=customer&list=true',
             'name_controller' => 'ybc-blog-panel-customer',
 		);
-        if(Tools::isSubmit('id_customer') && Tools::getValue('id_customer'))
+        if(Tools::isSubmit('id_customer') && ($id_customer = (int)Tools::getValue('id_customer')))
         {
             
             $fields_form['form']['input'][] = array('type' => 'hidden', 'name' => 'id_customer');
-            $blog_employee = Db::getInstance()->getRow('SELECT * FROM '._DB_PREFIX_.'ybc_blog_employee WHERE id_employee='.(int)Tools::getValue('id_customer').' AND is_customer=1');
+            $blog_employee = Db::getInstance()->getRow('SELECT * FROM `'._DB_PREFIX_.'ybc_blog_employee` WHERE id_employee='.(int)$id_customer.' AND is_customer=1');
             if($blog_employee['avata'])
             {             
-                $helper->tpl_vars['display_img'] = $this->_path.'views/img/avata/'.$blog_employee['avata'];
-                $helper->tpl_vars['img_del_link'] = $this->baseAdminPath.'&id_employee='.Tools::getValue('id_employee').'&delemployeeimage=true&control=customer';                
+                $helper->tpl_vars['display_img'] = _PS_YBC_BLOG_IMG_.'avata/'.$blog_employee['avata'];
+                $helper->tpl_vars['img_del_link'] = $this->baseAdminPath.'&id_customer='.$id_customer.'&delemployeeimage=true&control=customer';                
             }
         }
 		$helper->override_folder = '/';      
@@ -8078,7 +8767,8 @@ public function renderSettingCustomer()
     public function renderEmployeeFrom($list=false)
     {
         //List 
-        if(trim(Tools::getValue('list'))=='true' || $list)
+        $list_post = Tools::getValue('list');
+        if($list_post=='true' || $list)
         {
             $fields_list = array(
                 'id_employee' => array(
@@ -8112,7 +8802,7 @@ public function renderSettingCustomer()
                 'description' => array(
                     'title' => $this->l('Introduction'),
                     'type' => 'text',
-                    'strip_tag' => false ,
+                   // 'strip_tag' => false ,
                     'filter'=>true, 
                 ),  
                 'profile_name'=>array(
@@ -8261,39 +8951,43 @@ public function renderSettingCustomer()
             $filter = "";
             $sort = "";
             $having="";
-            if(Tools::getValue('control')=='employees')
+            if(($control = Tools::getValue('control')) && $control=='employees')
             {
-                if(trim(Tools::getValue('id_employee'))!='')
-                    $filter .= " AND e.id_employee = ".(int)trim(urldecode(Tools::getValue('id_employee')));
-                if(trim(Tools::getValue('name'))!='')
-                    $filter .= " AND (CONCAT(e.firstname,' ',e.lastname) like '".pSQL(Tools::getValue('name'))."%' OR be.name like'".pSQL(Tools::getValue('name'))."%')";                
-                if(trim(Tools::getValue('email')))
-                    $filter .= " AND e.email like '".pSQL(Tools::getValue('email'))."'";
-                if(trim(Tools::getValue('description')))
-                    $filter .= " AND bel.description like '%".pSQL(Tools::getValue('description'))."%'";
-                if(trim(Tools::getValue('id_profile')))
-                    $filter .= " AND pl.id_profile = '".(int)Tools::getValue('id_profile')."'";
-                if(trim(Tools::getValue('profile_employee')))
-                    $filter .= " AND (be.profile_employee like '%".Tools::getValue('profile_employee')."%' OR p.id_profile=1 or be.profile_employee like '%All tabs%')  ";
-                if(trim(Tools::getValue('total_post_min'))!='')
-                    $having .= ' AND total_post >="'.(int)Tools::getValue('total_post_min').'"';
-                if(trim(Tools::getValue('total_post_max'))!='')
-                    $having .= ' AND total_post <="'.(int)Tools::getValue('total_post_max').'"';
-                if(Tools::isSubmit('status') && trim(Tools::getValue('status'))!='')
-                    $filter .= " AND (be.status= '".(int)Tools::getValue('status')."'".(!(int)Tools::getValue('status') ? ' or be.status is null':'' )." )";
+                if(($id = trim(Tools::getValue('id_employee')))!='' && Validate::isCleanHtml($id))
+                    $filter .= " AND e.id_employee = ".(int)$id;
+                if(($name = trim(Tools::getValue('name')))!='' && Validate::isCleanHtml($name))
+                    $filter .= " AND (CONCAT(e.firstname,' ',e.lastname) like '".pSQL($name)."%' OR be.name like'".pSQL($name)."%')";                
+                if(($email = trim(Tools::getValue('email')))!='' && Validate::isCleanHtml($email))
+                    $filter .= " AND e.email like '%".pSQL($email)."%'";
+                if(($description = trim(Tools::getValue('description')))!='' && Validate::isCleanHtml($description))
+                    $filter .= " AND bel.description like '%".pSQL($description)."%'";
+                if(($id_profile = trim(Tools::getValue('id_profile')))!='' && Validate::isCleanHtml($id_profile))
+                    $filter .= " AND pl.id_profile = '".(int)$id_profile."'";
+                if(($profile_employee = trim(Tools::getValue('profile_employee')))!='' && Validate::isCleanHtml($profile_employee))
+                    $filter .= " AND (be.profile_employee like '%".$profile_employee."%' OR p.id_profile=1 or be.profile_employee like '%All tabs%')  ";
+                if(($total_post_min = trim(Tools::getValue('total_post_min')))!='' && Validate::isCleanHtml($total_post_min))
+                    $having .= ' AND total_post >="'.(int)$total_post_min.'"';
+                if(($total_post_max = trim(Tools::getValue('total_post_max')))!='' && Validate::isCleanHtml($total_post_max))
+                    $having .= ' AND total_post <="'.(int)$total_post_max.'"';
+                if(Tools::isSubmit('status') && ($status = trim(Tools::getValue('status')))!='' && Validate::isCleanHtml($status))
+                    $filter .= " AND (be.status= '".(int)$status."'".(!(int)$status ? ' or be.status is null':'' )." )";
                 //Sort
-                //die('xx'.$filter);
-                if(trim(Tools::getValue('sort')) && isset($fields_list[Tools::getValue('sort')]))
+                $sort_post = Tools::strtolower(Tools::getValue('sort'));
+                $sort_type = Tools::strtolower(Tools::getValue('sort_type'));
+                if(!in_array($sort_type,array('desc','asc')))
+                    $sort_type = 'desc';
+                if($sort_post && isset($fields_list[$sort_post]))
                 {
                     
-                    $sort .= trim(Tools::getValue('sort'))." ".(Tools::getValue('sort_type')=='asc' ? ' ASC ' :' DESC ')."";
+                    $sort .= $sort_post." ".($sort_type=='asc' ? ' ASC ' :' DESC ')."";
                 }
                 else
                     $sort = false;
             }
-            
             //Paggination
-            $page = (int)Tools::getValue('page') && (int)Tools::getValue('page') > 0 && Tools::getValue('control')=='employees'? (int)Tools::getValue('page') : 1;
+            $page = (int)Tools::getValue('page');
+            if($page<1)
+                $page =1;
             $totalRecords = (int)$this->countEmployeesFilter($filter,$having);
             $paggination = new Ybc_blog_paggination_class();            
             $paggination->total = $totalRecords;
@@ -8307,6 +9001,7 @@ public function renderSettingCustomer()
             if($start < 0)
                 $start = 0;
             $employees = $this->getEmployeesFilter($filter, $sort, $start, $paggination->limit,$having);
+            
             if($employees)
             {
                 foreach($employees as &$employee)
@@ -8314,17 +9009,17 @@ public function renderSettingCustomer()
                     if(!$employee['name'])
                         $employee['name']=$employee['employee'];
                     if($employee['avata'])
-                        $employee['avata']='<div class="avata_img"><img src="'.$this->getBaseLink().'modules/'.$this->name.'/views/img/avata/'.$employee['avata'].'" style="width:40px;"/></div>';
+                        $employee['avata']='<div class="avata_img"><img src="'._PS_YBC_BLOG_IMG_.'avata/'.$employee['avata'].'" style="width:40px;"/></div>';
                     else
-                        $employee['avata']='<div class="avata_img"><img src="'.$this->getBaseLink().'modules/'.$this->name.'/views/img/avata/default_customer.png" style="width:40px;"/></div>';
-                    $employee['name'] = '<a href ="'.$this->context->link->getAdminLink('AdminEmployees').'&updateemployee&id_employee='.(int)$employee['id_employee'].'" title="'.$employee['name'].'">'.$employee['name'].'</a>';
+                        $employee['avata']='<div class="avata_img"><img src="'._PS_YBC_BLOG_IMG_.'avata/default_customer.png" style="width:40px;"/></div>';
                     if($employee['id_profile']==1 || Tools::strpos($employee['profile_employee'],'All tabs')!==false)
                         $employee['profile_employee'] = 'All tabs';
                     else
                         $employee['profile_employee'] = str_replace(',','<br/>',$employee['profile_employee']);
                     $employee['view_post_url'] = $this->getLink('blog',array('id_author'=> $employee['id_employee'],'alias'=> Tools::link_rewrite($employee['name'],true)));
                     $employee['delete_post_url'] = $this->context->link->getAdminLink('AdminModules', true).'&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&control=employees&list=true&deleteAllPostEmployee&id_author='.(int)$employee['id_employee'];
-                    //$employee['total_post'] =(int)Db::getInstance()->getValue('SELECT COUNT(id_post) FROM '._DB_PREFIX_.'ybc_blog_post WHERE added_by="'.(int)$employee['id_employee'].'" AND is_customer=0'); 
+                    $employee['name'] = '<a href ="'.$this->context->link->getAdminLink('AdminEmployees').'&updateemployee&id_employee='.(int)$employee['id_employee'].'" title="'.$employee['name'].'">'.$employee['name'].'</a>';
+                    //$employee['total_post'] =(int)Db::getInstance()->getValue('SELECT COUNT(id_post) FROM `'._DB_PREFIX_.'ybc_blog_post` WHERE added_by="'.(int)$employee['id_employee'].'" AND is_customer=0');
                 }
             }
             $paggination->text =  $this->l('Showing {start} to {end} of {total} ({pages} Pages)');
@@ -8345,8 +9040,8 @@ public function renderSettingCustomer()
                 'filter_params' => $this->getFilterParams($fields_list),
                 'show_reset' => $filter || $having ? true : false,
                 'show_add_new' => false,
-                'sort' => $sort ? Tools::getValue('sort'):'',
-                'sort_type' => $sort ? Tools::getValue('sort_type'):'',
+                'sort' => $sort ? $sort_post:'',
+                'sort_type' => $sort ? $sort_type:'',
                 
             ); 
             if($list)
@@ -8355,7 +9050,8 @@ public function renderSettingCustomer()
         }
         
         //Form
-        $employee_class= new Employee(Tools::getValue('id_employee'));
+        $id_employee = (int)Tools::getValue('id_employee');
+        $employee_class= new Employee($id_employee);
         $fields_form = array(
 			'form' => array(
 				'input' => array(					
@@ -8370,13 +9066,14 @@ public function renderSettingCustomer()
 						'label' => $this->l('Introduction'),
 						'name' => 'description',
                         'lang'=>true,
-                        'autoload_rte'=>true,
+                        //'autoload_rte'=>true,
                     ),                         
                     array(
 						'type' => 'file',
 						'label' => $this->l('Avatar photo'),
 						'name' => 'avata',
-                        'desc'=> $this->l('Avatar photo should be a square image. Recommended size: ').Configuration::get('YBC_BLOG_IMAGE_AVATA_WIDTH',300).'x'.Configuration::get('YBC_BLOG_IMAGE_AVATA_HEIGHT',300),                 						
+                        'col' => 9,
+                        'desc'=> sprintf($this->l('Avatar photo should be a square image. Accepted formats: jpg, jpeg, png, gif. Limit: %dMb. Recommended size: '),Configuration::get('PS_ATTACHMENT_MAXIMUM_SIZE')).Configuration::get('YBC_BLOG_IMAGE_AVATA_WIDTH',300).'x'.Configuration::get('YBC_BLOG_IMAGE_AVATA_HEIGHT',300),                 						
 					),
                     array(
                         'type'=>'select',
@@ -8493,7 +9190,7 @@ public function renderSettingCustomer()
                             ),
                         ),
     					'name' => 'profile_employee',
-                        'selected_profile' => $this->getProfileEmployee((int)Tools::getValue('id_employee'))                                           
+                        'selected_profile' => $this->getProfileEmployee($employee_class->id)                                           
     				),
                     array(
                         'type' => 'hidden', 
@@ -8515,7 +9212,7 @@ public function renderSettingCustomer()
 		$helper->module = $this;
 		$helper->identifier = $this->identifier;
 		$helper->submit_action = 'saveBlogEmployee';
-		$helper->currentIndex = $this->context->link->getAdminLink('AdminModules', false).'&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name;
+		$helper->currentIndex = $this->context->link->getAdminLink('AdminModules', false).'&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&control=employees';
 		$helper->token = Tools::getAdminTokenLite('AdminModules');
 		$language = new Language((int)Configuration::get('PS_LANG_DEFAULT'));
 		$helper->tpl_vars = array(
@@ -8528,22 +9225,22 @@ public function renderSettingCustomer()
 			'fields_value' => $this->getFieldsEmployeeValues(),
 			'languages' => $this->context->controller->getLanguages(),
 			'id_language' => $this->context->language->id,
-			'image_baseurl' => $this->_path.'views/img/',
+			'image_baseurl' => _PS_YBC_BLOG_IMG_,
             'link' => $this->context->link,
             'post_key' => 'id_employee',
             'cancel_url' => $this->baseAdminPath.'&control=employees&list=true',
             'name_controller' => 'ybc-blog-panel-employee',                        
 		);
         
-        if(Tools::isSubmit('id_employee') && Tools::getValue('id_employee'))
+        if(Tools::isSubmit('id_employee') && ($id_employee = (int)Tools::getValue('id_employee')))
         {
             
             $fields_form['form']['input'][] = array('type' => 'hidden', 'name' => 'id_employee');
-            $blog_employee = Db::getInstance()->getRow('SELECT * FROM '._DB_PREFIX_.'ybc_blog_employee WHERE id_employee='.(int)Tools::getValue('id_employee').' AND is_customer=0');
+            $blog_employee = Db::getInstance()->getRow('SELECT * FROM `'._DB_PREFIX_.'ybc_blog_employee` WHERE id_employee='.(int)$id_employee.' AND is_customer=0');
             if($blog_employee['avata'])
             {             
-                $helper->tpl_vars['display_img'] = $this->_path.'views/img/avata/'.$blog_employee['avata'];
-                $helper->tpl_vars['img_del_link'] = $this->baseAdminPath.'&id_employee='.Tools::getValue('id_employee').'&delemployeeimage=true&control=employees';                
+                $helper->tpl_vars['display_img'] = _PS_YBC_BLOG_IMG_.'avata/'.$blog_employee['avata'];
+                $helper->tpl_vars['img_del_link'] = $this->baseAdminPath.'&id_employee='.$id_employee.'&delemployeeimage=true&control=employees';                
             }
         }
         
@@ -8556,7 +9253,8 @@ public function renderSettingCustomer()
     public function renderSlideForm()
     {
         //List 
-        if(trim(Tools::getValue('list'))=='true')
+        $list = trim(Tools::getValue('list'));
+        if($list=='true')
         {
             $fields_list = array(
                 'id_slide' => array(
@@ -8613,26 +9311,44 @@ public function renderSettingCustomer()
             );
             //Filter
             $filter = "";
-            if(trim(Tools::getValue('id_slide'))!='')
-                $filter .= " AND s.id_slide = ".(int)trim(urldecode(Tools::getValue('id_slide')));
-            if(trim(Tools::getValue('sort_order'))!='')
-                $filter .= " AND s.sort_order = ".(int)trim(urldecode(Tools::getValue('sort_order')));                
-            if(trim(Tools::getValue('caption'))!='')
-                $filter .= " AND sl.caption like '%".addslashes(trim(urldecode(Tools::getValue('title'))))."%'";
-            if(trim(Tools::getValue('enabled'))!='')
-                $filter .= " AND s.enabled =".(int)Tools::getValue('enabled');
+            $show_reset = false;
+            if(($id = trim(Tools::getValue('id_slide')))!='' && Validate::isCleanHtml($id))
+            {
+                $filter .= " AND s.id_slide = ".(int)$id;
+                $show_reset = true;
+            }
+            if(($sort_order = trim(Tools::getValue('sort_order')))!='' && Validate::isCleanHtml($sort_order))
+            {
+                $filter .= " AND s.sort_order = ".(int)$sort_order;
+                $show_reset = true;
+            }                    
+            if(($caption = trim(Tools::getValue('caption')))!='' && Validate::isCleanHtml($caption))
+            {
+                $filter .= " AND sl.caption like '%".pSQL($caption)."%'";
+                $show_reset = true;
+            }    
+            if(($enabled = trim(Tools::getValue('enabled')))!='' && Validate::isCleanHtml($enabled))
+            {
+                $filter .= " AND s.enabled =".(int)$enabled;
+                $show_reset = true;
+            }
             
             //Sort
             $sort = "";
-            if(trim(Tools::getValue('sort')) && isset($fields_list[Tools::getValue('sort')]))
+            $sort_post = Tools::strtolower(Tools::getValue('sort'));
+            $sort_type = Tools::strtolower(Tools::getValue('sort_type','desc'));
+            if(!in_array($sort_type,array('desc','asc')))
+                $sort_type = 'desc';
+            if($sort_post && isset($fields_list[$sort_post]))
             {
-                $sort .= trim(Tools::getValue('sort'))." ".(Tools::getValue('sort_type')=='asc' ? ' ASC ' :' DESC ')." , ";
+                $sort .= $sort_post." ".($sort_type=='asc' ? ' ASC ' :' DESC ')." , ";
             }
             else
                 $sort = 's.sort_order asc, ';
-            
             //Paggination
-            $page = (int)Tools::getValue('page') && (int)Tools::getValue('page') > 0 ? (int)Tools::getValue('page') : 1;
+            $page = (int)Tools::getValue('page');
+            if($page <1)
+                $page=1;
             $totalRecords = (int)$this->countSlidesWithFilter($filter);
             $paggination = new Ybc_blog_paggination_class();            
             $paggination->total = $totalRecords;
@@ -8650,11 +9366,11 @@ public function renderSettingCustomer()
             {
                 foreach($slides as &$slide)
                 {
-                    if($slide['image'] && file_exists(dirname(__FILE__).'/views/img/slide/'.$slide['image']))
+                    if($slide['image'] && file_exists(_PS_YBC_BLOG_IMG_DIR_.'slide/'.$slide['image']))
                     {
                         $slide['image'] = array(
                             'image_field' => true,
-                            'img_url' => $this->_path.'views/img/slide/'.$slide['image'],
+                            'img_url' => _PS_YBC_BLOG_IMG_.'slide/'.$slide['image'],
                             //'width' => 150
                         );
                     }
@@ -8677,10 +9393,10 @@ public function renderSettingCustomer()
                 'field_values' => $slides,
                 'paggination' => $paggination->render(),
                 'filter_params' => $this->getFilterParams($fields_list),
-                'show_reset' => trim(Tools::getValue('enabled'))!='' || trim(Tools::getValue('id_slide'))!='' || trim(Tools::getValue('description'))!='' || trim(Tools::getValue('title'))!='' || trim(Tools::getValue('sort_order'))!='' ? true : false,
+                'show_reset' => $show_reset,
                 'totalRecords' => $totalRecords,
-                'sort' => Tools::getValue('sort','sort_order'),
-                'sort_type'=>Tools::getValue('sort_type','asc'),
+                'sort' => $sort_post ? :'sort_order',
+                'sort_type'=> $sort_type,
             );            
             return $this->_html .= $this->renderList($listData);      
         }
@@ -8707,11 +9423,11 @@ public function renderSettingCustomer()
                         'lang'=>true,
                     ),                         
                     array(
-						'type' => 'file',
+						'type' => 'file_lang',
 						'label' => $this->l('Image'),
 						'name' => 'image',
                         'required' => true,    
-                         'desc' => $this->l('Recommended size: ').Configuration::get('YBC_BLOG_IMAGE_SLIDER_WIDTH',800).'x'.Configuration::get('YBC_BLOG_IMAGE_SLIDER_HEIGHT',470),       						
+                         'desc' =>sprintf($this->l('Accepted formats: jpg, jpeg, png, gif. Limit: %dMb. Recommended size: %sx%s.'),Configuration::get('PS_ATTACHMENT_MAXIMUM_SIZE'),Configuration::get('YBC_BLOG_IMAGE_SLIDER_WIDTH',null,null,null,800),Configuration::get('YBC_BLOG_IMAGE_SLIDER_HEIGHT',null,null,null,470)),       						
 					),
                     array(
 						'type' => 'switch',
@@ -8764,22 +9480,21 @@ public function renderSettingCustomer()
 			'fields_value' => $this->getFieldsValues(Ybc_blog_defines::$slideFields,'id_slide','Ybc_blog_slide_class','saveSlide'),
 			'languages' => $this->context->controller->getLanguages(),
 			'id_language' => $this->context->language->id,
-			'image_baseurl' => $this->_path.'views/img/',
             'link' => $this->context->link,
             'post_key' => 'id_slide',
+            'image_baseurl' => _PS_YBC_BLOG_IMG_.'slide/',
+            'image_baseurl_thumb' => _PS_YBC_BLOG_IMG_.'slide/thumb/',
             'addNewUrl' => $this->context->link->getAdminLink('AdminModules', true).'&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&control=slide',
             'cancel_url' => $this->baseAdminPath.'&control=slide&list=true'
 		);
         
-        if(Tools::isSubmit('id_slide') && $this->itemExists('slide','id_slide',(int)Tools::getValue('id_slide')))
+        if(Tools::isSubmit('id_slide') && ($id_slide = (int)Tools::getValue('id_slide')) && $this->itemExists('slide','id_slide',$id_slide))
         {
-            
             $fields_form['form']['input'][] = array('type' => 'hidden', 'name' => 'id_slide');
-            $slide = new Ybc_blog_slide_class((int)Tools::getValue('id_slide'));
+            $slide = new Ybc_blog_slide_class($id_slide);
             if($slide->image)
             {             
-                $helper->tpl_vars['display_img'] = $this->_path.'views/img/slide/'.$slide->image;
-                $helper->tpl_vars['img_del_link'] = $this->baseAdminPath.'&id_slide='.Tools::getValue('id_slide').'&delslideimage=true&control=slide';                
+                $helper->tpl_vars['img_del_link'] = $this->baseAdminPath.'&id_slide='.$id_slide.'&delslideimage=true&control=slide';                
             }
         }
         
@@ -8797,6 +9512,7 @@ public function renderSettingCustomer()
     private function _postSlide()
     {
         $errors = array();
+        $id_lang_default = Configuration::get('PS_LANG_DEFAULT');
         $id_slide = (int)Tools::getValue('id_slide');
         if($id_slide && !$this->itemExists('slide','id_slide',$id_slide) && !Tools::isSubmit('list'))
             Tools::redirectAdmin($this->baseAdminPath);
@@ -8811,7 +9527,7 @@ public function renderSettingCustomer()
             Hook::exec('actionUpdateBlog', array(
                 'id_slide' =>(int)$id_slide,
             ));       
-            if(($field == 'enabled' && $id_slide))
+            if($field == 'enabled' && $id_slide)
             {
                 $this->changeStatus('slide',$field,$id_slide,$status);
                 if(Tools::isSubmit('ajax'))
@@ -8820,7 +9536,7 @@ public function renderSettingCustomer()
                         'listId' => $id_slide,
                         'enabled' => $status,
                         'field' => $field,
-                        'message' => $this->displaySuccessMessage($this->l('Successful update')),
+                        'message' => $this->displaySuccessMessage($this->l('Successfully updated')),
                         'messageType'=>'success',
                         'href' => $this->context->link->getAdminLink('AdminModules', true).'&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&control=slide&change_enabled='.($status ? '0' : '1').'&field='.$field.'&id_slide='.$id_slide,
                     )));
@@ -8835,12 +9551,16 @@ public function renderSettingCustomer()
          {
             Tools::redirectAdmin($this->baseAdminPath);
             $slide = new Ybc_blog_slide_class($id_slide);
-            $icoUrl = dirname(__FILE__).'/views/img/slide/'.$slide->image; 
-            if($slide->image && file_exists($icoUrl))
+            $id_lang = (int)Tools::getValue('id_lang');
+            if(isset($slide->image[$id_lang]) && $slide->image[$id_lang] && file_exists(_PS_YBC_BLOG_IMG_DIR_.'slide/'.$slide->image[$id_lang]))
             {
-                @unlink($icoUrl);
-                $slide->image = '';                    
-                $slide->update();
+                $oldImage = $slide->image[$id_lang];
+                $slide->image[$id_lang] = $slide->image[$id_lang_default];                    
+                if($slide->update())
+                {
+                    if(!in_array($oldImage,$slide->image))
+                        @unlink(_PS_YBC_BLOG_IMG_DIR_.'slide/'.$oldImage);
+                }
                 Hook::exec('actionUpdateBlog', array(
                     'id_slide' =>(int)$id_slide,
                 )); 
@@ -8871,15 +9591,15 @@ public function renderSettingCustomer()
                 $errors[] = $this->l('Slide does not exist');
             elseif($this->_deleteSlide($id_slide))
             { 
-                $slides = Db::getInstance()->executeS('SELECT * FROM '._DB_PREFIX_.'ybc_blog_slide s
-                INNER JOIN '._DB_PREFIX_.'ybc_blog_slide_shop ss ON (s.id_slide =ss.id_slide AND ss.id_shop="'.(int)$this->context->shop->id.'")
+                $slides = Db::getInstance()->executeS('SELECT * FROM `'._DB_PREFIX_.'ybc_blog_slide` s
+                INNER JOIN `'._DB_PREFIX_.'ybc_blog_slide_shop` ss ON (s.id_slide =ss.id_slide AND ss.id_shop="'.(int)$this->context->shop->id.'")
                 ORDER BY sort_order asc');
                 if($slides)
                 {
                     foreach($slides as $key=>$slide)
                     {
                         $position=$key+1;
-                        Db::getInstance()->execute('UPDATE '._DB_PREFIX_.'ybc_blog_slide SET sort_order="'.(int)$position.'" WHERE id_slide='.(int)$slide['id_slide']);
+                        Db::getInstance()->execute('UPDATE `'._DB_PREFIX_.'ybc_blog_slide` SET sort_order="'.(int)$position.'" WHERE id_slide='.(int)$slide['id_slide']);
                     }
                 }
                 Tools::redirectAdmin($this->context->link->getAdminLink('AdminModules', true).'&conf=4&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&control=slide&list=true');
@@ -8887,19 +9607,19 @@ public function renderSettingCustomer()
             else
                 $errors[] = $this->l('Could not delete the slide. Please try again');    
          }
-         if(Tools::getValue('action')=='updateSliderOrdering' && $slides=Tools::getValue('slides'))
+         if(($action = Tools::getValue('action')) && $action=='updateSliderOrdering' && ($slides=Tools::getValue('slides')) && Ybc_blog::validateArray($slides,'isInt'))
          {
-            $page = Tools::getValue('page',1);
+            $page = (int)Tools::getValue('page',1);
             foreach($slides as $key=> $slide)
             {
                 $position=  1+ $key + ($page-1)*20;
                 if($key==0)
                 {
                     Hook::exec('actionUpdateBlog', array(
-                        'id_slide' =>(int)$id_slide,
+                        'id_slide' =>(int)$slide,
                     )); 
                 }
-                Db::getInstance()->execute('UPDATE '._DB_PREFIX_.'ybc_blog_slide SET sort_order="'.(int)$position.'" WHERE id_slide='.(int)$slide);
+                Db::getInstance()->execute('UPDATE `'._DB_PREFIX_.'ybc_blog_slide` SET sort_order="'.(int)$position.'" WHERE id_slide='.(int)$slide);
             }
             die(
                 Tools::jsonEncode(
@@ -8921,100 +9641,147 @@ public function renderSettingCustomer()
             else
             {
                 $slide = new Ybc_blog_slide_class();
-                if(!isset($_FILES['image']['name']) || isset($_FILES['image']['name']) && !$_FILES['image']['name'])
+                if(!isset($_FILES['image_'.$id_lang_default]['name']) || isset($_FILES['image_'.$id_lang_default]['name']) && !$_FILES['image_'.$id_lang_default]['name'])
                     $errors[] = $this->l('You need to upload an image');
                 $slide->sort_order = 1 + (int)Db::getInstance()->getValue('
-                SELECT count(*) FROM '._DB_PREFIX_.'ybc_blog_slide s
-                INNER JOIN '._DB_PREFIX_.'ybc_blog_slide_shop ss ON (s.id_slide =ss.id_slide AND ss.id_shop="'.(int)$this->context->shop->id.'")
+                SELECT count(*) FROM `'._DB_PREFIX_.'ybc_blog_slide` s
+                INNER JOIN `'._DB_PREFIX_.'ybc_blog_slide_shop` ss ON (s.id_slide =ss.id_slide AND ss.id_shop="'.(int)$this->context->shop->id.'")
                 ORDER BY sort_order asc');
             }                
-            $slide->enabled = trim(Tools::getValue('enabled',1)) ? 1 : 0;
+            $slide->enabled = (int)trim(Tools::getValue('enabled',1)) ? 1 : 0;
             $languages = Language::getLanguages(false);
-            foreach ($languages as $language)
-			{			
-			    $slide->caption[$language['id_lang']] = trim(Tools::getValue('caption_'.$language['id_lang'])) != '' ? trim(Tools::getValue('caption_'.$language['id_lang'])) :  trim(Tools::getValue('caption_'.Configuration::get('PS_LANG_DEFAULT')));
-                if($slide->caption[$language['id_lang']] && !Validate::isCleanHtml($slide->caption[$language['id_lang']]))
-                    $errors[] = $this->l('Caption in '.$language['name'].' is not valid');   
-                $slide->url[$language['id_lang']] = trim(Tools::getValue('url_'.$language['id_lang'])) != '' ? trim(Tools::getValue('url_'.$language['id_lang'])) :  trim(Tools::getValue('url_'.Configuration::get('PS_LANG_DEFAULT')));
-                if($slide->url[$language['id_lang']] && !Validate::isCleanHtml($slide->url[$language['id_lang']]))
-                    $errors[] = $this->l('url in '.$language['name'].' is not valid');                                	
+            $caption_default = trim(Tools::getValue('caption_'.Configuration::get('PS_LANG_DEFAULT')));
+            if($caption_default=='')
+                $errors[] = $this->l('You need to set caption');  
+            elseif($caption_default && !Validate::isCleanHtml($caption_default))
+                $errors[] = $this->l('Caption is not valid');
+            $url_default =trim(Tools::getValue('url_'.Configuration::get('PS_LANG_DEFAULT')));
+            if($url_default && !Validate::isCleanHtml($url_default))
+                $errors[] = $this->l('Url is not valid');
+            if(!$errors)
+            {
+                foreach ($languages as $language)
+    			{
+                    $id_lang = (int)$language['id_lang'];
+                    $caption = trim(Tools::getValue('caption_'.$id_lang));
+                    if($caption && !Validate::isCleanHtml($caption))
+                        $errors[] = sprintf($this->l('Caption in %s is not valid'),$language['name']); 
+                    else
+    			         $slide->caption[$id_lang] = $caption != '' ? $caption :  $caption_default;
+                    $url = trim(Tools::getValue('url_'.$id_lang));
+                    if($url && !Validate::isCleanHtml($url))
+                        $errors[] = sprintf($this->l('url in %s is not valid'),$language['name']);
+                    else  
+                        $slide->url[$id_lang] = $url != '' ? $url :  $url_default;                           	
+                }
             }
-            
-            if(Tools::getValue('caption_'.Configuration::get('PS_LANG_DEFAULT'))=='')
-                $errors[] = $this->l('You need to set caption');                    
+                    
             /**
              * Upload image 
              */  
-            $oldImage = false;
-            $newImage = false;       
-            if(isset($_FILES['image']['tmp_name']) && isset($_FILES['image']['name']) && $_FILES['image']['name'])
+            $oldImages = array();
+            $newImages = array();       
+            foreach($languages as $language)
             {
-                if(file_exists(dirname(__FILE__).'/views/img/slide/'.$_FILES['image']['name']))
+                $max_file_size = Configuration::get('PS_ATTACHMENT_MAXIMUM_SIZE')*1024*1024;
+                if(isset($_FILES['image_'.$language['id_lang']]['tmp_name']) && isset($_FILES['image_'.$language['id_lang']]['name']) && $_FILES['image_'.$language['id_lang']]['name'])
                 {
-                    $_FILES['image']['name'] = Tools::substr(sha1(microtime()),0,10).'-'.$_FILES['image']['name'];
-                    //$errors[] = $this->l('Image file name already exists');
-                }                                            
-                $type = Tools::strtolower(Tools::substr(strrchr($_FILES['image']['name'], '.'), 1));
-    			$imagesize = @getimagesize($_FILES['image']['tmp_name']);
-    			if (isset($_FILES['image']) &&				
-    				!empty($_FILES['image']['tmp_name']) &&
-    				!empty($imagesize) &&
-    				in_array($type, array('jpg', 'gif', 'jpeg', 'png'))
-    			)
-    			{
-    				$temp_name = tempnam(_PS_TMP_IMG_DIR_, 'PS');    				
-    				if ($error = ImageManager::validateUpload($_FILES['image']))
-    					$errors[] = $error;
-    				elseif (!$temp_name || !move_uploaded_file($_FILES['image']['tmp_name'], $temp_name))
-    					$errors[] = $this->l('Can not upload the file');
-    				elseif (!ImageManager::resize($temp_name, dirname(__FILE__).'/views/img/slide/'.$_FILES['image']['name'], Configuration::get('YBC_BLOG_IMAGE_SLIDER_WIDTH',null,null,null,800), Configuration::get('YBC_BLOG_IMAGE_SLIDER_HEIGHT',null,null,null,470), $type))
-    					$errors[] = $this->displayError($this->l('An error occurred during the image upload process.'));
-    				if (isset($temp_name))
-    					@unlink($temp_name);
-                    if($slide->image)
-                        $oldImage = dirname(__FILE__).'/views/img/slide/'.$slide->image;
-                    $slide->image = $_FILES['image']['name'];	
-                    $newImage = dirname(__FILE__).'/views/img/slide/'.$slide->image;
+                    if(!Validate::isFileName($_FILES['image_'.$language['id_lang']]['name']))
+                        $errors[] = sprintf($this->l('Image name is not valid in %s'),$language['iso_code']);
+                    elseif($_FILES['image_'.$language['id_lang']]['size'] > $max_file_size)
+                        $errors[] = sprintf($this->l('Image file is too large. Limit: %s'),Tools::ps_round($max_file_size/1048576,2).'Mb');
+                    else
+                    {
+                        $_FILES['image_'.$language['id_lang']]['name'] = str_replace(' ','-',$_FILES['image_'.$language['id_lang']]['name']);
+                        if(file_exists(_PS_YBC_BLOG_IMG_DIR_.'slide/'.$_FILES['image_'.$language['id_lang']]['name']))
+                        {
+                            $_FILES['image_'.$language['id_lang']]['name'] = $this->createNewFileName(_PS_YBC_BLOG_IMG_DIR_.'slide/',$_FILES['image_'.$language['id_lang']]['name']);
+                        }                                            
+                        $type = Tools::strtolower(Tools::substr(strrchr($_FILES['image_'.$language['id_lang']]['name'], '.'), 1));
+            			$imagesize = @getimagesize($_FILES['image_'.$language['id_lang']]['tmp_name']);
+            			if (isset($_FILES['image_'.$language['id_lang']]) &&				
+            				!empty($_FILES['image_'.$language['id_lang']]['tmp_name']) &&
+            				!empty($imagesize) &&
+            				in_array($type, array('jpg', 'gif', 'jpeg', 'png'))
+            			)
+            			{
+            				$temp_name = tempnam(_PS_TMP_IMG_DIR_, 'PS');    				
+            				if ($error = ImageManager::validateUpload($_FILES['image_'.$language['id_lang']]))
+            					$errors[] = $error;
+            				elseif (!$temp_name || !move_uploaded_file($_FILES['image_'.$language['id_lang']]['tmp_name'], $temp_name))
+            					$errors[] = $this->l('Cannot upload the file in').' '.$language['iso_code'];
+            				elseif (!ImageManager::resize($temp_name, _PS_YBC_BLOG_IMG_DIR_.'slide/'.$_FILES['image_'.$language['id_lang']]['name'], Configuration::get('YBC_BLOG_IMAGE_SLIDER_WIDTH',null,null,null,800), Configuration::get('YBC_BLOG_IMAGE_SLIDER_HEIGHT',null,null,null,470), $type))
+            					$errors[] = $this->displayError($this->l('An error occurred during the image upload process in').' '.$language['iso_code']);
+            				if (isset($temp_name))
+            					@unlink($temp_name);
+                            if($slide->image[$language['id_lang']])
+                                $oldImages[$language['id_lang']] = $slide->image[$language['id_lang']];
+                            $slide->image[$language['id_lang']] = $_FILES['image_'.$language['id_lang']]['name'];	
+                            $newImages[$language['id_lang']] = $slide->image[$language['id_lang']];
+                        }
+                        else
+                            $errors[] = sprintf($this->l('Image is not valid in %s'),$language['iso_code']);
+                    }
                 }
-               
+            }
+            foreach($languages as $language)
+            {
+                if(!$slide->image[$language['id_lang']])
+                    $slide->image[$language['id_lang']] = $slide->image[$id_lang_default];
             }			
-            
+            foreach($languages as $language)
+            {
+                if(!$slide->image[$language['id_lang']])
+                    $slide->image[$language['id_lang']] = $slide->image[$id_lang_default];
+            }
             /**
              * Save 
              */    
              
             if(!$errors)
             {
-                if (!Tools::getValue('id_slide'))
+                if (!$id_slide)
     			{
     				if (!$slide->add())
                     {
                         $errors[] = $this->displayError($this->l('The slide could not be added.'));
-                        if($newImage && file_exists($newImage))
-                        @unlink($newImage);                    
+                        if($newImages)
+                        {
+                            foreach($newImages as $newImage)
+                                if(file_exists((_PS_YBC_BLOG_IMG_DIR_.'slide/'.$newImage)))
+                                    @unlink(_PS_YBC_BLOG_IMG_DIR_.'slide/'.$newImage);
+                        }                    
                     }
                     else
                     {
                         Hook::exec('actionUpdateBlogImage', array(
                             'id_slide' =>(int)$slide->id,
-                            'image' => $newImage ? $slide->image :false,
+                            'image' => $newImages ? $slide->image :false,
                             'thumb' => false,
                         ));
                     }                	                    
     			}				
     			elseif (!$slide->update())
                 {
-                    if($newImage && file_exists($newImage))
-                        @unlink($newImage); 
+                    if($newImages)
+                    {
+                        foreach($newImages as $newImage)
+                            if(file_exists(_PS_YBC_BLOG_IMG_DIR_.'slide/'.$newImage))
+                                @unlink(_PS_YBC_BLOG_IMG_DIR_.'slide/'.$newImage);
+                    } 
                     $errors[] = $this->displayError($this->l('The slide could not be updated.'));
                 }
                 else
                 {
-                    if($oldImage && file_exists($oldImage))
-                    @unlink($oldImage); 
+                    if($oldImages)
+                    {
+                        foreach($oldImages as $oldImage)
+                            if(!in_array($oldImage,$slide->image) &&  file_exists(_PS_YBC_BLOG_IMG_DIR_.'slide/'.$oldImage))
+                                @unlink(_PS_YBC_BLOG_IMG_DIR_.'slide/'.$oldImage);
+                    } 
                     Hook::exec('actionUpdateBlogImage', array(
                         'id_slide' =>(int)$slide->id,
-                        'image' => $newImage ? $slide->image :false,
+                        'image' => $newImages ? $slide->image :false,
                         'thumb' => false,
                     ));
                 }
@@ -9024,16 +9791,24 @@ public function renderSettingCustomer()
             }
          }
          $changedImages = array();
-         if(isset($newImage) && $newImage && file_exists($newImage) && !$errors && isset($slide)){
-            $changedImages[] = array(
-                'name' => 'image',
-                'url' => $this->_path.'views/img/slide/'.$slide->image,                    
-            );
+         if(isset($newImages) && $newImages &&  !$errors && isset($slide)){
+            foreach($newImages as $id_lang=>$newImage)
+            {
+                $changedImages[] = array(
+                    'name' => 'image_'.$id_lang,
+                    'url' => _PS_YBC_BLOG_IMG_.'slide/'.$newImage,                    
+                );
+            }
+            
          }
          if (count($errors))
          {
-            if($newImage && file_exists($newImage))
-                @unlink($newImage); 
+            if($newImages)
+            {
+                foreach($newImages as $newImage)
+                    if(file_exists(_PS_YBC_BLOG_IMG_DIR_.'slide/'.$newImage))
+                        @unlink(_PS_YBC_BLOG_IMG_DIR_.'slide/'.$newImage);
+            } 
             $this->errorMessage = $this->displayError($errors);  
          }
          if(Tools::isSubmit('ajax'))
@@ -9043,14 +9818,14 @@ public function renderSettingCustomer()
                     'messageType' => $errors ? 'error' : 'success',
                     'message' => $errors ? $this->errorMessage : $this->displaySuccessMessage($this->l('Slider saved'),$this->l('View slider on blog page'),$this->getLink('blog')),
                     'images' => isset($changedImages) && $changedImages ? $changedImages : array(),
-                    'postUrl' => !$errors && Tools::isSubmit('saveSlide') && !(int)Tools::getValue('id_slide') ? $this->context->link->getAdminLink('AdminModules', true).'&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&id_slide='.$this->getMaxId('slide','id_slide').'&control=slide' : 0,
+                    'postUrl' => !$errors && Tools::isSubmit('saveSlide') && !(int)$id_slide ? $this->context->link->getAdminLink('AdminModules', true).'&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&id_slide='.$this->getMaxId('slide','id_slide').'&control=slide' : 0,
                     'itemKey' => 'id_slide',
-                    'itemId' => !$errors && Tools::isSubmit('saveSlide') && !(int)Tools::getValue('id_slide') ? $this->getMaxId('slide','id_slide') : ((int)Tools::getValue('id_slide') > 0 ? (int)Tools::getValue('id_slide') : 0),
+                    'itemId' => !$errors && Tools::isSubmit('saveSlide') && !(int)$id_slide ? $this->getMaxId('slide','id_slide') : ((int)$id_slide > 0 ? (int)$id_slide : 0),
                 )
             ));
          } 
          if (!$errors && Tools::isSubmit('saveSlide') && Tools::isSubmit('id_slide'))
-			Tools::redirectAdmin($this->context->link->getAdminLink('AdminModules', true).'&conf=4&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&id_slide='.Tools::getValue('id_slide').'&control=slide');
+			Tools::redirectAdmin($this->context->link->getAdminLink('AdminModules', true).'&conf=4&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&id_slide='.$id_slide.'&control=slide');
 		 elseif (!$errors && Tools::isSubmit('saveSlide'))
          {
             Tools::redirectAdmin($this->context->link->getAdminLink('AdminModules', true).'&conf=3&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&id_slide='.$this->getMaxId('slide','id_slide').'&control=slide');
@@ -9066,12 +9841,13 @@ public function renderSettingCustomer()
         if(Tools::isSubmit('submitImportBlog'))
         {
             $import= new Ybc_Blog_ImportExport();
+            $data_import = Tools::getValue('data_import');
             $this->context->smarty->assign(
                 array(
-                    'data_import'=>Tools::getValue('data_import'),
-                    'importoverride' => Tools::getValue('importoverride'),
-                    'keepauthorid' => Tools::getValue('keepauthorid'),
-                    'keepcommenter' => Tools::getValue('keepcommenter'),
+                    'data_import'=> $data_import && is_array($data_import) && Ybc_blog::validateArray($data_import) ? $data_import : array(),
+                    'importoverride' => (int)Tools::getValue('importoverride'),
+                    'keepauthorid' => (int)Tools::getValue('keepauthorid'),
+                    'keepcommenter' => (int)Tools::getValue('keepcommenter'),
                 )
             );
             $errors =$import->processImport();
@@ -9097,8 +9873,9 @@ public function renderSettingCustomer()
      */
     public function renderGalleryForm()
     {
-        //List 
-        if(trim(Tools::getValue('list'))=='true')
+        //List
+        $list = trim(Tools::getValue('list')); 
+        if($list=='true')
         {
             $fields_list = array(
                 'id_gallery' => array(
@@ -9183,30 +9960,39 @@ public function renderSettingCustomer()
             );
             //Filter
             $filter = "";
-            if(trim(Tools::getValue('id_gallery'))!='')
-                $filter .= " AND g.id_gallery = ".(int)trim(urldecode(Tools::getValue('id_gallery')));
-            if(trim(Tools::getValue('sort_order'))!='')
-                $filter .= " AND g.sort_order = ".(int)trim(urldecode(Tools::getValue('sort_order')));                
-            if(trim(Tools::getValue('title'))!='')
-                $filter .= " AND gl.title like '%".addslashes(trim(urldecode(Tools::getValue('title'))))."%'";
-            if(trim(Tools::getValue('description'))!='')
-                $filter .= " AND gl.description like '%".addslashes(trim(urldecode(Tools::getValue('description'))))."%'";
-            if(trim(Tools::getValue('enabled'))!='')
-                $filter .= " AND g.enabled =".(int)Tools::getValue('enabled');
-            if(trim(Tools::getValue('is_featured'))!='')
-                $filter .= " AND g.is_featured =".(int)Tools::getValue('is_featured');
-            
+            if(($id = trim(Tools::getValue('id_gallery')))!='' && Validate::isCleanHtml($id))
+                $filter .= " AND g.id_gallery = ".(int)$id;
+            if(($sort_order =trim(Tools::getValue('sort_order')))!='' && Validate::isCleanHtml($sort_order))
+                $filter .= " AND g.sort_order = ".(int)$sort_order;                
+            if(($title = trim(Tools::getValue('title')))!='' && Validate::isCleanHtml($title))
+                $filter .= " AND gl.title like '%".pSQL($title)."%'";
+            if(($description = trim(Tools::getValue('description')))!='' && Validate::isCleanHtml($description))
+                $filter .= " AND gl.description like '%".pSQL($description)."%'";
+            if(($enabled = trim(Tools::getValue('enabled')))!='' && Validate::isCleanHtml($enabled))
+                $filter .= " AND g.enabled =".(int)$enabled;
+            if(($is_featured = trim(Tools::getValue('is_featured')))!='' && Validate::isCleanHtml($is_featured))
+                $filter .= " AND g.is_featured =".(int)$is_featured;
+            if($filter) 
+                $show_reset = true;
+            else
+                $show_reset = false;
             //Sort
             $sort = "";
-            if(trim(Tools::getValue('sort')) && isset($fields_list[Tools::getValue('sort')]))
+            $sort_post = Tools::strtolower(trim(Tools::getValue('sort')));
+            $sort_type = Tools::strtolower(Tools::getValue('sort_type','desc'));
+            if(!in_array($sort_type,array('desc','asc')))
+                $sort_type ='desc';
+            if($sort_post && isset($fields_list[$sort_post]))
             {
-                $sort .= trim(Tools::getValue('sort'))." ".(Tools::getValue('sort_type')=='asc' ? ' ASC ' :' DESC ')." , ";
+                $sort .= $sort_post." ".($sort_type=='asc' ? ' ASC ' :' DESC ')." , ";
             }
             else
                 $sort = 'g.sort_order asc,';
             
             //Paggination
-            $page = (int)Tools::getValue('page') && (int)Tools::getValue('page') > 0 ? (int)Tools::getValue('page') : 1;
+            $page = (int)Tools::getValue('page');
+            if($page<=1)
+                $page =1;
             $totalRecords = (int)$this->countGalleriesWithFilter($filter);
             $paggination = new Ybc_blog_paggination_class();            
             $paggination->total = $totalRecords;
@@ -9224,19 +10010,19 @@ public function renderSettingCustomer()
             {
                 foreach($galleries as &$gallery)
                 {
-                    if($gallery['thumb'] && file_exists(dirname(__FILE__).'/views/img/gallery/thumb/'.$gallery['thumb']))
+                    if($gallery['thumb'] && file_exists(_PS_YBC_BLOG_IMG_DIR_.'gallery/thumb/'.$gallery['thumb']))
                     {
                         $gallery['thumb'] = array(
                             'image_field' => true,
-                            'img_url' =>  $this->_path.'views/img/gallery/thumb/'.$gallery['thumb'],
+                            'img_url' =>  _PS_YBC_BLOG_IMG_.'gallery/thumb/'.$gallery['thumb'],
                             //'width' => 150
                         );
                     }
-                    elseif($gallery['image'] && file_exists(dirname(__FILE__).'/views/img/gallery/'.$gallery['image']))
+                    elseif($gallery['image'] && file_exists(_PS_YBC_BLOG_IMG_DIR_.'gallery/'.$gallery['image']))
                     {
                         $gallery['thumb'] = array(
                             'image_field' => true,
-                            'img_url' =>  $this->_path.'views/img/gallery/'.$gallery['image'],
+                            'img_url' =>  _PS_YBC_BLOG_IMG_.'gallery/'.$gallery['image'],
                             //'width' => 150
                         );
                     }
@@ -9259,11 +10045,11 @@ public function renderSettingCustomer()
                 'field_values' => $galleries,
                 'paggination' => $paggination->render(),
                 'filter_params' => $this->getFilterParams($fields_list),
-                'show_reset' => trim(Tools::getValue('is_featured'))!='' || trim(Tools::getValue('enabled'))!='' || trim(Tools::getValue('id_gallery'))!='' || trim(Tools::getValue('description'))!='' || trim(Tools::getValue('title'))!='' || trim(Tools::getValue('sort_order'))!='' ? true : false,
+                'show_reset' => $show_reset,
                 'totalRecords' => $totalRecords,
                 'preview_link' => $this->getLink('gallery'),
-                'sort' => Tools::getValue('sort','sort_order'),
-                'sort_type'=>Tools::getValue('sort_type','asc')
+                'sort' => $sort_post ? : 'sort_order',
+                'sort_type'=>$sort_type,
             );            
             return $this->_html .= $this->renderList($listData);      
         }
@@ -9290,19 +10076,19 @@ public function renderSettingCustomer()
                         'autoload_rte' => true                      
 					),  
                     array(
-						'type' => 'file',
+						'type' => 'file_lang',
 						'label' => $this->l('Thumbnail image'),
 						'name' => 'thumb',
                         'imageType' => 'thumb',
                         'required' => true,
-                        'desc' => $this->l('Recommended size: ').Configuration::get('YBC_BLOG_IMAGE_GALLERY_THUHMB_WIDTH',null,null,null,180).'x'.Configuration::get('YBC_BLOG_IMAGE_GALLERY_THUHMB_HEIGHT',null,null,null,180),						
+                        'desc' => sprintf($this->l('Accepted formats: jpg, jpeg, png, gif. Limit: %dMb. Recommended size: %sx%s.'),Configuration::get('PS_ATTACHMENT_MAXIMUM_SIZE'),Configuration::get('YBC_BLOG_IMAGE_GALLERY_THUHMB_WIDTH',null,null,null,180),Configuration::get('YBC_BLOG_IMAGE_GALLERY_THUHMB_HEIGHT',null,null,null,180)),						
 					),                   
                     array(
-						'type' => 'file',
+						'type' => 'file_lang',
 						'label' => $this->l('Large Image'),
 						'name' => 'image',
                         'required' => true,
-                        'desc' => $this->l('Recommended size: ').Configuration::get('YBC_BLOG_IMAGE_GALLERY_WIDTH',null,null,null,600).'x'.Configuration::get('YBC_BLOG_IMAGE_GALLERY_HEIGHT',null,null,null,600),                        						
+                        'desc' => sprintf($this->l('Accepted formats: jpg, jpeg, png, gif. Limit: %dMb. Recommended size: %sx%s.'),Configuration::get('PS_ATTACHMENT_MAXIMUM_SIZE'),Configuration::get('YBC_BLOG_IMAGE_GALLERY_WIDTH',null,null,null,600),Configuration::get('YBC_BLOG_IMAGE_GALLERY_HEIGHT',null,null,null,600)),                        						
 					),
                     array(
 						'type' => 'switch',
@@ -9374,28 +10160,27 @@ public function renderSettingCustomer()
 			'fields_value' => $this->getFieldsValues(Ybc_blog_defines::$galleryFields,'id_gallery','Ybc_blog_gallery_class','saveGallery'),
 			'languages' => $this->context->controller->getLanguages(),
 			'id_language' => $this->context->language->id,
-			'image_baseurl' => $this->_path.'views/img/',
             'link' => $this->context->link,
             'cancel_url' => $this->baseAdminPath.'&control=gallery&list=true',
             'post_key' => 'id_gallery',
+            'image_baseurl' => _PS_YBC_BLOG_IMG_.'gallery/',
+            'image_baseurl_thumb' => _PS_YBC_BLOG_IMG_.'gallery/thumb/',
             'addNewUrl' => $this->context->link->getAdminLink('AdminModules', true).'&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&control=gallery',                   
             
 		);
         
-        if(Tools::isSubmit('id_gallery') && $this->itemExists('gallery','id_gallery',(int)Tools::getValue('id_gallery')))
+        if(Tools::isSubmit('id_gallery') && ($id_gallery = (int)Tools::getValue('id_gallery')) && $this->itemExists('gallery','id_gallery',$id_gallery))
         {
             
             $fields_form['form']['input'][] = array('type' => 'hidden', 'name' => 'id_gallery');
-            $gallery = new Ybc_blog_gallery_class((int)Tools::getValue('id_gallery'));
+            $gallery = new Ybc_blog_gallery_class($id_gallery);
             if($gallery->image)
             {             
-                $helper->tpl_vars['display_img'] = $this->_path.'views/img/gallery/'.$gallery->image;
-                $helper->tpl_vars['img_del_link'] = $this->baseAdminPath.'&id_gallery='.Tools::getValue('id_gallery').'&delgalleryimage=true&control=gallery';                
+                $helper->tpl_vars['img_del_link'] = $this->baseAdminPath.'&id_gallery='.$id_gallery.'&delgalleryimage=true&control=gallery';                
             }
             if($gallery->thumb)
             {             
-                $helper->tpl_vars['display_thumb'] = $this->_path.'views/img/gallery/thumb/'.$gallery->thumb;
-                $helper->tpl_vars['thumb_del_link'] = $this->baseAdminPath.'&id_gallery='.Tools::getValue('id_gallery').'&delgallerythumb=true&control=gallery';                
+                $helper->tpl_vars['thumb_del_link'] = $this->baseAdminPath.'&id_gallery='.$id_gallery.'&delgallerythumb=true&control=gallery';                
             }
         }
         
@@ -9406,6 +10191,7 @@ public function renderSettingCustomer()
     {
         $errors = array();
         $id_gallery = (int)Tools::getValue('id_gallery');
+        $id_lang_default = Configuration::get('PS_LANG_DEFAULT');
         if($id_gallery && !$this->itemExists('gallery','id_gallery',$id_gallery) && !Tools::isSubmit('list'))
             Tools::redirectAdmin($this->baseAdminPath);
         /**
@@ -9456,35 +10242,32 @@ public function renderSettingCustomer()
          */         
          if($id_gallery && $this->itemExists('gallery','id_gallery',$id_gallery) && Tools::isSubmit('delgalleryimage'))
          {
-            Tools::redirectAdmin($this->baseAdminPath);
+            //Tools::redirectAdmin($this->baseAdminPath);
+            $id_lang = (int)Tools::getValue('id_lang');
             Hook::exec('actionUpdateBlog', array(
                 'id_gallery' =>(int)$id_gallery,
             )); 
             $gallery = new Ybc_blog_gallery_class($id_gallery);
-            if($gallery->image)
+            if(isset($gallery->image[$id_lang]) && $gallery->image[$id_lang] && file_exists(_PS_YBC_BLOG_IMG_DIR_.'gallery/'.$gallery->image[$id_lang]))
             {
-                $icoUrl = dirname(__FILE__).'/views/img/gallery/'.$gallery->image; 
-                $thumbUrl = dirname(__FILE__).'/views/img/gallery/thumb/'.$gallery->thumb; 
-                if(file_exists($thumbUrl))
-                    @unlink($thumbUrl);
-                if(file_exists($icoUrl))
+                $oldImage = $gallery->image[$id_lang];
+                $gallery->image[$id_lang] = $gallery->image[$id_lang_default];                    
+                if($gallery->update())
                 {
-                    @unlink($icoUrl);
-                    $gallery->image = '';                    
-                    $gallery->update(); 
-                    if(Tools::isSubmit('ajax'))
-                    {
-                        die(Tools::jsonEncode(
-                            array(
-                                'messageType' => 'success',
-                                'message' => $this->displayConfirmation($this->l('Image has been deleted')),
-                            )
-                        ));
-                    }                 
-                    Tools::redirectAdmin($this->context->link->getAdminLink('AdminModules', true).'&conf=4&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&id_gallery='.$id_gallery.'&control=gallery');
+                    if(!in_array($oldImage,$gallery->image))
+                        @unlink(_PS_YBC_BLOG_IMG_DIR_.'gallery/'.$oldImage);
+                        
                 }
-                else
-                    $errors[] = $this->l('Image does not exist');  
+                if(Tools::isSubmit('ajax'))
+                {
+                    die(Tools::jsonEncode(
+                        array(
+                            'messageType' => 'success',
+                            'message' => $this->displayConfirmation($this->l('Image has been deleted')),
+                        )
+                    ));
+                }                 
+                Tools::redirectAdmin($this->context->link->getAdminLink('AdminModules', true).'&conf=4&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&id_gallery='.$id_gallery.'&control=gallery');
             }
             else
                 $errors[] = $this->l('Image is empty'); 
@@ -9504,14 +10287,14 @@ public function renderSettingCustomer()
             elseif($this->_deleteGallery($id_gallery))
             {   
                 $galleries = Db::getInstance()->executeS('
-                SELECT * FROM '._DB_PREFIX_.'ybc_blog_gallery g, '._DB_PREFIX_.'ybc_blog_gallery_shop gs
+                SELECT * FROM `'._DB_PREFIX_.'ybc_blog_gallery` g, `'._DB_PREFIX_.'ybc_blog_gallery_shop` gs
                 WHERE g.id_gallery=gs.id_gallery AND gs.id_shop="'.(int)$this->context->shop->id.'" ORDER BY g.sort_order asc');
                 if($galleries)
                 {
                     foreach($galleries as $key=> $gallery)
                     {
                         $position = $key+1;
-                        Db::getInstance()->execute('UPDATE '._DB_PREFIX_.'ybc_blog_gallery SET sort_order="'.(int)$position.'" WHERE id_gallery='.(int)$gallery['id_gallery']);
+                        Db::getInstance()->execute('UPDATE `'._DB_PREFIX_.'ybc_blog_gallery` SET sort_order="'.(int)$position.'" WHERE id_gallery='.(int)$gallery['id_gallery']);
                     }   
                 }
                 Tools::redirectAdmin($this->context->link->getAdminLink('AdminModules', true).'&conf=4&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&control=gallery&list=true');
@@ -9520,16 +10303,16 @@ public function renderSettingCustomer()
                 $errors[] = $this->l('Could not delete the item. Please try again');    
          }
          // update sort_order
-         if(Tools::getValue('action')=='updateGalleryOrdering' && $galleries=Tools::getValue('galleries'))
+         if(($action = Tools::getValue('action')) && $action=='updateGalleryOrdering' && $galleries=Tools::getValue('galleries'))
          {
-            $page = Tools::getValue('page',1);
+            $page = (int)Tools::getValue('page',1);
             foreach($galleries as $key=> $gallery)
             {
                 $position=  1+ $key + ($page-1)*20;
                 Hook::exec('actionUpdateBlog', array(
                     'id_gallery' =>(int)$gallery,
                 )); 
-                Db::getInstance()->execute('UPDATE '._DB_PREFIX_.'ybc_blog_gallery SET sort_order="'.(int)$position.'" WHERE id_gallery='.(int)$gallery);
+                Db::getInstance()->execute('UPDATE `'._DB_PREFIX_.'ybc_blog_gallery` SET sort_order="'.(int)$position.'" WHERE id_gallery='.(int)$gallery);
             }
             die(
                 Tools::jsonEncode(
@@ -9552,144 +10335,199 @@ public function renderSettingCustomer()
             {
                 $gallery = new Ybc_blog_gallery_class();  
                 $gallery->sort_order = 1 + (int)Db::getInstance()->getValue('
-                SELECT count(*) FROM '._DB_PREFIX_.'ybc_blog_gallery g, '._DB_PREFIX_.'ybc_blog_gallery_shop gs
+                SELECT count(*) FROM `'._DB_PREFIX_.'ybc_blog_gallery` g, `'._DB_PREFIX_.'ybc_blog_gallery_shop` gs
                 WHERE g.id_gallery=gs.id_gallery AND gs.id_shop="'.(int)$this->context->shop->id.'" ORDER BY g.sort_order asc');                                
             }                
-            $gallery->enabled = trim(Tools::getValue('enabled',1)) ? 1 : 0;
-            $gallery->is_featured = trim(Tools::getValue('is_featured',1)) ? 1 : 0;
+            $gallery->enabled = (int)trim(Tools::getValue('enabled',1)) ? 1 : 0;
+            $gallery->is_featured = (int)trim(Tools::getValue('is_featured',1)) ? 1 : 0;
             $languages = Language::getLanguages(false);
-            foreach ($languages as $language)
-			{			
-		        $gallery->title[$language['id_lang']] = trim(Tools::getValue('title_'.$language['id_lang'])) != '' ? trim(Tools::getValue('title_'.$language['id_lang'])) :  trim(Tools::getValue('title_'.Configuration::get('PS_LANG_DEFAULT')));
-                if($gallery->title[$language['id_lang']] && !Validate::isCleanHtml($gallery->title[$language['id_lang']]))
-                    $errors[] = $this->l('Name in '.$language['name'].' is not valid');
-                $gallery->description[$language['id_lang']] = trim(Tools::getValue('description_'.$language['id_lang'])) != '' ? trim(Tools::getValue('description_'.$language['id_lang'])) :  trim(Tools::getValue('description_'.Configuration::get('PS_LANG_DEFAULT')));
-                if($gallery->description[$language['id_lang']] && !Validate::isCleanHtml($gallery->description[$language['id_lang']], true))
-                    $errors[] = $this->l('Description in '.$language['name'].' is not valid');
-            }
-            
-            if(Tools::getValue('title_'.Configuration::get('PS_LANG_DEFAULT'))=='')
-                $errors[] = $this->l('Name is required');                    
+            $title_default = trim(Tools::getValue('title_'.Configuration::get('PS_LANG_DEFAULT')));
+            if($title_default=='')
+                $errors[] = $this->l('Name is required'); 
+            elseif($title_default && !Validate::isCleanHtml($title_default))
+                 $errors[] = $this->l('Name is not valid');
+            $description_default = trim(Tools::getValue('description_'.Configuration::get('PS_LANG_DEFAULT')));
+            if($description_default && !Validate::isCleanHtml($description_default,true))
+                $errors[] = $this->l('Description is not valid');
+            if(!$errors)
+            {
+                foreach ($languages as $language)
+    			{	
+                    $title = trim(Tools::getValue('title_'.$language['id_lang']));
+                    if($title && !Validate::isCleanHtml($title))
+                        $errors[] = sprintf($this->l('Name in %s is not valid'),$language['name']);
+                    else
+    		          $gallery->title[$language['id_lang']] = $title != '' ? $title : $title_default;
+                    $description = trim(Tools::getValue('description_'.$language['id_lang']));
+                    if($description && !Validate::isCleanHtml($description,true))
+                        $errors[] = sprintf($this->l('Description in %s is not valid'),$language['name']);
+                    else
+                        $gallery->description[$language['id_lang']] = $description != '' ? $description :  $description_default;
+                }
+            }           
             /**
              * Upload image 
              */  
-            $oldImage = false;
-            $newImage = false;       
-            $newThumb = false;
-            $oldThumb = false;
-            if(isset($_FILES['image']['tmp_name']) && isset($_FILES['image']['name']) && $_FILES['image']['name'])
-            {
-                if(file_exists(dirname(__FILE__).'/views/img/gallery/'.$_FILES['image']['name']))
-                {
-                    $_FILES['image']['name'] = Tools::substr(sha1(microtime()),0,10).'-'.$_FILES['image']['name'];
-                }                    
-                $type = Tools::strtolower(Tools::substr(strrchr($_FILES['image']['name'], '.'), 1));
-    			$imagesize = @getimagesize($_FILES['image']['tmp_name']);
-    			if (isset($_FILES['image']) &&				
-    				!empty($_FILES['image']['tmp_name']) &&
-    				!empty($imagesize) &&
-    				in_array($type, array('jpg', 'gif', 'jpeg', 'png'))
-    			)
-    			{
-    				$temp_name = tempnam(_PS_TMP_IMG_DIR_, 'PS');    				
-    				if ($error = ImageManager::validateUpload($_FILES['image']))
-    					$errors[] = $error;
-    				elseif (!$temp_name || !move_uploaded_file($_FILES['image']['tmp_name'], $temp_name))
-    					$errors[] = $this->l('Can not upload the file');
-    				elseif(!ImageManager::resize($temp_name, dirname(__FILE__).'/views/img/gallery/'.$_FILES['image']['name'], Configuration::get('YBC_BLOG_IMAGE_GALLERY_WIDTH',null,null,null,600), Configuration::get('YBC_BLOG_IMAGE_GALLERY_HEIGHT',null,null,null,600), $type))
-    					$errors[] = $this->displayError($this->l('An error occurred during the image upload process.'));
-    				
-                    if($gallery->image)
-                    {
-                        $oldImage = dirname(__FILE__).'/views/img/gallery/'.$gallery->image;
-                    }                                
-                    $gallery->image = $_FILES['image']['name'];
-                    $newImage = dirname(__FILE__).'/views/img/gallery/'.$gallery->image;
-                    if (isset($temp_name))
-    					@unlink($temp_name);		
-    			}
-                
-            }			
-            elseif(!$id_gallery)
+            $oldImages = array();
+            $newImages = array();       
+            $newThumbs = array();
+            $oldThumbs = array();
+            if(!$id_gallery && (!isset($_FILES['image_'.$id_lang_default]['name']) || !$_FILES['image_'.$id_lang_default]['name']))
                 $errors[] = $this->l('Image is required');
-            if(isset($_FILES['thumb']['tmp_name']) && isset($_FILES['thumb']['name']) && $_FILES['thumb']['name'])
-            {
-                if(file_exists(dirname(__FILE__).'/views/img/gallery/thumb/'.$_FILES['thumb']['name']))
-                {
-                    $_FILES['thumb']['name'] = Tools::substr(sha1(microtime()),0,10).'-'.$_FILES['thumb']['name'];
-                }                    
-                $type = Tools::strtolower(Tools::substr(strrchr($_FILES['thumb']['name'], '.'), 1));
-    			$imagesize = @getimagesize($_FILES['thumb']['tmp_name']);
-    			if (isset($_FILES['thumb']) &&				
-    				!empty($_FILES['thumb']['tmp_name']) &&
-    				!empty($imagesize) &&
-    				in_array($type, array('jpg', 'gif', 'jpeg', 'png'))
-    			)
-    			{
-    				$temp_name = tempnam(_PS_TMP_IMG_DIR_, 'PS');    				
-    				if ($error = ImageManager::validateUpload($_FILES['thumb']))
-    					$errors[] = $error;
-    				elseif (!$temp_name || !move_uploaded_file($_FILES['thumb']['tmp_name'], $temp_name))
-    					$errors[] = $this->l('Can not upload the file');
-    				elseif(!ImageManager::resize($temp_name, dirname(__FILE__).'/views/img/gallery/thumb/'.$_FILES['thumb']['name'], Configuration::get('YBC_BLOG_IMAGE_GALLERY_THUHMB_WIDTH',null,null,null,180), Configuration::get('YBC_BLOG_IMAGE_GALLERY_THUHMB_HEIGHT',null,null,null,180), $type))
-    					$errors[] = $this->displayError($this->l('An error occurred during the image thumbnail upload process.'));
-    				
-                    if($gallery->thumb)
-                    {
-                        $oldThumb = dirname(__FILE__).'/views/img/gallery/thumb/'.$gallery->thumb;
-                    }                                
-                    $gallery->thumb = $_FILES['thumb']['name'];
-                    $newThumb = dirname(__FILE__).'/views/img/gallery/thumb/'.$gallery->thumb;
-                    if (isset($temp_name))
-    					@unlink($temp_name);		
-    			}
-                
-            }			
-            elseif(!$id_gallery)
+            if(!$id_gallery && (!isset($_FILES['thumb_'.$id_lang_default]['name']) || !$_FILES['thumb_'.$id_lang_default]['name']))
                 $errors[] = $this->l('Thumbnail is required');
+            foreach($languages as $language)
+            {
+                $max_file_size = Configuration::get('PS_ATTACHMENT_MAXIMUM_SIZE')*1024*1024;
+                if(isset($_FILES['image_'.$language['id_lang']]['tmp_name']) && isset($_FILES['image_'.$language['id_lang']]['name']) && $_FILES['image_'.$language['id_lang']]['name'])
+                {
+                    if(!Validate::isFileName($_FILES['image_'.$language['id_lang']]['name']))
+                        $errors[] = sprintf($this->l('Image name is not valid in %s'),$language['iso_code']);
+                    elseif($_FILES['image_'.$language['id_lang']]['size'] > $max_file_size)
+                        $errors[] = sprintf($this->l('Image file is too large. Limit: %s'),Tools::ps_round($max_file_size/1048576,2).'Mb');
+                    else
+                    {
+                        $_FILES['image_'.$language['id_lang']]['name'] = str_replace(' ','-',$_FILES['image_'.$language['id_lang']]['name']);
+                        if(file_exists(_PS_YBC_BLOG_IMG_DIR_.'gallery/'.$_FILES['image_'.$language['id_lang']]['name']))
+                        {
+                            $_FILES['image_'.$language['id_lang']]['name'] = $this->createNewFileName(_PS_YBC_BLOG_IMG_DIR_.'gallery/',$_FILES['image_'.$language['id_lang']]['name']);
+                        }                    
+                        $type = Tools::strtolower(Tools::substr(strrchr($_FILES['image_'.$language['id_lang']]['name'], '.'), 1));
+            			$imagesize = @getimagesize($_FILES['image_'.$language['id_lang']]['tmp_name']);
+            			if (isset($_FILES['image_'.$language['id_lang']]) &&				
+            				!empty($_FILES['image_'.$language['id_lang']]['tmp_name']) &&
+            				!empty($imagesize) &&
+            				in_array($type, array('jpg', 'gif', 'jpeg', 'png'))
+            			)
+            			{
+            				$temp_name = tempnam(_PS_TMP_IMG_DIR_, 'PS');    				
+            				if ($error = ImageManager::validateUpload($_FILES['image_'.$language['id_lang']]))
+            					$errors[] = $error;
+            				elseif (!$temp_name || !move_uploaded_file($_FILES['image_'.$language['id_lang']]['tmp_name'], $temp_name))
+            					$errors[] = $this->l('Cannot upload the file in').' '.$language['iso_code'];
+            				elseif(!ImageManager::resize($temp_name, _PS_YBC_BLOG_IMG_DIR_.'gallery/'.$_FILES['image_'.$language['id_lang']]['name'], Configuration::get('YBC_BLOG_IMAGE_GALLERY_WIDTH',null,null,null,600), Configuration::get('YBC_BLOG_IMAGE_GALLERY_HEIGHT',null,null,null,600), $type))
+            					$errors[] = $this->displayError($this->l('An error occurred during the image upload process in').' '.$language['iso_code']);
+                            if($gallery->image[$language['id_lang']])
+                            {
+                                $oldImages[$language['id_lang']] =$gallery->image[$language['id_lang']];
+                            }                                
+                            $gallery->image[$language['id_lang']] = $_FILES['image_'.$language['id_lang']]['name'];
+                            $newImages[$language['id_lang']] = $gallery->image[$language['id_lang']];
+                            if (isset($temp_name))
+            					@unlink($temp_name);		
+            			}
+                        else
+                            $errors[] = sprintf($this->l('Image is not valid in %s'),$language['iso_code']);
+                    }
+                    
+                }			
+                if(isset($_FILES['thumb_'.$language['id_lang']]['tmp_name']) && isset($_FILES['thumb_'.$language['id_lang']]['name']) && $_FILES['thumb_'.$language['id_lang']]['name'])
+                {
+                    if(!Validate::isFileName($_FILES['thumb_'.$language['id_lang']]['name']))
+                        $errors[] = sprintf($this->l('Thumbnail image name is not valid in %s'),$language['iso_code']);
+                    elseif($_FILES['thumb_'.$language['id_lang']]['size'] > $max_file_size)
+                        $errors[] = sprintf($this->l('Thumbnail image file is too large. Limit: %s'),Tools::ps_round($max_file_size/1048576,2).'Mb');
+                    else
+                    {
+                        $_FILES['thumb_'.$language['id_lang']]['name'] = str_replace(' ','-',$_FILES['thumb_'.$language['id_lang']]['name']);
+                        if(file_exists(_PS_YBC_BLOG_IMG_DIR_.'gallery/thumb/'.$_FILES['thumb_'.$language['id_lang']]['name']))
+                        {
+                            $_FILES['thumb_'.$language['id_lang']]['name'] = $this->createNewFileName(_PS_YBC_BLOG_IMG_DIR_.'gallery/thumb/',$_FILES['thumb_'.$language['id_lang']]['name']);
+                        }                    
+                        $type = Tools::strtolower(Tools::substr(strrchr($_FILES['thumb_'.$language['id_lang']]['name'], '.'), 1));
+            			$imagesize = @getimagesize($_FILES['thumb_'.$language['id_lang']]['tmp_name']);
+            			if (isset($_FILES['thumb_'.$language['id_lang']]) &&				
+            				!empty($_FILES['thumb_'.$language['id_lang']]['tmp_name']) &&
+            				!empty($imagesize) &&
+            				in_array($type, array('jpg', 'gif', 'jpeg', 'png'))
+            			)
+            			{
+            				$temp_name = tempnam(_PS_TMP_IMG_DIR_, 'PS');    				
+            				if ($error = ImageManager::validateUpload($_FILES['thumb_'.$language['id_lang']]))
+            					$errors[] = $error;
+            				elseif (!$temp_name || !move_uploaded_file($_FILES['thumb_'.$language['id_lang']]['tmp_name'], $temp_name))
+            					$errors[] = $this->l('Cannot upload the file in').' '.$language['iso_code'];
+            				elseif(!ImageManager::resize($temp_name, _PS_YBC_BLOG_IMG_DIR_.'gallery/thumb/'.$_FILES['thumb_'.$language['id_lang']]['name'], Configuration::get('YBC_BLOG_IMAGE_GALLERY_THUHMB_WIDTH',null,null,null,180), Configuration::get('YBC_BLOG_IMAGE_GALLERY_THUHMB_HEIGHT',null,null,null,180), $type))
+            					$errors[] = $this->displayError($this->l('An error occurred during the image thumbnail upload process in').' '.$language['iso_code']);
+                            if($gallery->thumb[$language['id_lang']])
+                            {
+                                $oldThumbs[$language['id_lang']] = $gallery->thumb[$language['id_lang']];
+                            }                                
+                            $gallery->thumb[$language['id_lang']] = $_FILES['thumb_'.$language['id_lang']]['name'];
+                            $newThumbs[$language['id_lang']] = $gallery->thumb[$language['id_lang']];
+                            if (isset($temp_name))
+            					@unlink($temp_name);		
+            			}
+                        else
+                            $errors[] = sprintf($this->l('Thumbnail image is not valid in %s'),$language['iso_code']);
+                    }
+                    
+                }
+            }
+            foreach($languages as $language)
+            {
+                if(!$gallery->image[$language['id_lang']])
+                    $gallery->image[$language['id_lang']] = $gallery->image[$id_lang_default];
+                if(!$gallery->thumb[$language['id_lang']])
+                    $gallery->thumb[$language['id_lang']] = $gallery->thumb[$id_lang_default];
+            }			
             /**
              * Save 
              */    
              
             if(!$errors)
             {
-                if (!Tools::getValue('id_gallery'))
+                if (!$id_gallery)
     			{
     				if (!$gallery->add())
                     {
                         $errors[] = $this->displayError($this->l('The item could not be added.'));
-                        if($newImage && file_exists($newImage))
-                        @unlink($newImage);  
-                        if($newThumb && file_exists($newThumb))
-                        @unlink($newThumb);                     
+                        if($newImages)
+                        {
+                            foreach($newImages as $newImage)
+                                @unlink(_PS_YBC_BLOG_IMG_DIR_.'gallery/'.$newImage);
+                        }  
+                        if($newThumbs)
+                            foreach($newThumbs as $newThumb)
+                                @unlink(_PS_YBC_BLOG_IMG_DIR_.'gallery/thumb/'.$newThumb);                    
                     } 
                     else
                     {
                         Hook::exec('actionUpdateBlogImage', array(
                             'id_gallery' =>(int)$gallery->id,
-                            'image' => $newImage ? $gallery->image :false,
-                            'thumb' => $newThumb ? $gallery->thumb : false,
+                            'image' => $newImages ? $gallery->image :false,
+                            'thumb' => $newThumbs ? $gallery->thumb : false,
                         ));
                     }               	                    
     			}				
     			elseif (!$gallery->update())
                 {
-                    if($newImage && file_exists($newImage))
-                        @unlink($newImage);
-                    if($newThumb && file_exists($newThumb))
-                        @unlink($newThumb); 
+                    if($newImages)
+                    {
+                        foreach($newImages as $newImage)
+                            @unlink(_PS_YBC_BLOG_IMG_DIR_.'gallery/'.$newImage);
+                    }  
+                    if($newThumbs)
+                        foreach($newThumbs as $newThumb)
+                            @unlink(_PS_YBC_BLOG_IMG_DIR_.'gallery/thumb/'.$newThumb);
                     $errors[] = $this->displayError($this->l('The item could not be updated.'));
                 }
                 else
                 {
-                    if($oldImage && file_exists($oldImage))
-                    @unlink($oldImage); 
-                    if($oldThumb && file_exists($oldThumb))
-                    @unlink($oldThumb); 
+                    if($oldImages)
+                    {
+                        foreach($oldImages as $oldImage)
+                            if(!in_array($oldImage,$gallery->image))
+                                @unlink(_PS_YBC_BLOG_IMG_DIR_.'gallery/'.$oldImage);
+                    }  
+                    if($oldThumbs)
+                        foreach($oldThumbs as $oldThumb)
+                            if(!in_array($oldThumb,$gallery->thumb))
+                                @unlink(_PS_YBC_BLOG_IMG_DIR_.'gallery/thumb/'.$oldThumb);
                     Hook::exec('actionUpdateBlogImage', array(
                         'id_gallery' =>(int)$gallery->id,
-                        'image' => $newImage ? $gallery->image :false,
-                        'thumb' => $newThumb ? $gallery->thumb : false,
+                        'image' => $newImages ? $gallery->image :false,
+                        'thumb' => $newThumbs ? $gallery->thumb : false,
                     ));
                 }
     			Hook::exec('actionUpdateBlog', array(
@@ -9698,17 +10536,24 @@ public function renderSettingCustomer()
             }
          }
          $changedImages = array();
-         if(isset($newImage) && $newImage && file_exists($newImage) && !$errors && isset($gallery)){
-            $changedImages[] = array(
-                'name' => 'image',
-                'url' => $this->_path.'views/img/gallery/'.$gallery->image,                    
-            );
+         if(isset($newImages) && $newImages && !$errors && isset($gallery)){
+            
+            foreach($newImages as $id_lang=>$newImage)
+            {
+                $changedImages[] = array(
+                    'name' => 'image_'.$id_lang,
+                    'url' => _PS_YBC_BLOG_IMG_.'gallery/'.$newImage,                    
+                );
+            }
          }
-         if(isset($newThumb) && $newThumb && file_exists($newThumb) && !$errors && isset($gallery)){
-            $changedImages[] = array(
-                'name' => 'thumb',
-                'url' => $this->_path.'views/img/gallery/thumb/'.$gallery->thumb,                    
-            );
+         if(isset($newThumbs) && $newThumbs && !$errors && isset($gallery)){
+            foreach($newThumbs as $id_lang=> $newThumb)
+            {
+                $changedImages[] = array(
+                    'name' => 'thumb_'.$id_lang,
+                    'url' => _PS_YBC_BLOG_IMG_.'gallery/thumb/'.$newThumb,                    
+                );
+            }    
          }
          if(Tools::isSubmit('ajax'))
          {
@@ -9717,22 +10562,26 @@ public function renderSettingCustomer()
                     'messageType' => $errors ? 'error' : 'success',
                     'message' => $errors ? $this->displayError($errors) : $this->displaySuccessMessage($this->l('Gallery image saved'),$this->l('View blog gallery'),$this->getLink('gallery')),
                     'images' => isset($changedImages) && $changedImages ? $changedImages : array(),
-                    'postUrl' => !$errors && Tools::isSubmit('saveGallery') && !(int)Tools::getValue('id_gallery') ? $this->context->link->getAdminLink('AdminModules', true).'&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&id_gallery='.$this->getMaxId('gallery','id_gallery').'&control=gallery' : 0,
+                    'postUrl' => !$errors && Tools::isSubmit('saveGallery') && !(int)$id_gallery ? $this->context->link->getAdminLink('AdminModules', true).'&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&id_gallery='.$this->getMaxId('gallery','id_gallery').'&control=gallery' : 0,
                     'itemKey' => 'id_gallery',
-                    'itemId' => !$errors && Tools::isSubmit('saveGallery') && !(int)Tools::getValue('id_gallery') ? $this->getMaxId('gallery','id_gallery') : ((int)Tools::getValue('id_gallery') > 0 ? (int)Tools::getValue('id_gallery') : 0),
+                    'itemId' => !$errors && Tools::isSubmit('saveGallery') && !(int)$id_gallery ? $this->getMaxId('gallery','id_gallery') : ((int)$id_gallery > 0 ? (int)$id_gallery : 0),
                 )
             ));
          } 
-         if (count($errors))
+         if(count($errors))
          {
-            if($newImage && file_exists($newImage))
-                @unlink($newImage); 
-            if($newThumb && file_exists($newThumb))
-                @unlink($newThumb); 
+            if($newImages)
+            {
+                foreach($newImages as $newImage)
+                    @unlink(_PS_YBC_BLOG_IMG_DIR_.'gallery/'.$newImage);
+            }  
+            if($newThumbs)
+                foreach($newThumbs as $newThumb)
+                    @unlink(_PS_YBC_BLOG_IMG_DIR_.'gallery/thumb/'.$newThumb);
             $this->errorMessage = $this->displayError($errors);  
          }
-         elseif (Tools::isSubmit('saveGallery') && Tools::isSubmit('id_gallery'))
-			Tools::redirectAdmin($this->context->link->getAdminLink('AdminModules', true).'&conf=4&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&id_gallery='.Tools::getValue('id_gallery').'&control=gallery');
+         elseif (Tools::isSubmit('saveGallery') && $id_gallery)
+			Tools::redirectAdmin($this->context->link->getAdminLink('AdminModules', true).'&conf=4&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&id_gallery='.$id_gallery.'&control=gallery');
 		 elseif (Tools::isSubmit('saveGallery'))
          {
             Tools::redirectAdmin($this->context->link->getAdminLink('AdminModules', true).'&conf=3&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&id_gallery='.$this->getMaxId('gallery','id_gallery').'&control=gallery');
@@ -9740,7 +10589,7 @@ public function renderSettingCustomer()
     }
     public function hookModuleRoutes($params) {
         $subfix = (int)Configuration::get('YBC_BLOG_URL_SUBFIX') ? '.html' : '';
-        $blogAlias = Configuration::get('YBC_BLOG_ALIAS',$this->context->language->id);
+        $blogAlias = Configuration::get('YBC_BLOG_ALIAS',$this->context->language->id) ? : Configuration::get('YBC_BLOG_ALIAS',Configuration::get('PS_LANG_DEFAULT'));
         if(!$blogAlias)
             return array();
         $routes = array(
@@ -9790,7 +10639,7 @@ public function renderSettingCustomer()
                 'keywords' => array(
                     'id_post' =>    array('regexp' => '[0-9]+', 'param' => 'id_post'),
                     'edit_comment' => array('regexp' => '[0-9]+', 'param' => 'edit_comment'),
-                    'url_alias'       =>   array('regexp' => '[_a-zA-Z0-9-]+','param' => 'url_alias'),
+                    'url_alias'       =>   array('regexp' => '[_a-zA-Z0-9-\pL]+','param' => 'url_alias'),
                 ),
                 'params' => array(
                     'fc' => 'module',
@@ -9802,7 +10651,7 @@ public function renderSettingCustomer()
                 'rule' => $blogAlias.'/'.(($subAlias = Configuration::get('YBC_BLOG_ALIAS_POST',$this->context->language->id)) ? $subAlias : 'post').'/allcomments/{id_post}-{url_alias}'.$subfix,
                 'keywords' => array(
                     'id_post' =>    array('regexp' => '[0-9]+', 'param' => 'id_post'),
-                    'url_alias'       =>   array('regexp' => '[_a-zA-Z0-9-]+','param' => 'url_alias'),
+                    'url_alias'       =>   array('regexp' => '[_a-zA-Z0-9-\pL]+','param' => 'url_alias'),
                 ),
                 'params' => array(
                     'fc' => 'module',
@@ -9814,7 +10663,7 @@ public function renderSettingCustomer()
                 'controller' => 'blog',
                 'rule' => $blogAlias.'/'.(($subAlias = Configuration::get('YBC_BLOG_ALIAS_POST',$this->context->language->id)) ? $subAlias : 'post').'/{id_post}-{url_alias}'.$subfix,
                 'keywords' => array(
-                    'url_alias'       =>   array('regexp' => '[_a-zA-Z0-9-]+','param' => 'url_alias'),
+                    'url_alias'       =>   array('regexp' => '[_a-zA-Z0-9-\pL]+','param' => 'url_alias'),
                     'id_post' =>    array('regexp' => '[0-9]+', 'param' => 'id_post'),
                 ),
                 'params' => array(
@@ -9826,7 +10675,7 @@ public function renderSettingCustomer()
                 'controller' => 'blog',
                 'rule' => $blogAlias.'/'.(($subAlias = Configuration::get('YBC_BLOG_ALIAS_POST',$this->context->language->id)) ? $subAlias : 'post').'/{post_url_alias}'.$subfix,
                 'keywords' => array(
-                    'post_url_alias'       =>   array('regexp' => '[_a-zA-Z0-9-]+','param' => 'post_url_alias'),
+                    'post_url_alias'       =>   array('regexp' => '[_a-zA-Z0-9-\pL]+','param' => 'post_url_alias'),
                 ),
                 'params' => array(
                     'fc' => 'module',
@@ -9839,7 +10688,7 @@ public function renderSettingCustomer()
                 'keywords' => array(
                     'id_category' =>    array('regexp' => '[0-9]+', 'param' => 'id_category'),
                     'page' =>    array('regexp' => '[0-9]+', 'param' => 'page'),
-                    'url_alias'       =>   array('regexp' => '[_a-zA-Z0-9-]+','param' => 'url_alias'),
+                    'url_alias'       =>   array('regexp' => '[_a-zA-Z0-9-\pL]+','param' => 'url_alias'),
                 ),
                 'params' => array(
                     'fc' => 'module',
@@ -9852,7 +10701,7 @@ public function renderSettingCustomer()
                 'keywords' => array(
                     //'id_category' =>    array('regexp' => '[0-9]+', 'param' => 'id_category'),
                     'page' =>    array('regexp' => '[0-9]+', 'param' => 'page'),
-                    'category_url_alias'       =>   array('regexp' => '[_a-zA-Z0-9-]+','param' => 'category_url_alias'),
+                    'category_url_alias'       =>   array('regexp' => '[_a-zA-Z0-9-\pL]+','param' => 'category_url_alias'),
                 ),
                 'params' => array(
                     'fc' => 'module',
@@ -9864,7 +10713,7 @@ public function renderSettingCustomer()
                 'rule' => $blogAlias.'/'.(($subAlias = Configuration::get('YBC_BLOG_ALIAS_CATEGORY',$this->context->language->id)) ? $subAlias : 'category').'/{id_category}-{url_alias}'.$subfix,
                 'keywords' => array(
                     'id_category' =>    array('regexp' => '[0-9]+', 'param' => 'id_category'),
-                    'url_alias'       =>   array('regexp' => '[_a-zA-Z0-9-]+','param' => 'url_alias'),
+                    'url_alias'       =>   array('regexp' => '[_a-zA-Z0-9-\pL]+','param' => 'url_alias'),
                 ),
                 'params' => array(
                     'fc' => 'module',
@@ -9876,7 +10725,7 @@ public function renderSettingCustomer()
                 'rule' => $blogAlias.'/'.(($subAlias = Configuration::get('YBC_BLOG_ALIAS_CATEGORY',$this->context->language->id)) ? $subAlias : 'category').'/{category_url_alias}'.$subfix,
                 'keywords' => array(
                     //'id_category' =>    array('regexp' => '[0-9]+', 'param' => 'id_category'),
-                    'category_url_alias'       =>   array('regexp' => '[_a-zA-Z0-9-]+','param' => 'category_url_alias'),
+                    'category_url_alias'       =>   array('regexp' => '[_a-zA-Z0-9-\pL]+','param' => 'category_url_alias'),
                 ),
                 'params' => array(
                     'fc' => 'module',
@@ -10169,7 +11018,7 @@ public function renderSettingCustomer()
                 'rule' => $blogAlias.'/'.(($subAlias = Configuration::get('YBC_BLOG_ALIAS_RSS',$this->context->language->id)) ? $subAlias : 'rss').'/'.(($subAlias = Configuration::get('YBC_BLOG_ALIAS_CATEGORY',$this->context->language->id)) ? $subAlias : 'category').'/{id_category}-{url_alias}'.$subfix,
                 'keywords' => array(
                     'id_category' =>    array('regexp' => '[0-9]+', 'param' => 'id_category'),
-                    'url_alias'       =>   array('regexp' => '[_a-zA-Z0-9-]+','param' => 'url_alias'),
+                    'url_alias'       =>   array('regexp' => '[_a-zA-Z0-9-\pL]+','param' => 'url_alias'),
                 ),
                 'params' => array(
                     'fc' => 'module',
@@ -10253,20 +11102,22 @@ public function renderSettingCustomer()
     public function setMetas()
     {
         $meta = array();
-        if(trim(Tools::getValue('module'))!='ybc_blog')
+        $module = Tools::getValue('module');
+        if($module!='ybc_blog')
             return;
         $id_lang = $this->context->language->id;
         $id_category = (int)Tools::getValue('id_category');
         $id_post = (int)Tools::getValue('id_post');
-        if(!$id_post && Tools::getValue('post_url_alias'))
+        $controller = Tools::getValue('controller');
+        if(!$id_post && ($post_url_alias = Tools::getValue('post_url_alias')) && Validate::isLinkRewrite($post_url_alias))
         {
-            $id_post = (int)Db::getInstance()->getValue('SELECT ps.id_post FROM '._DB_PREFIX_.'ybc_blog_post_lang pl ,'._DB_PREFIX_.'ybc_blog_post_shop ps WHERE ps.id_post= pl.id_post AND ps.id_shop="'.(int)$this->context->shop->id.'" AND pl.id_lang="'.(int)$this->context->language->id.'" AND pl.url_alias ="'.pSQL(Tools::getValue('post_url_alias')).'"');
+            $id_post = (int)Db::getInstance()->getValue('SELECT ps.id_post FROM `'._DB_PREFIX_.'ybc_blog_post_lang` pl ,`'._DB_PREFIX_.'ybc_blog_post_shop` ps WHERE ps.id_post= pl.id_post AND ps.id_shop="'.(int)$this->context->shop->id.'" AND pl.id_lang="'.(int)$this->context->language->id.'" AND pl.url_alias ="'.pSQL($post_url_alias).'"');
         }
-        if(!$id_category && Tools::getValue('category_url_alias'))
+        if(!$id_category && ($category_url_alias = Tools::getValue('category_url_alias')) && Validate::isLinkRewrite($category_url_alias))
         {
-            $id_category = (int)Db::getInstance()->getValue('SELECT cs.id_category FROM '._DB_PREFIX_.'ybc_blog_category_lang cl,'._DB_PREFIX_.'ybc_blog_category_shop cs WHERE cs.id_category=cl.id_category AND cs.id_shop="'.(int)$this->context->shop->id.'" AND cl.url_alias ="'.pSQL(Tools::getValue('category_url_alias')).'"');  
+            $id_category = (int)Db::getInstance()->getValue('SELECT cs.id_category FROM `'._DB_PREFIX_.'ybc_blog_category_lang` cl,`'._DB_PREFIX_.'ybc_blog_category_shop` cs WHERE cs.id_category=cl.id_category AND cs.id_shop="'.(int)$this->context->shop->id.'" AND cl.url_alias ="'.pSQL($category_url_alias).'"');
         }
-        if($id_category || Tools::getValue('category_url_alias') )
+        if($id_category)
         {
             if($this->itemExists('category','id_category', $id_category))
             {
@@ -10283,7 +11134,7 @@ public function renderSettingCustomer()
                 $meta['meta_title'] = $this->l('Page not found');
                      
         }
-        elseif($id_post  || Tools::getValue('post_url_alias'))
+        elseif($id_post)
         {
             if($this->itemExists('post','id_post', $id_post))
             {
@@ -10300,86 +11151,90 @@ public function renderSettingCustomer()
             else
                 $meta['meta_title'] = $this->l('Page not found');  
         }
-        elseif(Tools::getValue('tag'))
+        elseif(($tag = Tools::getValue('tag')) && Validate::isCleanHtml($tag))
         {
-            $meta['meta_title'] = $this->l('Tag: ').' "'.Tools::getValue('tag').'"';
+            $meta['meta_title'] = $this->l('Tag: ').' "'.$tag.'"';
         }  
-        elseif(Tools::getValue('latest'))
+        elseif(($latest = Tools::getValue('latest')) && Validate::isCleanHtml($latest))
         {
             $meta['meta_title'] = $this->l('Latest posts');
             $meta['meta_description'] = strip_tags(Configuration::get('YBC_BLOG_SEO_LATEST',$id_lang));            
         }
-        elseif(Tools::getValue('featured'))
+        elseif(($featured = Tools::getValue('featured')) && Validate::isCleanHtml($featured))
         {
             $meta['meta_title'] = $this->l('Featured posts');
             $meta['meta_description'] = strip_tags(Configuration::get('YBC_BLOG_SEO_FEATURED',$id_lang));            
         }
-        elseif(Tools::getValue('popular'))
+        elseif(($popular = Tools::getValue('popular')) && Validate::isCleanHtml($popular))
         {
             $meta['meta_title'] = $this->l('Popular posts');
             $meta['meta_description'] = strip_tags(Configuration::get('YBC_BLOG_SEO_POPULAR',$id_lang));            
         }
-        elseif(Tools::getValue('search'))
+        elseif(($search = Tools::getValue('search')) && Validate::isCleanHtml($search))
         {
-            $meta['meta_title'] = $this->l('Search:').' "'.str_replace('+',' ',Tools::getValue('search')).'"';
+            $meta['meta_title'] = $this->l('Search:').' "'.str_replace('+',' ',$search).'"';
             $meta['meta_description'] = strip_tags(Configuration::get('YBC_BLOG_SEO_SEARCH',$id_lang));            
                         
         } 
-        elseif(Tools::getValue('year') && Tools::getValue('month'))
-          $meta['meta_title'] = $this->l('Posted in :').' "'.Tools::getValue('year').' - '.$this->getMonthName(Tools::getValue('month')).'"';  
-        elseif(Tools::getValue('year'))
-          $meta['meta_title'] = $this->l('Posted in :').' "'.Tools::getValue('year').'"';  
-        elseif(Tools::getValue('controller')=='gallery')
+        elseif(($year = (int)Tools::getValue('year')) && ($month = (int)Tools::getValue('month')))
+          $meta['meta_title'] = $this->l('Posted in :').' "'.$year.' - '.$this->getMonthName($month).'"';  
+        elseif($year)
+          $meta['meta_title'] = $this->l('Posted in :').' "'.$year.'"';  
+        elseif($controller=='gallery')
         {
             $meta['meta_title'] = $this->l('Gallery');
             $meta['meta_description'] = strip_tags(Configuration::get('YBC_BLOG_SEO_GALLERY',$id_lang));           
         }
-        elseif(Tools::getValue('controller')=='comment')
+        elseif($controller=='comment')
         {
             $meta['meta_title'] = $this->l('All comments');
         } 
-        elseif(Tools::getValue('id_author'))
+        elseif($id_author = (int)Tools::getValue('id_author'))
         {
-            if($employee = $this->getAuthorById(Tools::getValue('id_author'),Tools::getValue('is_customer')))                
+            
+            $is_customer = (int)Tools::getValue('is_customer');
+            if($employee = $this->getAuthorById($id_author,$is_customer))                
             {
                 $meta['meta_title'] = $this->l('Author: ').$employee['name'];
                 $meta['meta_description'] = strip_tags($employee['description']);
             }
             else
                 $meta['meta_title'] = $this->l('Page not found');
+                
         } 
-        elseif(Tools::getValue('controller')=='author')
+        elseif($controller=='author')
         {
             $meta['meta_title'] = $this->l('Authors');
             $meta['meta_description'] = strip_tags(Configuration::get('YBC_BLOG_SEO_AUTHOR',$id_lang));  
         }
-        elseif(Tools::getValue('controller')=='category')
+        elseif($controller=='category')
         {
             $meta['meta_title'] = $this->l('All categories');
             $meta['meta_description'] = Configuration::get('YBC_BLOG_SEO_CATEGORIES',$id_lang) ? strip_tags(Configuration::get('YBC_BLOG_SEO_CATEGORIES',$id_lang)):'';                        
                         
         }
-        elseif(Tools::getValue('controller')=='rss')
+        elseif($controller=='rss')
         {
             $meta['meta_title']= $this->l('RSS');
         }
-        elseif(Tools::getValue('controller')=='managementblog')
+        elseif($controller=='managementblog')
         {
             $meta['meta_title'] = $this->l('My blog posts');
         }
-        elseif(Tools::getValue('controller')=='managementcomments')
+        elseif($controller=='managementcomments')
         {
             $meta['meta_title'] = $this->l('My blog comments');
         }
-        elseif(Tools::getValue('controller')=='managementmyinfo')
+        elseif($controller=='managementmyinfo')
         {
             $meta['meta_title']= $this->l('My blog info');
         }
-        elseif(Tools::getValue('controller')=='blog')
+        elseif($controller=='blog')
         {
             if($id_author = (int)Tools::getValue('id_author'))
             {
-                $employeePost = Db::getInstance()->getRow('SELECT * FROM '._DB_PREFIX_.'ybc_blog_employee WHERE id_employee="'.(int)$id_author.'" AND is_customer="'.(int)Tools::getValue('is_customer').'"');
+                $is_customer = (int)Tools::getValue('is_customer');
+                $employeePost = Db::getInstance()->getRow('SELECT * FROM `'._DB_PREFIX_.'ybc_blog_employee` WHERE id_employee="'.(int)$id_author.'" AND is_customer="'.(int)$is_customer.'"');
                 if($employeePost)
                 {
                     $meta['meta_title'] = $this->l('Author').' '.$employeePost['name'];                    
@@ -10442,15 +11297,15 @@ public function renderSettingCustomer()
     {
         if($is_customer)
         {
-            $author= Db::getInstance()->getRow('SELECT * FROM '._DB_PREFIX_.'customer c
-            LEFT JOIN '._DB_PREFIX_.'ybc_blog_employee be ON (c.id_customer=be.id_employee AND be.is_customer=1)
-            LEFT JOIN '._DB_PREFIX_.'ybc_blog_employee_lang bel ON (be.id_employee_post=bel.id_employee_post AND bel.id_lang="'.(int)$this->context->language->id.'")
+            $author= Db::getInstance()->getRow('SELECT * FROM `'._DB_PREFIX_.'customer` c
+            LEFT JOIN `'._DB_PREFIX_.'ybc_blog_employee` be ON (c.id_customer=be.id_employee AND be.is_customer=1)
+            LEFT JOIN `'._DB_PREFIX_.'ybc_blog_employee_lang` bel ON (be.id_employee_post=bel.id_employee_post AND bel.id_lang="'.(int)$this->context->language->id.'")
             WHERE c.id_customer = '.(int)$id_author);
         }
         else
-            $author= Db::getInstance()->getRow('SELECT * FROM '._DB_PREFIX_.'employee e
-            LEFT JOIN '._DB_PREFIX_.'ybc_blog_employee be ON (e.id_employee=be.id_employee AND be.is_customer=0)
-            LEFT JOIN '._DB_PREFIX_.'ybc_blog_employee_lang bel ON (be.id_employee_post=bel.id_employee_post AND bel.id_lang="'.(int)$this->context->language->id.'")
+            $author= Db::getInstance()->getRow('SELECT * FROM `'._DB_PREFIX_.'employee` e
+            LEFT JOIN `'._DB_PREFIX_.'ybc_blog_employee` be ON (e.id_employee=be.id_employee AND be.is_customer=0)
+            LEFT JOIN `'._DB_PREFIX_.'ybc_blog_employee_lang` bel ON (be.id_employee_post=bel.id_employee_post AND bel.id_lang="'.(int)$this->context->language->id.'")
             WHERE e.id_employee = '.(int)$id_author);
         $params=array();
         $params['id_author'] = $id_author;
@@ -10461,25 +11316,26 @@ public function renderSettingCustomer()
                 $author['name']=trim(Tools::strtolower($author['firstname'].' '.$author['lastname']));
             $params['alias'] = str_replace(' ','-',$author['name']);
             $author['alias'] = $params['alias'];
-            $author['author_link']= $this->getLink('blog',$params);
+            $author['author_link'] = '';//$this->getLink('blog',$params);
         }
         return $author;    
     }
     public function getBreadCrumb()
     {
         $id_post = (int)Tools::getValue('id_post');
-        if(!$id_post && Tools::getValue('post_url_alias'))
+        if(!$id_post && ($post_url_alias = Tools::getValue('post_url_alias')) && Validate::isLinkRewrite($post_url_alias))
         {
-            $id_post = (int)Db::getInstance()->getValue('SELECT ps.id_post FROM '._DB_PREFIX_.'ybc_blog_post_lang pl ,'._DB_PREFIX_.'ybc_blog_post_shop ps  WHERE ps.id_shop="'.(int)$this->context->shop->id.'" AND ps.id_post=pl.id_post AND pl.url_alias ="'.pSQL(Tools::getValue('post_url_alias')).'"');
+            $id_post = (int)Db::getInstance()->getValue('SELECT ps.id_post FROM `'._DB_PREFIX_.'ybc_blog_post_lang` pl ,`'._DB_PREFIX_.'ybc_blog_post_shop` ps  WHERE ps.id_shop="'.(int)$this->context->shop->id.'" AND ps.id_post=pl.id_post AND pl.url_alias ="'.pSQL($post_url_alias).'"');
         }
         $id_category = (int)Tools::getValue('id_category');
-        if(!$id_category && Tools::getValue('category_url_alias'))
+        if(!$id_category && ($category_url_alias= Tools::getValue('category_url_alias')) && Validate::isLinkRewrite($category_url_alias))
         {
-            $id_category = (int)Db::getInstance()->getValue('SELECT cs.id_category FROM '._DB_PREFIX_.'ybc_blog_category_lang cl,'._DB_PREFIX_.'ybc_blog_category_shop cs WHERE cs.id_category=cl.id_category AND cs.id_shop="'.(int)$this->context->shop->id.'" AND cl.url_alias ="'.pSQL(Tools::getValue('category_url_alias')).'"');   
+            $id_category = (int)Db::getInstance()->getValue('SELECT cs.id_category FROM `'._DB_PREFIX_.'ybc_blog_category_lang` cl,`'._DB_PREFIX_.'ybc_blog_category_shop` cs WHERE cs.id_category=cl.id_category AND cs.id_shop="'.(int)$this->context->shop->id.'" AND cl.url_alias ="'.pSQL($category_url_alias).'"');
         }
         $id_author = (int)Tools::getValue('id_author');
         $is_customer= (int)Tools::getValue('is_customer');
         $nodes = array();
+        $controller = Tools::getValue('controller');
         $nodes[] = array(
             'title' => $this->l('Home'),
             'url' => $this->context->link->getPageLink('index', true),
@@ -10488,14 +11344,14 @@ public function renderSettingCustomer()
             'title' => $this->l('Blog'),
             'url' => $this->getLink('blog')
         );
-        if(Tools::getValue('controller')=='category')
+        if($controller=='category')
         {
             $nodes[] = array(
                 'title' => $this->l('All categories'),
                 'url' => $this->getLink('category')
             );
         }
-        if(Tools::getValue('controller')=='comment')
+        if($controller=='comment')
         {
             $nodes[] = array(
                 'title' => $this->l('All Comments'),
@@ -10520,7 +11376,7 @@ public function renderSettingCustomer()
                 'url' => $this->getLink('blog',array('id_author' => $id_author)),               
             );
         }
-        elseif(Tools::getValue('controller')=='author')
+        elseif($controller=='author')
         {
              $nodes[] = array(
                     'title' => $this->l('Authors'),
@@ -10533,9 +11389,9 @@ public function renderSettingCustomer()
                 $id_category_default= $post['id_category_default'];
             else
             {
-                $sql = 'SELECT c.id_category FROM '._DB_PREFIX_.'ybc_blog_category c
-                INNER JOIN '._DB_PREFIX_.'ybc_blog_category_shop cs ON (c.id_category =cs.id_category)
-                INNER JOIN '._DB_PREFIX_.'ybc_blog_post_category pc on (pc.id_category =cs.id_category)
+                $sql = 'SELECT c.id_category FROM `'._DB_PREFIX_.'ybc_blog_category` c
+                INNER JOIN `'._DB_PREFIX_.'ybc_blog_category_shop` cs ON (c.id_category =cs.id_category)
+                INNER JOIN `'._DB_PREFIX_.'ybc_blog_post_category` pc on (pc.id_category =cs.id_category)
                 WHERE pc.id_post="'.(int)$id_post.'" AND cs.id_shop="'.(int)$this->context->shop->id.'" ORDER BY c.sort_order ASC';
                 $id_category_default = Db::getInstance()->getValue($sql);
             }
@@ -10551,67 +11407,69 @@ public function renderSettingCustomer()
                 'url' => $this->getLink('blog',array('id_post' => $id_post)),                   
             );
         }
-        if(Tools::getValue('controller')=='rss')
+        if($controller=='rss')
         {
             $nodes[] = array(
                 'title' => $this->l('Rss'),
                 'url' => $this->getLink('rss'),                   
             );
         }
-        if(Tools::getValue('controller') == 'gallery')
+        if($controller == 'gallery')
         {
             $nodes[] = array(
                 'title' => $this->l('Gallery'),
                 'url' => $this->getLink('gallery'),                   
             );
         }
-        if(Tools::getValue('controller') == 'blog' && Tools::getValue('latest'))
+        if($controller == 'blog' && ($latest = Tools::getValue('latest')) && Validate::isCleanHtml($latest))
         {
             $nodes[] = array(
                 'title' => $this->l('Latest posts'),
                 'url' => $this->getLink('blog',array('latest' => true)),                   
             );
         }
-        if(Tools::getValue('controller') == 'blog' && Tools::getValue('popular'))
+        if($controller == 'blog' && ($popular = Tools::getValue('popular')) && Validate::isCleanHtml($popular))
         {
             $nodes[] = array(
                 'title' => $this->l('Popular posts'),
                 'url' => $this->getLink('blog',array('popular' => true)),                   
             );
         }
-        if(Tools::getValue('controller') == 'blog' && Tools::getValue('featured'))
+        if($controller == 'blog' && ($featured = Tools::getValue('featured')) && Validate::isCleanHtml($featured))
         {
             $nodes[] = array(
                 'title' => $this->l('Featured posts'),
                 'url' => $this->getLink('blog',array('featured' => true)),                   
             );
         }
-        if(Tools::getValue('controller') == 'blog' && Tools::getValue('tag'))
+        if($controller == 'blog' && ($tag = Tools::getValue('tag')) && Validate::isCleanHtml($tag))
         {
             $nodes[] = array(
-                'title' => $this->l('Blog tag').': '.Tools::getValue('tag'),
-                'url' => $this->getLink('blog',array('tag' => Tools::getValue('tag'))),                    
+                'title' => $this->l('Blog tag').': '.$tag,
+                'url' => $this->getLink('blog',array('tag' => $tag)),                    
             );
         }
-        if(Tools::getValue('controller') == 'blog' && Tools::getValue('search'))
+        if($controller == 'blog' && ($search = Tools::getValue('search')) && Validate::isCleanHtml($search))
         {
             $nodes[] = array(
-                'title' => $this->l('Blog search').': '.str_replace('+',' ',Tools::getValue('search')),
-                'url' => $this->getLink('blog',array('search' => Tools::getValue('search'))),                     
+                'title' => $this->l('Blog search').': '.str_replace('+',' ',$search),
+                'url' => $this->getLink('blog',array('search' => $search)),                     
             );
         }
-        if(Tools::getValue('controller') == 'blog' && Tools::getValue('month') && Tools::getValue('year'))
+        $year = (int)Tools::getValue('year');
+        $month = (int)Tools::getValue('month');
+        if($controller == 'blog' && $month && $year)
         {
             $nodes[] = array(
-                'title' => Tools::getValue('month').'-'.Tools::getValue('year'),
-                'url' => $this->getLink('blog',array('month' => Tools::getValue('month'),'year'=>Tools::getValue('year'))),                     
+                'title' => $month.'-'.$year,
+                'url' => $this->getLink('blog',array('month' => $month,'year'=>$year)),                     
             );
         }
-        elseif(Tools::getValue('controller') == 'blog' && Tools::getValue('year'))
+        elseif($controller == 'blog' && $year)
         {
             $nodes[] = array(
-                'title' =>Tools::getValue('year'),
-                'url' => $this->getLink('blog',array('year'=>Tools::getValue('year'))),                     
+                'title' =>$year,
+                'url' => $this->getLink('blog',array('year'=>$year)),                     
             );
         }
         if($this->is17)
@@ -10631,7 +11489,7 @@ public function renderSettingCustomer()
         $tab->module = 'ybc_blog';
         $tab->id_parent = 0;            
         foreach($languages as $lang){
-                $tab->name[$lang['id_lang']] = $this->l('Blog');
+                $tab->name[$lang['id_lang']] = ($text_lang = $this->getTextLang('Blog',$lang)) ? $text_lang : $this->l('Blog');
         }
         $tab->save();
         $blogTabId = Tab::getIdFromClassName('AdminYbcBlog');
@@ -10648,7 +11506,7 @@ public function renderSettingCustomer()
                     $tab->id_parent = $blogTabId; 
                     $tab->icon=$tabArg['icon'];             
                     foreach($languages as $lang){
-                            $tab->name[$lang['id_lang']] = $tabArg['tab_name'];
+                            $tab->name[$lang['id_lang']] = ($text_lang = $this->getTextLang($tabArg['tabname'],$lang,'ybc_blog_defines')) ? $text_lang : $tabArg['tab_name'];
                     }
                     $tab->save();
                 }
@@ -10692,13 +11550,13 @@ public function renderSettingCustomer()
                 if($tag)
                     $tagElements[] = $tag['tag'];         
         }
-        $sql = "SELECT pl.title, pl.short_description,pl.description, p.*
-            FROM "._DB_PREFIX_."ybc_blog_post p
-            INNER JOIN "._DB_PREFIX_."ybc_blog_post_shop ps ON (p.id_post= ps.id_post)
-            LEFT JOIN "._DB_PREFIX_."ybc_blog_tag t ON p.id_post = t.id_post
-            LEFT JOIN "._DB_PREFIX_."ybc_blog_post_lang pl ON pl.id_post = p.id_post AND pl.id_lang = ".(int)$id_lang."
-            LEFT JOIN "._DB_PREFIX_."ybc_blog_post_category pc ON (pc.id_post=p.id_post)
-            WHERE ps.id_shop='".(int)$this->context->shop->id."' AND  p.enabled=1 AND (t.tag IN ('".implode("','",array_map('pSQL',$tagElements))."') OR pc.id_category IN (SELECT id_category FROM "._DB_PREFIX_."ybc_blog_post_category WHERE id_post=".(int)$id_post.")) AND p.id_post != ".(int)$id_post."
+        $sql = "SELECT pl.title, pl.short_description,pl.description,pl.image,pl.thumb, p.*
+            FROM `"._DB_PREFIX_."ybc_blog_post` p
+            INNER JOIN `"._DB_PREFIX_."ybc_blog_post_shop` ps ON (p.id_post= ps.id_post)
+            LEFT JOIN `"._DB_PREFIX_."ybc_blog_tag` t ON p.id_post = t.id_post
+            LEFT JOIN `"._DB_PREFIX_."ybc_blog_post_lang` pl ON pl.id_post = p.id_post AND pl.id_lang = ".(int)$id_lang."
+            LEFT JOIN `"._DB_PREFIX_."ybc_blog_post_category` pc ON (pc.id_post=p.id_post)
+            WHERE ps.id_shop='".(int)$this->context->shop->id."' AND  p.enabled=1 AND (t.tag IN ('".implode("','",array_map('pSQL',$tagElements))."') OR pc.id_category IN (SELECT id_category FROM `"._DB_PREFIX_."ybc_blog_post_category` WHERE id_post=".(int)$id_post.")) AND p.id_post != ".(int)$id_post."
             GROUP BY pl.id_post
             ORDER BY p.sort_order ASC, p.datetime_added DESC
             LIMIT 0,".(int)$limit."
@@ -10708,69 +11566,68 @@ public function renderSettingCustomer()
     }
     public function getInternalStyles()
     {
-        $color = Configuration::get('YBC_BLOG_CUSTOM_COLOR');
-        if(!$color) 
-            $color = '#FF4C65';
-        $color_hover= Configuration::get('YBC_BLOG_CUSTOM_COLOR_HOVER');
-        if(!$color_hover)
-            $color_hover='#FF4C65';
-        $css = file_exists(dirname(__FILE__).'/views/css/dynamic_style.css') ? Tools::file_get_contents(dirname(__FILE__).'/views/css/dynamic_style.css') : ''; 
-        if($css)
-            $css = str_replace(array('[color]','[color_hover]'),array($color,$color_hover),$css);
+        if(!file_exists(dirname(__FILE__).'/views/css/custom.css'))
+        {
+            $this->refreshCssCustom();
+        }
+        $this->context->controller->addCSS($this->_path.'views/css/custom.css');
         $id_category = (int)Tools::getValue('id_category');
         $id_post = (int)Tools::getValue('id_post');
-        if(!$id_post && Tools::getValue('post_url_alias'))
+        if(!$id_post && ($post_url_alias = Tools::getValue('post_url_alias')) && Validate::isLinkRewrite($post_url_alias))
         {
-            $id_post = (int)Db::getInstance()->getValue('SELECT ps.id_post FROM '._DB_PREFIX_.'ybc_blog_post_lang pl ,'._DB_PREFIX_.'ybc_blog_post_shop ps WHERE ps.id_post= pl.id_post AND ps.id_shop="'.(int)$this->context->shop->id.'" AND pl.id_lang="'.(int)$this->context->language->id.'" AND pl.url_alias ="'.pSQL(Tools::getValue('post_url_alias')).'"');
+            $id_post = (int)Db::getInstance()->getValue('SELECT ps.id_post FROM `'._DB_PREFIX_.'ybc_blog_post_lang` pl ,`'._DB_PREFIX_.'ybc_blog_post_shop` ps WHERE ps.id_post= pl.id_post AND ps.id_shop="'.(int)$this->context->shop->id.'" AND pl.id_lang="'.(int)$this->context->language->id.'" AND pl.url_alias ="'.pSQL($post_url_alias).'"');
         }
-        if(!$id_category && Tools::getValue('category_url_alias'))
+        if(!$id_category && ($category_url_alias = Tools::getValue('category_url_alias')) && Validate::isLinkRewrite($category_url_alias) )
         {
-            $id_category = (int)Db::getInstance()->getValue('SELECT cs.id_category FROM '._DB_PREFIX_.'ybc_blog_category_lang cl,'._DB_PREFIX_.'ybc_blog_category_shop cs WHERE cs.id_category=cl.id_category AND cs.id_shop="'.(int)$this->context->shop->id.'" AND cl.url_alias ="'.pSQL(Tools::getValue('category_url_alias')).'"');  
+            $id_category = (int)Db::getInstance()->getValue('SELECT cs.id_category FROM `'._DB_PREFIX_.'ybc_blog_category_lang` cl,`'._DB_PREFIX_.'ybc_blog_category_shop` cs WHERE cs.id_category=cl.id_category AND cs.id_shop="'.(int)$this->context->shop->id.'" AND cl.url_alias ="'.pSQL($category_url_alias).'"');
         }
-        if(Tools::isSubmit('fc') && Tools::getValue('fc') && Tools::getValue('module')=='ybc_blog')
+        $fc = Tools::getValue('fc');
+        $module = Tools::getValue('module');
+        $controller = Tools::getValue('controller');
+        if($fc=='module' && $module=='ybc_blog')
         {
             if($id_category)
-                $current_link= $this->getLink(Tools::getValue('controller'),array('id_category' => $id_category));
+                $current_link= $this->getLink($controller,array('id_category' => $id_category));
             elseif($id_post)
-                $current_link= $this->getLink(Tools::getValue('controller'),array('id_post' => $id_post));
-            elseif($id_author=Tools::getValue('id_author'))
-                $current_link=$this->getLink(Tools::getValue('controller'),array('id_author'=>$id_author));
-            elseif($tag=Tools::getValue('tag'))
-                $current_link=$this->getLink(Tools::getValue('controller'),array('tag'=>$tag));
-            elseif($search=Tools::getValue('search'))
-                $current_link=$this->getLink(Tools::getValue('controller'),array('search'=>$search));
-            elseif($latest=Tools::getValue('latest'))
-                $current_link=$this->getLink(Tools::getValue('controller'),array('latest'=>$latest));
+                $current_link= $this->getLink($controller,array('id_post' => $id_post));
+            elseif($id_author=(int)Tools::getValue('id_author'))
+                $current_link=$this->getLink($controller,array('id_author'=>$id_author));
+            elseif(($tag=Tools::getValue('tag')) && Validate::isCleanHtml($tag))
+                $current_link=$this->getLink($controller,array('tag'=>$tag));
+            elseif(($search=Tools::getValue('search')) && Validate::isCleanHtml($search))
+                $current_link=$this->getLink($controller,array('search'=>$search));
+            elseif(($latest=Tools::getValue('latest')) && Validate::isCleanHtml($latest))
+                $current_link=$this->getLink($controller,array('latest'=>$latest));
             else
-                $current_link=$this->getLink(Tools::getValue('controller'));
+                $current_link=$this->getLink($controller);
         }
         $this->smarty->assign(
             array(
-                'css' => $css,
+                //'css' => $css,
                 'link_current'=>isset($current_link)?$current_link:false,
                 'baseAdminDir' => __PS_BASE_URI__.'/',
                 'url_path' => $this->_path,
-                'ybc_blog_product_category' => Tools::getValue('id_category'),
+                'ybc_blog_product_category' => $id_category,
             )
         );
-        if($id_post && Tools::getValue('module')==$this->name && Tools::getValue('controller')=='blog')
+        if($id_post && $module==$this->name && $controller=='blog')
         {
             $post = $this->getPostById($id_post);
             if($post)
             {
+                $is_customer = (int)Tools::getValue('is_customer');
                 $post['img_name'] = isset($post['image']) ? $post['image'] : '';
                 if($post['image'])
-                    $post['image'] =(Configuration::get('PS_SSL_ENABLED')? 'https://' : 'http://').$this->context->shop->domain.$this->context->shop->getBaseURI().'modules/'.$this->name.'/views/img/post/'.$post['image'];                            
+                    $post['image'] = $this->context->link->getMediaLink(_PS_YBC_BLOG_IMG_.'post/'.$post['image']);                            
                 if($post['thumb'])
-                    $post['thumb'] = (Configuration::get('PS_SSL_ENABLED')? 'https://' : 'http://').$this->context->shop->domain.$this->context->shop->getBaseURI().'modules/'.$this->name.'/views/img/post/thumb/'.$post['thumb'];
+                    $post['thumb'] = $this->context->link->getMediaLink(_PS_YBC_BLOG_IMG_.'post/thumb/'.$post['thumb']);
                 $post['link'] = $this->getLink('blog',array('id_post'=>$post['id_post']));
                 $post['categories'] = $this->getCategoriesByIdPost($post['id_post'],false,true);  
                 $post['products'] = $post['products'] ? $this->getRelatedProductByProductsStr($post['products']) : false;  
                 $params = array(); 
                 $params['id_author'] = (int)$post['added_by'];
-                $params['is_customer'] =(int)Tools::getValue('is_customer');
-                $employee = $this->getAuthorById($params['id_author'],Tools::getValue('is_customer'));
-                
+                $params['is_customer'] =(int)$is_customer;
+                $employee = $this->getAuthorById($params['id_author'],$is_customer);
                 if($employee)
                     $params['alias'] = str_replace(' ','-',trim(Tools::strtolower($employee['firstname'].' '.$employee['lastname']))); 
                 $post['author_link'] = $this->getLink('blog', $params);
@@ -10796,7 +11653,7 @@ public function renderSettingCustomer()
             return '';
        } 
        $query = Tools::getValue('q', false);
-       if (!$query OR $query == '' OR (Tools::strlen($query) < 3 AND !Validate::isUnsignedId($query) ))
+       if (!$query OR $query == '' OR (Tools::strlen($query) < 3 AND !Validate::isUnsignedId($query)) OR !Validate::isCleanHtml($query))
         	die();
        $filter ='AND (';
        $filter .= " c.id_customer = ".(int)trim(urldecode($query));
@@ -10820,14 +11677,14 @@ public function renderSettingCustomer()
             return '';
         }
         $query = Tools::getValue('q', false);
-        if (!$query OR $query == '' OR (Tools::strlen($query) < 3 AND !Validate::isUnsignedId($query) ))
+        if (!$query OR $query == '' OR (Tools::strlen($query) < 3 AND !Validate::isUnsignedId($query)) OR !Validate::isCleanHtml($query) )
         	die();
         $posts= $this->getPostsWithFilter(' AND ( p.id_post="'.(int)$query.'" OR pl.title like "%'.pSQL($query).'%")');
         if($posts)
         {
         	foreach ($posts as $post)
         	{
-        	   echo $post['title'].'|'.$post['id_post'].'|'.($post['thumb'] ?  $this->getBaseLink().'modules/ybc_blog/views/img/post/thumb/'.$post['thumb'] : $this->getBaseLink().'modules/ybc_blog/views/img/post/'.$post['image'])."\n";	
+        	   echo $post['title'].'|'.$post['id_post'].'|'.($post['thumb'] ?  $this->context->link->getMediaLink(_PS_YBC_BLOG_IMG_.'post/thumb/'.$post['thumb']) :  $this->context->link->getMediaLink(_PS_YBC_BLOG_IMG_.'post/'.$post['image']) )."\n";	
         	}
         }
         die();
@@ -10837,7 +11694,7 @@ public function renderSettingCustomer()
         if(!Tools::isSubmit('ajaxproductsearch'))
             return;
         $query = Tools::getValue('q', false);
-        if (!$query OR $query == '' OR Tools::strlen($query) < 1)
+        if (!$query OR $query == '' OR Tools::strlen($query) < 1 OR !Validate::isCleanHtml($query))
         	die();        
         /*
          * In the SQL request the "q" param is used entirely to match result in database.
@@ -10850,12 +11707,8 @@ public function renderSettingCustomer()
         	$query = Tools::substr($query, 0, $pos);
         
         $excludeIds = Tools::getValue('excludeIds', false);
-        //if ($excludeIds && $excludeIds != 'NaN')
-//            	$excludeIds = implode(',', array_map('intval', explode(',', $excludeIds)));
-//            else
-//            	$excludeIds = '';
-        
-        // Excluding downloadable products from packs because download from pack is not supported
+        if($excludeIds && !Validate::isCleanHtml($excludeIds))
+            $excludeIds = false;
         $excludeVirtuals = (bool)Tools::getValue('excludeVirtuals', false);
         $exclude_packs = (bool)Tools::getValue('exclude_packs', false);
         
@@ -10903,7 +11756,7 @@ public function renderSettingCustomer()
    }
    public function getProfileEmployee($id_employee)
    {
-        $profile_employee = Db::getInstance()->getValue('SELECT profile_employee FROM '._DB_PREFIX_.'ybc_blog_employee where id_employee='.(int)$id_employee.' AND is_customer=0');
+        $profile_employee = Db::getInstance()->getValue('SELECT profile_employee FROM `'._DB_PREFIX_.'ybc_blog_employee` where id_employee='.(int)$id_employee.' AND is_customer=0');
         return explode(',',$profile_employee);
    }
    public function getBlogCategoriesTreeFontEnd($id_root,$active=true,$id_lang=null,$id_category=0)
@@ -10928,10 +11781,10 @@ public function renderSettingCustomer()
                     {
                         $arg[0]['link'] = $this->getLink('blog',array('id_category'=>$child['id_category']));
                         $arg[0]['link_rss'] = $this->context->link->getModuleLink($this->name,'rss',array('id_category'=>$child['id_category']));
-                        if($child['thumb'] && file_exists(dirname(__FILE__).'/views/img/category/thumb/'.$child['thumb']))
-                            $arg[0]['thumb_link'] = '<img src="'.$this->_path.'views/img/category/thumb/'.$child['thumb'].'" style="width:10px;"/>';
-                        elseif($child['image'] && file_exists(dirname(__FILE__).'/views/img/category/'.$child['image']))
-                            $arg[0]['thumb_link'] = '<img src="'.$this->_path.'views/img/category/'.$child['image'].'" style="width:10px;"/>';
+                        if($child['thumb'] && file_exists(_PS_YBC_BLOG_IMG_DIR_.'category/thumb/'.$child['thumb']))
+                            $arg[0]['thumb_link'] = '<img src="'.$this->context->link->getMediaLink(_PS_YBC_BLOG_IMG_.'category/thumb/'.$child['thumb']).'" style="width:10px;"/>';
+                        elseif($child['image'] && file_exists(_PS_YBC_BLOG_IMG_DIR_.'category/'.$child['image']))
+                            $arg[0]['thumb_link'] = '<img src="'.$this->context->link->getMediaLink(_PS_YBC_BLOG_IMG_.'category/'.$child['image']).'" style="width:10px;"/>';
                         if($this->checkCategoryEnabled($child['id_category']))
                             $temp[] = $arg[0];
                     }
@@ -10943,9 +11796,9 @@ public function renderSettingCustomer()
         }
         else
         {
-            $sql = "SELECT c.id_category, cl.title,c.image
-                FROM "._DB_PREFIX_."ybc_blog_category c
-                LEFT JOIN "._DB_PREFIX_."ybc_blog_category_lang cl ON c.id_category = cl.id_category AND cl.id_lang = ".(int)$id_lang."
+            $sql = "SELECT c.id_category, cl.title,cl.image
+                FROM `"._DB_PREFIX_."ybc_blog_category` c
+                LEFT JOIN `"._DB_PREFIX_."ybc_blog_category_lang` cl ON c.id_category = cl.id_category AND cl.id_lang = ".(int)$id_lang."
                 WHERE c.id_category = ".(int)$id_root." ".($active ? " AND  c.enabled = 1" : "")." GROUP BY c.id_category";
             if($category = Db::getInstance()->getRow($sql))
             {            
@@ -10965,10 +11818,10 @@ public function renderSettingCustomer()
                         {
                             $arg[0]['link'] = $this->getLink('blog',array('id_category'=>$child['id_category']));
                             $arg[0]['link_rss'] = $this->context->link->getModuleLink($this->name,'rss',array('id_category'=>$child['id_category']));
-                            if($child['thumb'] && file_exists(dirname(__FILE__).'/views/img/category/thumb/'.$child['thumb']))
-                                $arg[0]['thumb_link'] = '<img src="'.$this->_path.'views/img/category/thumb/'.$child['thumb'].'" style="width:10px;"/>';
-                            elseif($child['image'] && file_exists(dirname(__FILE__).'/views/img/category/'.$child['image']))
-                                $arg[0]['thumb_link'] = '<img src="'.$this->_path.'views/img/category/'.$child['image'].'" style="width:10px;"/>';
+                            if($child['thumb'] && file_exists(_PS_YBC_BLOG_IMG_DIR_.'category/thumb/'.$child['thumb']))
+                                $arg[0]['thumb_link'] = '<img src="'.$this->context->link->getMediaLink(_PS_YBC_BLOG_IMG_.'category/thumb/'.$child['thumb']).'" style="width:10px;"/>';
+                            elseif($child['image'] && file_exists(_PS_YBC_BLOG_IMG_DIR_.'category/'.$child['image']))
+                                $arg[0]['thumb_link'] = '<img src="'.$this->context->link->getMediaLink(_PS_YBC_BLOG_IMG_.'category/'.$child['image']).'" style="width:10px;"/>';
                             if($this->checkCategoryEnabled($child['id_category']))
                                 $temp[] = $arg[0];
                         }
@@ -10985,7 +11838,7 @@ public function renderSettingCustomer()
         $categories_enabled= explode(',',Configuration::get('YBC_BLOG_CATEGOGY_CUSTOMER'));
         if(in_array($id_category,$categories_enabled))
             return true;
-        elseif($childs= Db::getInstance()->executeS('SELECT id_category FROM '._DB_PREFIX_.'ybc_blog_category WHERE id_parent="'.(int)$id_category.'"'))
+        elseif($childs= Db::getInstance()->executeS('SELECT id_category FROM `'._DB_PREFIX_.'ybc_blog_category` WHERE id_parent="'.(int)$id_category.'"'))
         {
             foreach($childs as $child)
                 if($this->checkCategoryEnabled($child['id_category']))
@@ -11023,10 +11876,10 @@ public function renderSettingCustomer()
                             $arg[0]['link']='#';
                             $arg[0]['link_rss']='#';
                         }
-                        if($child['thumb'] && file_exists(dirname(__FILE__).'/views/img/category/thumb/'.$child['thumb']))
-                            $arg[0]['thumb_link'] = '<img src="'.$this->_path.'views/img/category/thumb/'.$child['thumb'].'" style="width:10px;"/>';
-                        elseif($child['image'] && file_exists(dirname(__FILE__).'/views/img/category/'.$child['image']))
-                            $arg[0]['thumb_link'] = '<img src="'.$this->_path.'views/img/category/'.$child['image'].'" style="width:10px;"/>';
+                        if($child['thumb'] && file_exists(_PS_YBC_BLOG_IMG_DIR_.'category/thumb/'.$child['thumb']))
+                            $arg[0]['thumb_link'] = '<img src="'._PS_YBC_BLOG_IMG_.'category/thumb/'.$child['thumb'].'" style="width:10px;"/>';
+                        elseif($child['image'] && file_exists(_PS_YBC_BLOG_IMG_DIR_.'category/'.$child['image']))
+                            $arg[0]['thumb_link'] = '<img src="'._PS_YBC_BLOG_IMG_.'category/'.$child['image'].'" style="width:10px;"/>';
                         $temp[] = $arg[0];
                     }
                         
@@ -11037,9 +11890,9 @@ public function renderSettingCustomer()
         }
         else
         {
-            $sql = "SELECT c.id_category, cl.title,c.image
-                FROM "._DB_PREFIX_."ybc_blog_category c
-                LEFT JOIN "._DB_PREFIX_."ybc_blog_category_lang cl ON c.id_category = cl.id_category AND cl.id_lang = ".(int)$id_lang."
+            $sql = "SELECT c.id_category, cl.title,cl.image
+                FROM `"._DB_PREFIX_."ybc_blog_category` c
+                LEFT JOIN `"._DB_PREFIX_."ybc_blog_category_lang` cl ON c.id_category = cl.id_category AND cl.id_lang = ".(int)$id_lang."
                 WHERE c.id_category = ".(int)$id_root." ".($active ? " AND  c.enabled = 1" : "")." GROUP BY c.id_category";
             if($category = Db::getInstance()->getRow($sql))
             {            
@@ -11067,10 +11920,10 @@ public function renderSettingCustomer()
                                 $arg[0]['link'] ='#';
                                 $arg[0]['link_rss']='#';
                             }
-                            if($child['thumb'] && file_exists(dirname(__FILE__).'/views/img/category/thumb/'.$child['thumb']))
-                                $arg[0]['thumb_link'] = '<img src="'.$this->_path.'views/img/category/thumb/'.$child['thumb'].'" style="width:10px;"/>';
-                            elseif($child['image'] && file_exists(dirname(__FILE__).'/views/img/category/'.$child['image']))
-                                $arg[0]['thumb_link'] = '<img src="'.$this->_path.'views/img/category/'.$child['image'].'" style="width:10px;"/>';
+                            if($child['thumb'] && file_exists(_PS_YBC_BLOG_IMG_DIR_.'category/thumb/'.$child['thumb']))
+                                $arg[0]['thumb_link'] = '<img src="'._PS_YBC_BLOG_IMG_.'category/thumb/'.$child['thumb'].'" style="width:10px;"/>';
+                            elseif($child['image'] && file_exists(_PS_YBC_BLOG_IMG_DIR_.'category/'.$child['image']))
+                                $arg[0]['thumb_link'] = '<img src="'._PS_YBC_BLOG_IMG_.'category/'.$child['image'].'" style="width:10px;"/>';
                             $temp[] = $arg[0];
                         }
                             
@@ -11086,22 +11939,22 @@ public function renderSettingCustomer()
    {
         if(is_null($id_lang))
             $id_lang = (int)$this->context->language->id;
-        $sql = "SELECT c.id_category, cl.title,c.image,c.thumb
-                FROM "._DB_PREFIX_."ybc_blog_category c
-                LEFT JOIN "._DB_PREFIX_."ybc_blog_category_shop cs ON (c.id_category=cs.id_category)
-                LEFT JOIN "._DB_PREFIX_."ybc_blog_category_lang cl ON c.id_category = cl.id_category AND cl.id_lang = ".(int)$id_lang."
-                WHERE c.id_parent = ".(int)$id_root." ".($active ? " AND  c.enabled = 1" : "").($id_category?' AND c.id_category <'.(int)$id_category :'')." AND cs.id_shop='".(int)$this->context->shop->id."' GROUP BY c.id_category";
+        $sql = "SELECT c.id_category, cl.title,cl.image,cl.thumb
+                FROM `"._DB_PREFIX_."ybc_blog_category` c
+                LEFT JOIN `"._DB_PREFIX_."ybc_blog_category_shop` cs ON (c.id_category=cs.id_category)
+                LEFT JOIN `"._DB_PREFIX_."ybc_blog_category_lang` cl ON c.id_category = cl.id_category AND cl.id_lang = ".(int)$id_lang."
+                WHERE c.id_parent = ".(int)$id_root." ".($active ? " AND  c.enabled = 1" : "").($id_category?' AND c.id_category <'.(int)$id_category :'')." AND cs.id_shop='".(int)$this->context->shop->id."' GROUP BY c.id_category ORDER BY c.sort_order";
         return Db::getInstance()->executeS($sql);
    }
    public function getChildrenBlogCategories($id_root, $active=true, $id_lang=null,$id_category=0)
    {
         if(is_null($id_lang))
             $id_lang = (int)$this->context->language->id;
-        $sql = "SELECT c.id_category, cl.title,c.image,c.thumb
-                FROM "._DB_PREFIX_."ybc_blog_category c
-                LEFT JOIN "._DB_PREFIX_."ybc_blog_category_shop cs ON (c.id_category=cs.id_category)
-                LEFT JOIN "._DB_PREFIX_."ybc_blog_category_lang cl ON c.id_category = cl.id_category AND cl.id_lang = ".(int)$id_lang."
-                WHERE c.id_parent = ".(int)$id_root." ".($active ? " AND  c.enabled = 1" : "").($id_category?' AND c.id_category <'.(int)$id_category :'')." AND cs.id_shop='".(int)$this->context->shop->id."' GROUP BY c.id_category";
+        $sql = "SELECT c.id_category, cl.title,cl.image,cl.thumb
+                FROM `"._DB_PREFIX_."ybc_blog_category` c
+                LEFT JOIN `"._DB_PREFIX_."ybc_blog_category_shop` cs ON (c.id_category=cs.id_category)
+                LEFT JOIN `"._DB_PREFIX_."ybc_blog_category_lang` cl ON c.id_category = cl.id_category AND cl.id_lang = ".(int)$id_lang."
+                WHERE c.id_parent = ".(int)$id_root." ".($active ? " AND  c.enabled = 1" : "").($id_category?' AND c.id_category <'.(int)$id_category :'')." AND cs.id_shop='".(int)$this->context->shop->id."' GROUP BY c.id_category ORDER BY c.sort_order";
         return Db::getInstance()->executeS($sql);
    }
    public function getBlogCategoriesDropdown($blogcategories, &$depth_level = -1,$selected_blog_category=0)
@@ -11148,10 +12001,10 @@ public function renderSettingCustomer()
         $employee = new Employee($id_employee);
         if($employee->id_profile==1)
             return true;
-        $id_employee_post= (int)Db::getInstance()->getValue('SELECT id_employee_post FROM '._DB_PREFIX_.'ybc_blog_employee WHERE id_employee='.(int)$id_employee.' AND is_customer=0 AND status<=0');
+        $id_employee_post= (int)Db::getInstance()->getValue('SELECT id_employee_post FROM `'._DB_PREFIX_.'ybc_blog_employee` WHERE id_employee='.(int)$id_employee.' AND is_customer=0 AND status<=0');
         if($id_employee_post)
             return false;
-        $profile_employee= Db::getInstance()->getValue('SELECT profile_employee FROM '._DB_PREFIX_.'ybc_blog_employee WHERE id_employee='.(int)$id_employee.' AND is_customer=0');
+        $profile_employee= Db::getInstance()->getValue('SELECT profile_employee FROM `'._DB_PREFIX_.'ybc_blog_employee` WHERE id_employee='.(int)$id_employee.' AND is_customer=0');
         if($profile_employee)
         {   
             $profiles = explode(',',$profile_employee);
@@ -11166,22 +12019,23 @@ public function renderSettingCustomer()
     {
         if(!Configuration::get('YBC_BLOG_DISPLAY_PRODUCT_PAGE'))
             return '';
+        $id_product = (int)Tools::getValue('id_product');
         $limit = (int)Configuration::get('YBC_BLOG_NUMBER_POST_IN_PRODUCT') > 0 ? (int)Configuration::get('YBC_BLOG_NUMBER_POST_IN_PRODUCT') : 5;
         $sql ="SELECT * FROM `"._DB_PREFIX_."ybc_blog_post` p
-        INNER JOIN "._DB_PREFIX_."ybc_blog_post_shop ps ON (ps.id_post= p.id_post AND id_shop='".(int)$this->context->shop->id."')
-        LEFT JOIN "._DB_PREFIX_."ybc_blog_post_lang pl ON (p.id_post=pl.id_post)
-        WHERE p.enabled=1 AND FIND_IN_SET('".(int)Tools::getValue('id_product')."', REPLACE(products,'-', ',')) AND pl.id_lang=".(int)$this->context->language->id.' LIMIT 0,'.(int)$limit;
+        INNER JOIN `"._DB_PREFIX_."ybc_blog_post_shop` ps ON (ps.id_post= p.id_post AND id_shop='".(int)$this->context->shop->id."')
+        LEFT JOIN `"._DB_PREFIX_."ybc_blog_post_lang` pl ON (p.id_post=pl.id_post)
+        WHERE p.enabled=1 AND FIND_IN_SET('".(int)$id_product."', REPLACE(products,'-', ',')) AND pl.id_lang=".(int)$this->context->language->id.' GROUP BY p.id_post LIMIT 0,'.(int)$limit;
         $posts= Db::getInstance()->executeS($sql);
         if($posts)
         {
             foreach($posts as &$rpost)
                 if($rpost['image'])
                 {
-                    $rpost['image'] = $this->blogDir.'views/img/post/'.$rpost['image'];
+                    $rpost['image'] = $this->context->link->getMediaLink(_PS_YBC_BLOG_IMG_.'post/'.$rpost['image']);
                     if($rpost['thumb'])
-                        $rpost['thumb'] = $this->blogDir.'views/img/post/thumb/'.$rpost['thumb'];
+                        $rpost['thumb'] = $this->context->link->getMediaLink(_PS_YBC_BLOG_IMG_.'post/thumb/'.$rpost['thumb']);
                     else
-                        $rpost['thumb'] =$this->blogDir.'views/img/post/'.$rpost['image'];
+                        $rpost['thumb'] = $this->context->link->getMediaLink(_PS_YBC_BLOG_IMG_.'post/'.$rpost['image']);
                     $rpost['link'] =   $this->getLink('blog',array('id_post'=>$rpost['id_post']));
                     $rpost['categories'] = $this->getCategoriesByIdPost($rpost['id_post'],false,true); 
                     $rpost['comments_num'] = $this->countCommentsWithFilter(' AND bc.id_post='.$rpost['id_post'].' AND approved=1');
@@ -11191,7 +12045,7 @@ public function renderSettingCustomer()
                 {
                     $rpost['image'] = '';
                     if($rpost['thumb'])
-                        $rpost['thumb'] = $this->blogDir.'views/img/post/thumb/'.$rpost['thumb'];
+                        $rpost['thumb'] = $this->context->link->getMediaLink(_PS_YBC_BLOG_IMG_.'post/thumb/'.$rpost['thumb']);
                     else
                         $rpost['thumb'] = '';
                     $rpost['link'] =   $this->getLink('blog',array('id_post'=>$rpost['id_post']));
@@ -11203,7 +12057,7 @@ public function renderSettingCustomer()
         $this->context->smarty->assign(
             array(
                 'posts'=>$posts,
-                'image_folder' => $this->blogDir.'views/img/',
+                'image_folder' => _PS_YBC_BLOG_IMG_,
                 'display_desc' => Configuration::get('YBC_BLOG_PRODUCT_PAGE_DISPLAY_DESC'), 
                 'allow_rating' => (int)Configuration::get('YBC_BLOG_ALLOW_RATING') ? true : false,
                 'show_featured_post' => (int)Configuration::get('YBC_BLOG_SHOW_FEATURED_BLOCK') ? true : false,
@@ -11221,7 +12075,7 @@ public function renderSettingCustomer()
     }
    public function displayBlogCategoryTre($blockCategTree,$selected_categories,$name='',$disabled_categories=array())
     {
-        if($id_post = Tools::getValue('id_post'))
+        if($id_post = (int)Tools::getValue('id_post'))
         {
             $post = new Ybc_blog_post_class($id_post);
             $id_category_default= $post->id_category_default;
@@ -11234,7 +12088,7 @@ public function renderSettingCustomer()
                 'branche_tpl_path_input'=> _PS_MODULE_DIR_.'ybc_blog/views/templates/hook/category-tree-blog.tpl',
                 'selected_categories'=>$selected_categories,
                 'disabled_categories' => $disabled_categories,
-                'id_category_default' => $id_category_default,
+                'id_category_default' => (int)Tools::getValue('main_category',$id_category_default) ,
                 'name'=>$name ? $name :'blog_categories',
             )
         );
@@ -11243,10 +12097,11 @@ public function renderSettingCustomer()
     public function hookBlogArchivesBlock()
     {
         $sql='SELECT count(*) as total_post,YEAR(p.datetime_added) as year_add 
-        FROM '._DB_PREFIX_.'ybc_blog_post p
-        LEFT JOIN '._DB_PREFIX_.'customer c ON (c.id_customer=p.added_by AND p.is_customer=1)
-        LEFT JOIN '._DB_PREFIX_.'employee e ON (e.id_employee=p.added_by AND p.is_customer=0)
-        LEFT JOIN '._DB_PREFIX_.'ybc_blog_employee ybe ON ((ybe.id_employee=c.id_customer AND ybe.is_customer=1) OR (ybe.id_employee=e.id_employee AND ybe.is_customer=0))
+        FROM `'._DB_PREFIX_.'ybc_blog_post` p
+        INNER JOIN `'._DB_PREFIX_.'ybc_blog_post_shop` ps ON (p.id_post = ps.id_post AND ps.id_shop="'.(int)$this->context->shop->id.'")
+        LEFT JOIN `'._DB_PREFIX_.'customer` c ON (c.id_customer=p.added_by AND p.is_customer=1)
+        LEFT JOIN `'._DB_PREFIX_.'employee` e ON (e.id_employee=p.added_by AND p.is_customer=0)
+        LEFT JOIN `'._DB_PREFIX_.'ybc_blog_employee` ybe ON ((ybe.id_employee=c.id_customer AND ybe.is_customer=1) OR (ybe.id_employee=e.id_employee AND ybe.is_customer=0))
         WHERE (ybe.status>=0 OR ybe.status is NULL OR e.id_profile=1) AND p.enabled=1 GROUP BY year_add ORDER BY year_add DESC';
         $years = Db::getInstance()->executeS($sql);
         if($years)
@@ -11254,10 +12109,11 @@ public function renderSettingCustomer()
             foreach($years as &$year)
             {
                 $sql ='SELECT count(*) as total_post, MONTH(p.datetime_added) as month_add 
-                FROM '._DB_PREFIX_.'ybc_blog_post p
-                LEFT JOIN '._DB_PREFIX_.'customer c ON (c.id_customer=p.added_by AND p.is_customer=1)
-                LEFT JOIN '._DB_PREFIX_.'employee e ON (e.id_employee=p.added_by AND p.is_customer=0)
-                LEFT JOIN '._DB_PREFIX_.'ybc_blog_employee ybe ON ((ybe.id_employee=c.id_customer AND ybe.is_customer=1) OR (ybe.id_employee=e.id_employee AND ybe.is_customer=0))
+                FROM `'._DB_PREFIX_.'ybc_blog_post` p
+                INNER JOIN `'._DB_PREFIX_.'ybc_blog_post_shop` ps ON (p.id_post = ps.id_post AND ps.id_shop="'.(int)$this->context->shop->id.'")
+                LEFT JOIN `'._DB_PREFIX_.'customer` c ON (c.id_customer=p.added_by AND p.is_customer=1)
+                LEFT JOIN `'._DB_PREFIX_.'employee` e ON (e.id_employee=p.added_by AND p.is_customer=0)
+                LEFT JOIN `'._DB_PREFIX_.'ybc_blog_employee` ybe ON ((ybe.id_employee=c.id_customer AND ybe.is_customer=1) OR (ybe.id_employee=e.id_employee AND ybe.is_customer=0))
                 WHERE (ybe.status>=0 OR ybe.status is NULL OR e.id_profile=1) AND enabled=1 AND YEAR(datetime_added)="'.pSQL($year['year_add']).'" GROUP BY month_add ORDER BY month_add DESC';
                 $year['months'] = Db::getInstance()->executeS($sql);
                 $year['link'] = $this->getLink('blog',array('year'=>$year['year_add']));
@@ -11312,9 +12168,12 @@ public function renderSettingCustomer()
         if(Tools::isSubmit('saveCustomerAuthor'))
         {
             $ybc_defines = new Ybc_blog_defines();
-            $this->_saveConfiguration($ybc_defines->customer_settings);
-            Hook::exec('actionUpdateBlog', array()); 
-            Tools::redirectAdmin($this->context->link->getAdminLink('AdminModules', true).'&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&control=author&conf=4');
+            if($this->_saveConfiguration($ybc_defines->customer_settings))
+            {
+                Hook::exec('actionUpdateBlog', array()); 
+                Tools::redirectAdmin($this->context->link->getAdminLink('AdminModules', true).'&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&control=author&conf=4');
+            }
+            
         }
     }
     public function _saveConfiguration($configs,$dirImg='',$width_image='',$height_image='')
@@ -11322,34 +12181,53 @@ public function renderSettingCustomer()
         $errors = array();
         $languages = Language::getLanguages(false);
         $id_lang_default = (int)Configuration::get('PS_LANG_DEFAULT');
+        $key_values = array();
         if($configs)
         {
             foreach($configs as $key => $config)
             {
                 if(isset($config['lang']) && $config['lang'])
                 {
-                    if(isset($config['required']) && $config['required'] && $config['type']!='switch' && trim(Tools::getValue($key.'_'.$id_lang_default) == ''))
+                    $key_lang_default = trim(Tools::getValue($key.'_'.$id_lang_default));
+                    if(isset($config['required']) && $config['required'] && $config['type']!='switch' && $key_lang_default=='')
                     {
-                        $errors[] = $config['label'].' '.$this->l('is required');
-                    }                        
+                        $errors[] = sprintf($this->l('%s is required'),$config['label']);
+                    }
+                    elseif($key_lang_default && !Validate::isCleanHtml($key_lang_default))
+                        $errors[] = sprintf($this->l('%s is not valid'),$config['label']);
+                    else
+                    {
+                        $key_values[$key][$id_lang_default] = $key_lang_default;
+                        foreach($languages as $language)
+                        {
+                            $id_lang = (int)$language['id_lang'];
+                            $key_lang = trim(Tools::getValue($key.'_'.$id_lang));
+                            if($key_lang && !Validate::isCleanHtml($key_lang))
+                                $errors[] = sprintf($this->l('%s in %s is not valid'),$language['name'],$config['label']);
+                            else
+                                $key_values[$key][$id_lang] = $key_lang;
+                        }
+                    }                    
                 }
                 else
                 {
-                    if(isset($config['required']) && $config['required'] && $config['type']!='switch' && trim(Tools::getValue($key) == ''))
+                    $key_value = Tools::getValue($key);
+                    if(isset($config['required']) && $config['required'] && $config['type']!='switch' && !$key_value)
                     {
-                        $errors[] = $config['label'].' '.$this->l('is required');
+                        $errors[] = sprintf($this->l('%s is required'),$config['label']);
                     }
                     if(isset($config['validate']) && method_exists('Validate',$config['validate']))
                     {
                         $validate = $config['validate'];
-                        if(!Validate::$validate(trim(Tools::getValue($key))))
-                            $errors[] = $config['label'].' '.$this->l('is invalid');
+                        if(!Validate::$validate($key_value))
+                            $errors[] = sprintf($this->l('%s is not valid'),$config['label']);
                         unset($validate);
                     }
-                    elseif(!is_array(Tools::getValue($key)) &&  !Validate::isCleanHtml(trim(Tools::getValue($key))))
+                    elseif(!is_array($key_value) &&  !Validate::isCleanHtml($key_value))
                     {
-                        $errors[] = $config['label'].' '.$this->l('is invalid');
-                    }   
+                        $errors[] = sprintf($this->l('%s is not valid'),$config['label']);
+                    } 
+                    $key_values[$key] = $key_value;  
                 }                    
             }
         }
@@ -11364,10 +12242,11 @@ public function renderSettingCustomer()
                         $valules = array();
                         foreach($languages as $lang)
                         {
+                            $id_lang = (int)$lang['id_lang'];
                             if($config['type']=='switch')                                                           
-                                $valules[$lang['id_lang']] = (int)trim(Tools::getValue($key.'_'.$lang['id_lang'])) ? 1 : 0;                                
+                                $valules[$id_lang] = (int)$key_values[$key][$id_lang] ? 1 : 0;                                
                             else
-                                $valules[$lang['id_lang']] = trim(Tools::getValue($key.'_'.$lang['id_lang'])) ? trim(Tools::getValue($key.'_'.$lang['id_lang'])) : trim(Tools::getValue($key.'_'.$id_lang_default));
+                                $valules[$id_lang] = $key_values[$key][$id_lang] ? : $key_values[$key][$id_lang_default];
                         }
                         Configuration::updateValue($key,$valules);
                     }
@@ -11375,17 +12254,18 @@ public function renderSettingCustomer()
                     {
                         if($config['type']=='switch')
                         {                           
-                            Configuration::updateValue($key,(int)trim(Tools::getValue($key)) ? 1 : 0);
+                            Configuration::updateValue($key,(int)$key_values[$key] ? 1 : 0);
                         }
                         elseif($config['type']=='checkbox' || $config['type']=='blog_categories')
-                            Configuration::updateValue($key,implode(',',Tools::getValue($key)));
+                            Configuration::updateValue($key,implode(',',$key_values[$key]));
                         elseif($config['type']=='file')
                         {      
                             if(isset($_FILES[$key]['tmp_name']) && isset($_FILES[$key]['name']) && $_FILES[$key]['name'])
                             {
+                                $_FILES[$key]['name'] = str_replace(' ','-',$_FILES[$key]['name']);
                                 if(file_exists($dirImg.$_FILES[$key]['name']))
                                 {
-                                    $_FILES[$key]['name'] = Tools::substr(sha1(microtime()),0,10).'-'.$_FILES[$key]['name'];
+                                    $_FILES[$key]['name'] = $this->createNewFileName($dirImg,$_FILES[$key]['name']);
                                 }
                                 $type = Tools::strtolower(Tools::substr(strrchr($_FILES[$key]['name'], '.'), 1));
                     			$imagesize = @getimagesize($_FILES[$key]['tmp_name']);
@@ -11399,9 +12279,9 @@ public function renderSettingCustomer()
                     				if ($error = ImageManager::validateUpload($_FILES[$key]))
                     					$errors[] = $error;
                     				elseif (!$temp_name || !move_uploaded_file($_FILES[$key]['tmp_name'], $temp_name))
-                    					$errors[] = $this->l('Can not upload the file');
+                    					$errors[] = $this->l('Cannot upload the file');
                     				elseif(!ImageManager::resize($temp_name, $dirImg.$_FILES[$key]['name'], $width_image, $height_image, $type))
-                    					$errors[] = $this->displayError($this->l('An error occurred during the image upload process.'));
+                    					$errors[] = $this->l('An error occurred during the image upload process.');
                     				if (isset($temp_name))
                     					@unlink($temp_name);
                                     if(Configuration::get($key))
@@ -11415,7 +12295,7 @@ public function renderSettingCustomer()
                             }
                         }
                         else
-                            Configuration::updateValue($key,trim(Tools::getValue($key)));   
+                            Configuration::updateValue($key,trim($key_values[$key]));   
                     }                        
                 }
             }
@@ -11423,7 +12303,11 @@ public function renderSettingCustomer()
         if (count($errors))
         {
            $this->errorMessage = $this->displayError($errors);  
+           if(!Tools::isSubmit('ajax'))
+                return false;
         }
+        if(!Tools::isSubmit('ajax'))
+            return true;
         //
         if(Tools::isSubmit('ajax'))
         {
@@ -11452,48 +12336,50 @@ public function renderSettingCustomer()
     {
         $filter = "";
         $having="";
-        if(Tools::getValue('control')=='employee')
+        $control = Tools::getValue('control');
+        if($control=='employee')
         {
-            if(trim(Tools::getValue('id_employee'))!='')
-                $filter .= " AND e.id_employee = ".(int)trim(urldecode(Tools::getValue('id_employee')));
-            if(trim(Tools::getValue('name'))!='')
-                $filter .= " AND (CONCAT(e.firstname,' ',e.lastname) like '".pSQL(Tools::getValue('name'))."%' OR be.name like'".pSQL(Tools::getValue('name'))."%')";                
-            if(trim(Tools::getValue('email')))
-                $filter .= " AND e.email like '".pSQL(Tools::getValue('email'))."'";
-            if(trim(Tools::getValue('description')))
-                $filter .= " AND bel.description like '%".pSQL(Tools::getValue('description'))."%'";
-            if(trim(Tools::getValue('id_profile')))
-                $filter .= " AND pl.id_profile = '".(int)Tools::getValue('id_profile')."'";
-            if(trim(Tools::getValue('profile_employee')))
-                $filter .= " AND (be.profile_employee like '".Tools::getValue('profile_employee')."' OR p.id_profile=1)  ";
-            if(trim(Tools::getValue('total_post_min'))!='')
-                $having .= ' AND total_post >="'.(int)Tools::getValue('total_post_min').'"';
-            if(trim(Tools::getValue('total_post_max'))!='')
-                $having .= ' AND total_post <="'.(int)Tools::getValue('total_post_max').'"'; 
-            if(Tools::isSubmit('status') && trim(Tools::getValue('status'))!='')
-                    $filter .= " AND (be.status= '".(int)Tools::getValue('status')."'".((int)Tools::getValue('status')==1 ? ' or be.status is null':'' )." )";
+            if(($id_employee = trim(Tools::getValue('id_employee')))!='' && Validate::isCleanHtml($id_employee))
+                $filter .= " AND e.id_employee = ".(int)$id_employee;
+            if(($name = trim(Tools::getValue('name')))!='' && Validate::isCleanHtml($name))
+                $filter .= " AND (CONCAT(e.firstname,' ',e.lastname) like '".pSQL($name)."%' OR be.name like'".pSQL($name)."%')";                
+            if(($email = trim(Tools::getValue('email'))) && Validate::isCleanHtml($email))
+                $filter .= " AND e.email like '%".pSQL($email)."%'";
+            if(($desc = trim(Tools::getValue('description'))) && Validate::isCleanHtml($desc))
+                $filter .= " AND bel.description like '%".pSQL($desc)."%'";
+            if(($id_profile = trim(Tools::getValue('id_profile'))) && Validate::isCleanHtml($id_profile))
+                $filter .= " AND pl.id_profile = '".(int)$id_profile."'";
+            if(($profile_employee = trim(Tools::getValue('profile_employee')))!='' && Validate::isCleanHtml($profile_employee))
+                $filter .= " AND (be.profile_employee like '".pSQL($profile_employee)."' OR p.id_profile=1)  ";
+            if(($total_post_min = trim(Tools::getValue('total_post_min')))!='' && Validate::isCleanHtml($total_post_min))
+                $having .= ' AND total_post >="'.(int)$total_post_min.'"';
+            if(($total_post_max = trim(Tools::getValue('total_post_max')))!='' && Validate::isCleanHtml($total_post_max))
+                $having .= ' AND total_post <="'.(int)$total_post_max.'"'; 
+            if(Tools::isSubmit('status') && ($status = trim(Tools::getValue('status')))!='' && Validate::isCleanHtml($status))
+                    $filter .= " AND (be.status= '".(int)$status."'".((int)$status==1 ? ' or be.status is null':'' )." )";
         }        
         $totalEmployee = (int)$this->countEmployeesFilter($filter,$having);
         $filter = "";
         $having="";
-        if(Tools::getValue('control')=='customer')
+        if($control=='customer')
         {
-            if(trim(Tools::getValue('id_customer'))!='')
-                $filter .= " AND c.id_customer = ".(int)trim(urldecode(Tools::getValue('id_customer')));
-            if(trim(Tools::getValue('name'))!='')
-                $filter .= " AND (CONCAT(c.firstname,' ',c.lastname) like '".pSQL(Tools::getValue('name'))."%' OR be.name like'".pSQL(Tools::getValue('name'))."%')";                
-            if(trim(Tools::getValue('email'))!='')
-                $filter .= " AND c.email like '".pSQL(Tools::getValue('email'))."%'";
-            if(trim(Tools::getValue('description'))!='')
-                $filter .= ' AND bel.description like "%'.pSQL(Tools::getValue('description')).'%"';
-            if(trim(Tools::getValue('total_post_min'))!='')
-                $having .= ' AND total_post >="'.(int)Tools::getValue('total_post_min').'"';
-            if(trim(Tools::getValue('total_post_max'))!='')
-                $having .= ' AND total_post <="'.(int)Tools::getValue('total_post_max').'"'; 
-            if(Tools::isSubmit('status') && trim(Tools::getValue('status'))!='')
-                    $filter .= " AND (be.status= '".(int)Tools::getValue('status')."'".((int)Tools::getValue('status')==1 ? ' or be.status is null':'' )." )";
+            if(($id_customer = trim(Tools::getValue('id_customer')))!='' && Validate::isCleanHtml($id_customer))
+                $filter .= " AND c.id_customer = ".(int)$id_customer;
+            if(($name = trim(Tools::getValue('name')))!='' && Validate::isCleanHtml($name))
+                $filter .= " AND (CONCAT(c.firstname,' ',c.lastname) like '".pSQL($name)."%' OR be.name like'".pSQL($name)."%')";                
+            if(($email = trim(Tools::getValue('email')))!='' && Validate::isCleanHtml($email))
+                $filter .= " AND c.email like '".pSQL($email)."%'";
+            if(($description = trim(Tools::getValue('description')))!='' && Validate::isCleanHtml($description) )
+                $filter .= ' AND bel.description like "%'.pSQL($description).'%"';
+            if(($total_post_min = trim(Tools::getValue('total_post_min')))!='' && Validate::isCleanHtml($total_post_min))
+                $having .= ' AND total_post >="'.(int)$total_post_min.'"';
+            if(($total_post_max = trim(Tools::getValue('total_post_max')))!='' && Validate::isCleanHtml($total_post_max))
+                $having .= ' AND total_post <="'.(int)$total_post_max.'"'; 
+            if(Tools::isSubmit('status') && ($status = trim(Tools::getValue('status')))!='' && Validate::isCleanHtml($status))
+                    $filter .= " AND (be.status= '".(int)$status."'".((int)$status==1 ? ' or be.status is null':'' )." )";
         }  
-        if(Tools::isSubmit('has_post') && Tools::getValue('has_post')==0)
+        $has_post = Tools::getValue('has_post');
+        if(Tools::isSubmit('has_post') && $has_post==0)
             $having .= ' AND total_post <=0';
         else
             $having .= ' AND total_post >=1';       
@@ -11502,7 +12388,7 @@ public function renderSettingCustomer()
             array(
                 'totalCustomer' => $totalCustomer,
                 'totalEmployee' => $totalEmployee,
-                'control' => Tools::getValue('control'),
+                'control' => $control,
                 'YBC_BLOG_ALLOW_CUSTOMER_AUTHOR' => Configuration::get('YBC_BLOG_ALLOW_CUSTOMER_AUTHOR'),
             )
         );
@@ -11510,8 +12396,8 @@ public function renderSettingCustomer()
     }
     public function getGroups($list_id=false)
     {
-        $sql ='SELECT g.id_group as value, gl.name as label FROM '._DB_PREFIX_.'group g
-            LEFT JOIN '._DB_PREFIX_.'group_lang gl ON (g.id_group=gl.id_group AND gl.id_lang="'.(int)$this->context->language->id.'")
+        $sql ='SELECT g.id_group as value, gl.name as label FROM `'._DB_PREFIX_.'group` g
+            LEFT JOIN `'._DB_PREFIX_.'group_lang` gl ON (g.id_group=gl.id_group AND gl.id_lang="'.(int)$this->context->language->id.'")
         WHERE g.id_group !="'.(int)Configuration::get('PS_UNIDENTIFIED_GROUP').'" AND g.id_group !="'.(int)Configuration::get('PS_GUEST_GROUP').'"
         ';
         $groups=Db::getInstance()->executeS($sql);
@@ -11536,8 +12422,8 @@ public function renderSettingCustomer()
         {
             if($this->context->customer->id && $authorGroups=explode(',',Configuration::get('YBC_BLOG_GROUP_CUSTOMER_AUTHOR')))
             {
-                $groups = Db::getInstance()->executeS('SELECT * FROM '._DB_PREFIX_.'group g 
-                INNER JOIN '._DB_PREFIX_.'customer_group cg ON (g.id_group= cg.id_group)
+                $groups = Db::getInstance()->executeS('SELECT * FROM `'._DB_PREFIX_.'group` g 
+                INNER JOIN `'._DB_PREFIX_.'customer_group` cg ON (g.id_group= cg.id_group)
                 WHERE cg.id_customer ="'.(int)$this->context->customer->id.'" AND g.id_group !="'.(int)Configuration::get('PS_UNIDENTIFIED_GROUP').'" AND g.id_group !="'.(int)Configuration::get('PS_GUEST_GROUP').'"
                 ');
                 if($groups)
@@ -11559,7 +12445,8 @@ public function renderSettingCustomer()
         $this->context->smarty->assign(
             array(
                 'author'=> $this->checkGroupAuthor(),
-                'suppened' =>(int)Db::getInstance()->getValue('SELECT id_employee_post FROM '._DB_PREFIX_.'ybc_blog_employee WHERE id_employee='.(int)$this->context->customer->id.' AND is_customer=1 AND status<=0'),
+                'path_module'=> $this->_path,
+                'suppened' =>(int)Db::getInstance()->getValue('SELECT id_employee_post FROM `'._DB_PREFIX_.'ybc_blog_employee` WHERE id_employee='.(int)$this->context->customer->id.' AND is_customer=1 AND status<=0'),
             )
         );
         if($this->is17)
@@ -11588,7 +12475,7 @@ public function renderSettingCustomer()
         $this->context->smarty->assign(
             array(
                 'left_tabs'=>$left_tabs,  
-                'tabmanagament' => Tools::getValue('tabmanagament','post'),
+                'tabmanagament' => ($tabmanagament = Tools::getValue('tabmanagament','post')) && Validate::isCleanHtml($tabmanagament) ? $tabmanagament :'post',
             )
         );
         return $this->display(__FILE__,'blog_management_left.tpl');
@@ -11605,14 +12492,14 @@ public function renderSettingCustomer()
         $this->context->smarty->assign(
             array(
                 'left_tabs'=>$left_tabs,  
-                'tabmanagament' => Tools::getValue('tabmanagament','comment_other'),
+                'tabmanagament' => ($tabmanagament =  Tools::getValue('tabmanagament','comment_other')) && Validate::isCleanHtml($tabmanagament) ? $tabmanagament :'comment_other',
             )
         );
         return $this->display(__FILE__,'blog_management_left.tpl');
     }
     public function renderCommentOtherListByCustomer()
     {
-        if(!(Tools::isSubmit('editcomment') && Tools::getValue('id_comment')))
+        if(!(Tools::isSubmit('editcomment') && ($id_comment = (int)Tools::getValue('id_comment'))))
         {
             $fields_list = array(
                 'id_comment' => array(
@@ -11705,36 +12592,43 @@ public function renderSettingCustomer()
             );
             //Filter comment
             $filter = " AND bc.id_user ='".(int)$this->context->customer->id."'";
-            if(Tools::isSubmit('ybc_submit_ybc_comment') && Tools::getValue('tabmanagament')=='comment_other')
+            $tabmanagament = Tools::getValue('tabmanagament');
+            if(Tools::isSubmit('ybc_submit_ybc_comment') && $tabmanagament=='comment_other')
             {
-                if(trim(Tools::getValue('id_comment'))!='')
-                    $filter .= " AND bc.id_comment = ".(int)trim(urldecode(Tools::getValue('id_comment')));
-                if(trim(Tools::getValue('comment'))!='')
-                    $filter .= " AND bc.comment like '%".addslashes(trim(urldecode(Tools::getValue('comment'))))."%'";
-                if(trim(Tools::getValue('subject'))!='')
-                    $filter .= " AND (bc.subject like '%".addslashes(trim(urldecode(Tools::getValue('subject'))))."%' OR bc.comment like '%".addslashes(trim(urldecode(Tools::getValue('subject'))))."%' )";
-                if(trim(Tools::getValue('rating'))!='')
-                    $filter .= " AND bc.rating = ".(int)trim(urldecode(Tools::getValue('rating')));                
-                if(trim(Tools::getValue('name'))!='')
-                    $filter .= " AND bc.name like '%".addslashes(trim(urldecode(Tools::getValue('name'))))."%'";
-                if(trim(Tools::getValue('approved'))!='')
-                    $filter .= " AND bc.approved = ".(int)trim(urldecode(Tools::getValue('approved')));
-                if(trim(Tools::getValue('reported'))!='')
-                    $filter .= " AND bc.reported = ".(int)trim(urldecode(Tools::getValue('reported')));
-                if(trim(Tools::getValue('title'))!='')
-                    $filter .= " AND pl.title like '%".pSQL(trim(urldecode(Tools::getValue('title'))))."%'";
+                if(($id = trim(Tools::getValue('id_comment')))!='' && Validate::isCleanHtml($id))
+                    $filter .= " AND bc.id_comment = ".(int)$id;
+                if(($comment_post = trim(Tools::getValue('comment')))!='' && Validate::isCleanHtml($comment_post))
+                    $filter .= " AND bc.comment like '%".pSQL($comment_post)."%'";
+                if(($subject = trim(Tools::getValue('subject')))!='' && Validate::isCleanHtml($subject))
+                    $filter .= " AND (bc.subject like '%".pSQL($subject)."%' OR bc.comment like '%".pSQL($subject)."%' )";
+                if(($rating = trim(Tools::getValue('rating')))!='' && Validate::isCleanHtml($rating))
+                    $filter .= " AND bc.rating = ".(int)$rating;                
+                if(($name = trim(Tools::getValue('name')))!='' && Validate::isCleanHtml($name))
+                    $filter .= " AND bc.name like '%".pSQL($name)."%'";
+                if(($approved = trim(Tools::getValue('approved')))!='' && Validate::isCleanHtml($approved))
+                    $filter .= " AND bc.approved = ".(int)$approved;
+                if(($reported = trim(Tools::getValue('reported')))!='' && Validate::isCleanHtml($reported))
+                    $filter .= " AND bc.reported = ".(int)$reported;
+                if(($title = trim(Tools::getValue('title')))!='' && Validate::isCleanHtml($title))
+                    $filter .= " AND pl.title like '%".pSQL($title)."%'";
             }
             //Sort
             $sort = "";
-            if(trim(Tools::getValue('sort')) && isset($fields_list[Tools::getValue('sort')]))
+            $sort_post = trim(Tools::getValue('sort'));
+            $sort_type = Tools::strtolower(trim(Tools::getValue('sort_type','desc')));
+            if(!in_array($sort_type,array('desc','asc')))
+                $sort_type='desc';
+            if($sort_post && isset($fields_list[$sort_post]))
             {
-                $sort .= trim(Tools::getValue('sort'))." ".(Tools::getValue('sort_type')=='asc' ? ' ASC ' :' DESC ')." , ";
+                $sort .= $sort_post." ".($sort_type=='asc' ? ' ASC ' :' DESC ')." , ";
             }
             else
                 $sort = 'bc.id_comment desc,';
             
             //Paggination
-            $page = (int)Tools::getValue('page') && (int)Tools::getValue('page')> 0 && Tools::getValue('tabmanagament')=='comment_other' ? (int)Tools::getValue('page') : 1;
+            $page = (int)Tools::getValue('page');
+            if($page<0)
+                $page=1;
             $totalRecords = (int)$this->countCommentsWithFilter($filter);
             $paggination = new Ybc_blog_paggination_class();            
             $paggination->total = $totalRecords;
@@ -11777,11 +12671,11 @@ public function renderSettingCustomer()
                 'field_values' => $comments,
                 'paggination' => $paggination->render(),
                 'filter_params' => $this->getFilterParamsFontEnd($fields_list,'ybc_submit_ybc_comment'),
-                'show_reset' => trim(Tools::getValue('id_comment'))!='' || trim(Tools::getValue('comment'))!='' || trim(Tools::getValue('rating'))!='' || trim(Tools::getValue('subject'))!='' || trim(Tools::getValue('customer'))!='' || trim(Tools::getValue('approved'))!='' || trim(Tools::getValue('reported'))!='' || trim(Tools::getValue('title'))!='' ? true : false,
+                'show_reset' => Tools::isSubmit('ybc_submit_ybc_comment') && isset($comment_post) && ($id_comment!='' || $comment_post!='' || $rating!='' || $subject!='' || $approved!='' || $reported!='' || $title!='') ? true : false,
                 'totalRecords' => $totalRecords,
                 'show_add_new' => false,
-                'sort'=>Tools::getValue('sort','id_comment'),
-                'sort_type'=>Tools::getValue('sort_type','desc'),
+                'sort'=>$sort_post,
+                'sort_type'=>$sort_type,
             );            
             return $this->_html .= $this->renderListByCustomer($listData);
         }
@@ -11789,15 +12683,20 @@ public function renderSettingCustomer()
         
     }
     public function sendMailRepyCustomer($id_comment,$replier,$comment_reply=''){
-        if(Configuration::get('YBC_BLOG_ENABLE_MAIL_REPLY_CUSTOMER'))
+        $comment = new Ybc_blog_comment_class($id_comment);
+        if($comment->email && Validate::isEmail($comment->email) && ($id_customer = Customer::customerExists($comment->email,true)) && ($customer = new Customer($id_customer)) && Validate::isLoadedObject($customer))
+            $id_lang = $customer->id_lang;
+        else
+            $id_lang = $this->context->language->id;
+        if(($subject = Ybc_blog_email_template_class::getSubjectByTemplate('admin_reply_comment_to_customer',$id_lang)))
         {
-            $comment = new Ybc_blog_comment_class($id_comment);
-            $post = new Ybc_blog_post_class($comment->id_post,$this->context->language->id);
+            $post = new Ybc_blog_post_class($comment->id_post,$id_lang);
+            $reply_comwent_text = Tools::getValue('reply_comwent_text');
             $template_reply_comment=array(
                 '{customer_name}' => $comment->name,
                 '{customer_email}' => $comment->email,
                 '{comment}' =>$comment->comment,
-                '{comment_reply}' => $comment_reply ? $comment_reply : Tools::getValue('reply_comwent_text'),
+                '{comment_reply}' => $comment_reply ? $comment_reply : (Validate::isCleanHtml($reply_comwent_text) ?  $reply_comwent_text :''),
                 '{post_link}' => $this->getLink('blog',array('id_post'=>$comment->id_post)),
                 '{post_title}'=>$post->title,
                 '{replier}' => $replier,
@@ -11805,9 +12704,9 @@ public function renderSettingCustomer()
                 '{color_hover}'=>Configuration::get('YBC_BLOG_CUSTOM_COLOR_HOVER')
             );
             Mail::Send(
-    			Context::getContext()->language->id,
+    			$id_lang,
     			'admin_reply_comment_to_customer',
-    			$this->l('New reply to your comment'),
+    			$subject,
     			$template_reply_comment,
 		        $comment->email,
     			$comment->name,
@@ -11820,39 +12719,43 @@ public function renderSettingCustomer()
         }
     }
     public function sendMailReplyAdmin($id_comment,$replier,$approved=1,$comment_reply=''){
-        if(Configuration::get('YBC_BLOG_ENABLE_MAIL_REPLY'))
+        $comment = new Ybc_blog_comment_class($id_comment);
+        $post_class = new Ybc_blog_post_class($comment->id_post);
+        if($post_class->is_customer && ($id_customer= $post_class->added_by))
         {
-            $comment = new Ybc_blog_comment_class($id_comment);
-            $post_class = new Ybc_blog_post_class($comment->id_post,$this->context->language->id);
+            $author= new Customer($id_customer);
+            $link_view_comment= $this->context->link->getModuleLink('ybc_blog','managementblog',array('tabmanagament'=>'comment','list'=>1));
+        }
+        else
+        {
+            $author = new Employee($post_class->added_by);
+            $link_view_comment= $this->getBaseLink().Configuration::get('YBC_BLOG_ADMIN_FORDER');
+        }
+        $id_lang = $author->id_lang;
+        if(($subject = Ybc_blog_email_template_class::getSubjectByTemplate('customer_reply_comment_to_admin_'.$approved,$id_lang)))
+        {
+            $post_class = new Ybc_blog_post_class($comment->id_post,$id_lang);
+            $reply_comwent_text = Tools::getValue('reply_comwent_text');
             $template_reply_comment=array(
                 '{customer_name}' => $comment->name, 
                 '{customer_email}' => $comment->email,
                 '{comment}' =>$comment->comment,
-                '{comment_reply}' => $comment_reply ? $comment_reply : Tools::getValue('reply_comwent_text'),
+                '{comment_reply}' => $comment_reply ? $comment_reply : (Validate::isCleanHtml($reply_comwent_text) ? $reply_comwent_text :''),
                 '{post_title}' => $post_class->title,
                 '{replier}'=>$replier,
                 '{color_main}'=>Configuration::get('YBC_BLOG_CUSTOM_COLOR'),
                 '{color_hover}'=>Configuration::get('YBC_BLOG_CUSTOM_COLOR_HOVER'),
                 '{post_link}' => $this->getLink('blog',array('id_post'=>$post_class->id)),
             );
-            if($post_class->is_customer && $id_customer= $post_class->added_by)
-            {
-                $author= new Customer($id_customer);
-                $link_view_comment= $this->context->link->getModuleLink('ybc_blog','managementblog',array('tabmanagament'=>'comment','list'=>1));
-            }
-            else
-            {
-                $author = new Employee($post_class->added_by);
-                $link_view_comment= $this->getBaseLink().Configuration::get('YBC_BLOG_ADMIN_FORDER');
-            }
+            
             if($author->id)
             {
                 $template_reply_comment['{author_name}'] = $author->firstname.' '.$author->lastname;
                 $template_reply_comment['{link_view_comment}'] = $link_view_comment;
                 Mail::Send(
-        			Context::getContext()->language->id,
+        			$id_lang,
         			'customer_reply_comment_to_admin_'.$approved,
-        			$this->l('A customer has replied a comment on ').$post_class->title,
+        			str_replace('[post_title]',$post_class->title,$subject),
         			$template_reply_comment,
     		        $author->email,
         			$author->firstname.' '.$author->lastname,
@@ -11874,7 +12777,7 @@ public function renderSettingCustomer()
                         Mail::Send(
             			Context::getContext()->language->id,
             			'customer_reply_comment_to_admin_'.$approved,
-            			$this->l('A customer has replied a comment on ').$post_class->title,
+            			$this->l('A customer has replied to a comment on ').$post_class->title,
             			$template_reply_comment,
         		        $email,
             			Configuration::get('PS_SHOP_NAME'),
@@ -11890,34 +12793,36 @@ public function renderSettingCustomer()
     }
     public function renderCommentListByCustomer()
     {
-        if(Tools::isSubmit('viewcomment') && $id_comment=Tools::getValue('id_comment'))
+        if(Tools::isSubmit('viewcomment') && ($id_comment=(int)Tools::getValue('id_comment')))
         {
             $errors =array();
             $comment= new Ybc_blog_comment_class($id_comment);
-            if(Tools::getValue('change_approved_comment'))
+            if(Tools::isSubmit('change_approved_comment'))
             {
                 if($this->checkPermisionComment('edit',$id_comment))
                 {
-                    Db::getInstance()->execute('UPDATE '._DB_PREFIX_.'ybc_blog_comment set approved="'.(int)Tools::getValue('approved').'" WHERE id_comment='.(int)$id_comment);
+                    $approved = (int)Tools::getValue('approved');
+                    Db::getInstance()->execute('UPDATE `'._DB_PREFIX_.'ybc_blog_comment` set approved="'.(int)$approved.'" WHERE id_comment='.(int)$id_comment);
                     Tools::redirectLink($this->context->link->getModuleLink($this->name,'managementblog',array('tabmanagament'=>'comment','id_comment'=>$comment->id,'viewcomment'=>1,'updatedComment'=> 1)));
                 }
                 else    
                     $errors[]=  $this->l('Sorry, you do not have permission');    
             }
-            $replies= Db::getInstance()->executeS('SELECT * FROM '._DB_PREFIX_.'ybc_blog_reply WHERE id_comment='.(int)$id_comment);
-            if(Tools::getValue('addReplyComment'))
+            $replies= Db::getInstance()->executeS('SELECT * FROM `'._DB_PREFIX_.'ybc_blog_reply` WHERE id_comment='.(int)$id_comment);
+            if(Tools::isSubmit('addReplyComment'))
             {
                 if($this->checkPermisionComment('reply',$id_comment))
                 {
-                    if(Tools::strlen(Tools::getValue('reply_comwent_text')) < 20)
-                        $errors[] = $this->l('Reply need to be at least 20 characters');
-                    if(!Validate::isCleanHtml(Tools::getValue('reply_comwent_text'),false))
-                        $errors[] = $this->l('Reply need to be clean HTML');
-                    if(Tools::strlen(Tools::getValue('reply_comwent_text')) >2000)
-                        $errors[] = $this->l('Reply can not be longer than 2000 characters'); 
+                    $reply_comwent_text = Tools::getValue('reply_comwent_text');
+                    if(Tools::strlen($reply_comwent_text) < 20)
+                        $errors[] = $this->l('Reply needs to be at least 20 characters');
+                    if(!Validate::isCleanHtml($reply_comwent_text,false))
+                        $errors[] = $this->l('Reply needs to be clean HTML');
+                    if(Tools::strlen($reply_comwent_text) >2000)
+                        $errors[] = $this->l('Reply cannot be longer than 2000 characters');
                     if(!$errors)
                     {
-                        $sql= "INSERT INTO "._DB_PREFIX_."ybc_blog_reply(id_comment,id_user,name,email,reply,id_employee,approved,datetime_added,datetime_updated) values('".(int)$id_comment."', '".(int)$this->context->customer->id."','".pSQL($this->context->customer->firstname)." ".pSQL($this->context->customer->lastname)."','".pSQL($this->context->customer->email)."','".pSQL(Tools::getValue('reply_comwent_text'))."','0',1,'".pSQL(date('Y-m-d H:i:s'))."','".pSQL(date('Y-m-d H:i:s'))."')";
+                        $sql= "INSERT INTO `"._DB_PREFIX_."ybc_blog_reply`(id_comment,id_user,name,email,reply,id_employee,approved,datetime_added,datetime_updated) values('".(int)$id_comment."', '".(int)$this->context->customer->id."','".pSQL($this->context->customer->firstname)." ".pSQL($this->context->customer->lastname)."','".pSQL($this->context->customer->email)."','".pSQL($reply_comwent_text)."','0',1,'".pSQL(date('Y-m-d H:i:s'))."','".pSQL(date('Y-m-d H:i:s'))."')";
                         Db::getInstance()->execute($sql);
                         $this->sendMailRepyCustomer($id_comment,$this->context->customer->firstname.' '.$this->context->customer->lastname);
                         Tools::redirectLink($this->context->link->getModuleLink($this->name,'managementblog',array('tabmanagament'=>'comment','id_comment'=>$comment->id,'viewcomment'=>1,'addedReply'=> 1)));
@@ -11927,7 +12832,7 @@ public function renderSettingCustomer()
                         $this->context->smarty->assign(
                             array(
                                 'replyCommentsave' => $id_comment,
-                                'reply_comwent_text' => Tools::getValue('reply_comwent_text'),
+                                'reply_comwent_text' => $reply_comwent_text,
                             )
                         );
                     }
@@ -11936,23 +12841,24 @@ public function renderSettingCustomer()
                     $errors[]=$this->l('Sorry, you do not have permission');
                 
             }
-            if(Tools::isSubmit('delete_reply') && $id_reply=Tools::getValue('delete_reply'))
+            if(Tools::isSubmit('delete_reply') && ($id_reply = (int)Tools::getValue('delete_reply')))
             {
                 if($this->checkPermisionComment('delete',$id_comment))
                 {
-                    Db::getInstance()->execute('DELETE FROM '._DB_PREFIX_.'ybc_blog_reply WHERE id_reply='.(int)$id_reply);
+                    Db::getInstance()->execute('DELETE FROM `'._DB_PREFIX_.'ybc_blog_reply` WHERE id_reply='.(int)$id_reply);
                     Tools::redirectLink($this->context->link->getModuleLink($this->name,'managementblog',array('tabmanagament'=>'comment','id_comment'=>$comment->id,'viewcomment'=>1,'deleteddReply'=> 1)));
                 }
                 else
                     $errors[]=$this->l('Sorry, you do not have permission');
             }
-            if(Tools::isSubmit('change_approved_reply') && $id_reply=Tools::getValue('change_approved_reply'))
+            if(Tools::isSubmit('change_approved_reply') && ($id_reply= (int)Tools::getValue('change_approved_reply')))
             {
                 if($this->checkPermisionComment('edit',$id_comment))
                 {
-                    $reply_old = Db::getInstance()->getRow('SELECT * FROM '._DB_PREFIX_.'ybc_blog_reply WHERE id_reply='.(int)$id_reply);
-                    Db::getInstance()->execute('UPDATE '._DB_PREFIX_.'ybc_blog_reply SET approved='.(int)Tools::getValue('approved').' WHERE id_reply='.(int)$id_reply);
-                    if($reply_old['approved']!=Tools::getValue('approved') && Tools::getValue('approved')==1)
+                    $approved = (int)Tools::getValue('approved');
+                    $reply_old = Db::getInstance()->getRow('SELECT * FROM `'._DB_PREFIX_.'ybc_blog_reply` WHERE id_reply='.(int)$id_reply);
+                    Db::getInstance()->execute('UPDATE `'._DB_PREFIX_.'ybc_blog_reply` SET approved='.(int)$approved.' WHERE id_reply='.(int)$id_reply);
+                    if($reply_old['approved']!=$approved && $approved==1)
                     {
                         $this->sendMailRepyCustomer($id_comment,$reply_old['name'],$reply_old['reply']);
                     }
@@ -11970,16 +12876,16 @@ public function renderSettingCustomer()
                     $reply['reply'] = str_replace("\n",'<'.'b'.'r/'.'>',$reply['reply']);
                     if($reply['id_employee'])
                     {
-                        if($name= Db::getInstance()->getValue('SELECT name FROM '._DB_PREFIX_.'ybc_blog_employee WHERE id_employee="'.(int)$reply['id_employee'].'" AND is_customer=0'))
+                        if($name= Db::getInstance()->getValue('SELECT name FROM `'._DB_PREFIX_.'ybc_blog_employee` WHERE id_employee="'.(int)$reply['id_employee'].'" AND is_customer=0'))
                             $reply['name']= $name;
-                        elseif($name = Db::getInstance()->getValue('SELECT CONCAT(firstname," ",lastname) FROM '._DB_PREFIX_.'employee WHERE id_employee='.(int)$reply['id_employee']))
+                        elseif($name = Db::getInstance()->getValue('SELECT CONCAT(firstname," ",lastname) FROM `'._DB_PREFIX_.'employee` WHERE id_employee='.(int)$reply['id_employee']))
                             $reply['name']= $name;
                     }
                     if($reply['id_user'])
                     {
-                        if($name= Db::getInstance()->getValue('SELECT name FROM '._DB_PREFIX_.'ybc_blog_employee WHERE id_employee="'.(int)$reply['id_user'].'" AND is_customer=1'))
+                        if($name= Db::getInstance()->getValue('SELECT name FROM `'._DB_PREFIX_.'ybc_blog_employee` WHERE id_employee="'.(int)$reply['id_user'].'" AND is_customer=1'))
                             $reply['name']= $name;
-                        elseif($name = Db::getInstance()->getValue('SELECT CONCAT(firstname," ",lastname) FROM '._DB_PREFIX_.'customer WHERE id_customer='.(int)$reply['id_user']))
+                        elseif($name = Db::getInstance()->getValue('SELECT CONCAT(firstname," ",lastname) FROM `'._DB_PREFIX_.'customer` WHERE id_customer='.(int)$reply['id_user']))
                             $reply['name']= $name;
                     }
                 }
@@ -11998,7 +12904,8 @@ public function renderSettingCustomer()
             );
             return $this->_html .=($errors ? $this->displayError($errors): '' ).$this->display(__FILE__,'author_reply_comment.tpl');
         }
-        if(!(Tools::isSubmit('editcomment') && Tools::getValue('id_comment')))
+        $id_comment = (int)Tools::getValue('id_comment');
+        if(!(Tools::isSubmit('editcomment') && $id_comment))
         {
             $fields_list = array(
                 'id_comment' => array(
@@ -12100,34 +13007,41 @@ public function renderSettingCustomer()
             );
             //Filter
             $filter = " AND p.added_by ='".(int)$this->context->customer->id."' AND p.is_customer=1";
-            if(trim(Tools::getValue('id_comment'))!='')
-                $filter .= " AND bc.id_comment = ".(int)trim(urldecode(Tools::getValue('id_comment')));
-            if(trim(Tools::getValue('comment'))!='')
-                $filter .= " AND bc.comment like '%".addslashes(trim(urldecode(Tools::getValue('comment'))))."%'";
-            if(trim(Tools::getValue('subject'))!='')
-                $filter .= " AND (bc.subject like '%".addslashes(trim(urldecode(Tools::getValue('subject'))))."%' OR bc.comment like '%".addslashes(trim(urldecode(Tools::getValue('subject'))))."%' )";
-            if(trim(Tools::getValue('rating'))!='')
-                $filter .= " AND bc.rating = ".(int)trim(urldecode(Tools::getValue('rating')));                
-            if(trim(Tools::getValue('name'))!='')
-                $filter .= " AND bc.name like '%".addslashes(trim(urldecode(Tools::getValue('name'))))."%'";
-            if(trim(Tools::getValue('approved'))!='')
-                $filter .= " AND bc.approved = ".(int)trim(urldecode(Tools::getValue('approved')));
-            if(trim(Tools::getValue('reported'))!='')
-                $filter .= " AND bc.reported = ".(int)trim(urldecode(Tools::getValue('reported')));
-             if(trim(Tools::getValue('title'))!='')
-                $filter .= " AND pl.title like '%".addslashes(trim(urldecode(Tools::getValue('title'))))."%'";
+            if(($id_comment = trim(Tools::getValue('id_comment')))!='' && Validate::isCleanHtml($id_comment))
+                $filter .= " AND bc.id_comment = ".(int)$id_comment;
+            if(($comment = trim(Tools::getValue('comment')))!='' && Validate::isCleanHtml($comment) )
+                $filter .= " AND bc.comment like '%".pSQL($comment)."%'";
+            if(($subject =  trim(Tools::getValue('subject')))!='' && Validate::isCleanHtml($subject))
+                $filter .= " AND (bc.subject like '%".pSQL($subject)."%' OR bc.comment like '%".pSQL($subject)."%' )";
+            if(($rating = trim(Tools::getValue('rating')))!='' && Validate::isCleanHtml($rating))
+                $filter .= " AND bc.rating = ".(int)$rating;                
+            if(($name = trim(Tools::getValue('name')))!='' && Validate::isCleanHtml($name))
+                $filter .= " AND bc.name like '%".pSQL($name)."%'";
+            if(($approved = trim(Tools::getValue('approved')))!='' && Validate::isCleanHtml($approved))
+                $filter .= " AND bc.approved = ".(int)$approved;
+            if(($reported =  trim(Tools::getValue('reported')))!='' && Validate::isCleanHtml($reported))
+                $filter .= " AND bc.reported = ".(int)$reported;
+             if(($title =  trim(Tools::getValue('title')))!='' && Validate::isCleanHtml($title))
+                $filter .= " AND pl.title like '%".pSQL($title)."%'";
             //Sort
+            $sort_post = Tools::strtolower(Tools::getValue('sort','id_comment'));
+            if(!isset($fields_list[$sort_post]))
+                $sort_post = 'id_comment';
+            $sort_type = Tools::strtolower(trim(Tools::getValue('sort_type','desc')));
+            if(!in_array($sort_type,array('asc','desc')))
+                $sort_type = 'desc';
             $sort = "";
-            if(trim(Tools::getValue('sort')) && isset($fields_list[Tools::getValue('sort')]))
+            if(trim($sort_post) && isset($fields_list[$sort_post]))
             {
-                $sort .= trim(Tools::getValue('sort'))." ".(Tools::getValue('sort_type')=='asc' ? ' ASC ' :' DESC ')." , ";
+                $sort .= trim($sort_post)." ".($sort_type=='asc' ? ' ASC ' :' DESC ')." , ";
             }
             else
                 $sort = 'bc.id_comment desc,';
             
             //Paggination
-            $page = (int)Tools::getValue('page') && (int)Tools::getValue('page')> 0 && Tools::getValue('tabmanagament')=='comment' ? (int)Tools::getValue('page') : 1;
-            
+            $page = (int)Tools::getValue('page');
+            if($page <0 )
+                $page =1;
             $totalRecords = (int)$this->countCommentsWithFilter($filter);
             $paggination = new Ybc_blog_paggination_class();            
             $paggination->total = $totalRecords;
@@ -12143,19 +13057,20 @@ public function renderSettingCustomer()
             $comments = $this->getCommentsWithFilter($filter, $sort, $start, $paggination->limit);
             if($comments)
             {
-                foreach($comments as &$comment)
+                foreach($comments as &$comment_val)
                 {
-                    $comment['child_view_url']=$this->context->link->getModuleLink($this->name,'managementblog',array('tabmanagament'=>'comment','id_comment'=>$comment['id_comment'],'viewcomment'=>1));
-                    $comment['view_url'] = $this->getLink('blog', array('id_post' => $comment['id_post'])).'#blog_comment_line_'.$comment['id_comment'];
-                    $comment['title'] ='<a href="'.$comment['view_url'].'" title="'.$comment['title'].'">'.$comment['title'].'</a>';
-                    $comment['view_text'] = $this->l('View in post');
+                    $comment_val['child_view_url']=$this->context->link->getModuleLink($this->name,'managementblog',array('tabmanagament'=>'comment','id_comment'=>$comment_val['id_comment'],'viewcomment'=>1));
+                    $comment_val['view_url'] = $this->getLink('blog', array('id_post' => $comment_val['id_post'])).'#blog_comment_line_'.$comment_val['id_comment'];
+                    $comment_val['title'] ='<a href="'.$comment_val['view_url'].'" title="'.$comment_val['title'].'">'.$comment_val['title'].'</a>';
+                    $comment_val['view_text'] = $this->l('View in post');
                     if(($privileges= explode(',',Configuration::get('YBC_BLOG_AUTHOR_PRIVILEGES'))) && in_array('manage_comments',$privileges))
                     {
-                        $comment['edit_url'] = $this->getLink('blog',array('id_post'=>$comment['id_post'],'edit_comment'=>$comment['id_comment']));
-                        $comment['delete_url'] = $this->context->link->getModuleLink($this->name,'managementblog',array('tabmanagament'=>'comment','id_comment'=>$comment['id_comment'],'deletecomment'=>1));
-                        $comment['edit_approved'] = $this->context->link->getModuleLink($this->name,'managementblog',array('tabmanagament'=>'comment','id_comment'=>$comment['id_comment'],'commentapproved'=>!$comment['approved']));
+                        $comment_val['edit_url'] = $this->getLink('blog',array('id_post'=>$comment_val['id_post'],'edit_comment'=>$comment_val['id_comment']));
+                        $comment_val['delete_url'] = $this->context->link->getModuleLink($this->name,'managementblog',array('tabmanagament'=>'comment','id_comment'=>$comment_val['id_comment'],'deletecomment'=>1));
+                        $comment_val['edit_approved'] = $this->context->link->getModuleLink($this->name,'managementblog',array('tabmanagament'=>'comment','id_comment'=>$comment_val['id_comment'],'commentapproved'=>!$comment_val['approved']));
                     }
                  }
+                 unset($comment_val);
             }
             $paggination->text =  $this->l('Showing {start} to {end} of {total} ({pages} Pages)');
             $paggination->style_links = $this->l('links');
@@ -12172,11 +13087,11 @@ public function renderSettingCustomer()
                 'field_values' => $comments,
                 'paggination' => $paggination->render(),
                 'filter_params' => $this->getFilterParamsFontEnd($fields_list,'ybc_submit_ybc_comment'),
-                'show_reset' => trim(Tools::getValue('id_comment'))!='' || trim(Tools::getValue('comment'))!='' || trim(Tools::getValue('rating'))!='' || trim(Tools::getValue('subject'))!='' || trim(Tools::getValue('customer'))!='' || trim(Tools::getValue('approved'))!='' || trim(Tools::getValue('reported'))!='' || trim(Tools::getValue('title'))!='' ? true : false,
+                'show_reset' => $id_comment!='' || $comment!='' || $rating !='' || $subject !=''  || $approved !='' || $reported !='' || $title!='' ? true : false,
                 'totalRecords' => $totalRecords,
                 'show_add_new' => false,
-                'sort'=>Tools::getValue('sort','id_comment'),
-                'sort_type'=>Tools::getValue('sort_type','desc'),
+                'sort'=> $sort_post,
+                'sort_type'=>$sort_type,
             );            
             return $this->_html .= $this->renderListByCustomer($listData);
         }
@@ -12212,21 +13127,25 @@ public function renderSettingCustomer()
         return $this->display(__FILE__,'blog_management_right.tpl');
     }
     public function renderFormAuthorInformation(){
-        $information = Db::getInstance()->getRow('SELECT * FROM '._DB_PREFIX_.'ybc_blog_employee e, '._DB_PREFIX_.'ybc_blog_employee_lang el WHERE id_employee="'.(int)$this->context->customer->id.'" AND id_lang="'.(int)$this->context->language->id.'" AND is_customer=1');
+        $information = Db::getInstance()->getRow('
+        SELECT * FROM `'._DB_PREFIX_.'ybc_blog_employee` e,
+        `'._DB_PREFIX_.'ybc_blog_employee_lang` el 
+        WHERE e.id_employee_post =el.id_employee_post AND e.id_employee="'.(int)$this->context->customer->id.'" AND el.id_lang="'.(int)$this->context->language->id.'" AND e.is_customer=1');
         $this->context->smarty->assign(
             array(
                 'name_author'=> isset($information['name']) && $information['name'] ? $information['name'] : $this->context->customer->firstname.' '.$this->context->customer->lastname,
                 'author_description' => isset($information['description']) && $information['description']?$information['description'] :'',
-                'author_avata' => isset($information['avata']) && $information['avata']?$this->getBaseLink().'modules/'.$this->name.'/views/img/avata/'.$information['avata'] :'',
-                'avata_default' => $this->getBaseLink().'modules/'.$this->name.'/views/img/avata/'.(Configuration::get('YBC_BLOG_IMAGE_AVATA_DEFAULT')? Configuration::get('YBC_BLOG_IMAGE_AVATA_DEFAULT') : 'default_customer.png'),
-                'link_delete_image' => $this->context->link->getModuleLink('ybc_blog','managementmyinfo',array('delemployeeimage'=>1))
+                'author_avata' => isset($information['avata']) && $information['avata'] ? $this->context->link->getMediaLink(_PS_YBC_BLOG_IMG_.'avata/'.$information['avata']) :'',
+                'avata_default' => $this->context->link->getMediaLink(_PS_YBC_BLOG_IMG_.'avata/'.(Configuration::get('YBC_BLOG_IMAGE_AVATA_DEFAULT')? Configuration::get('YBC_BLOG_IMAGE_AVATA_DEFAULT') : 'default_customer.png')),
+                'link_delete_image' => $this->context->link->getModuleLink('ybc_blog','managementmyinfo',array('delemployeeimage'=>1)),
+                'action_link' => $this->context->link->getModuleLink($this->name,'managementmyinfo'),
             )
         );
         return $this->display(__FILE__,'form_author.tpl');
     }
     public function displayFormBlog()
     {
-        if($id_post=Tools::getValue('id_post'))
+        if(($id_post=(int)Tools::getValue('id_post')))
         {
             if(!$this->checkPermistionPost($id_post,'edit_blog'))
             {
@@ -12252,8 +13171,8 @@ public function renderSettingCustomer()
                 'ybc_post'=>$ybc_post,
                 'link'=> $this->context->link,
                 'link_back_list' => $this->context->link->getModuleLink('ybc_blog','managementblog',array('tabmanagament'=>'post')),
-                'dir_img' => $this->getBaseLink().'modules/ybc_blog/views/img/',
-                'html_content' =>$this->displayBlogCategoryTre($this->getBlogCategoriesTreeFontEnd(0),$this->getSelectedCategories((int)Tools::getValue('id_post')),'',$this->getCategoriesDisabled()),
+                'dir_img' => _PS_YBC_BLOG_IMG_,
+                'html_content_category_block' =>$this->displayBlogCategoryTre($this->getBlogCategoriesTreeFontEnd(0),$this->getSelectedCategories((int)$id_post),'',$this->getCategoriesDisabled()),
                 //'languages'=>Language::getLanguages(false),
             )
         );
@@ -12265,7 +13184,7 @@ public function renderSettingCustomer()
         {
             $in = implode(',',array_map('intval',$categories));        
         }    
-        $slq="SELECT id_category FROM "._DB_PREFIX_."ybc_blog_category WHERE 1".(isset($in) && $in? ' AND id_category NOT IN ('.$in.')':'')."" ;  
+        $slq="SELECT id_category FROM `"._DB_PREFIX_."ybc_blog_category` WHERE 1".(isset($in) && $in? ' AND id_category NOT IN ('.$in.')':'')."" ;
         $categories = Db::getInstance()->executeS($slq);
         if($categories)
         {
@@ -12278,7 +13197,7 @@ public function renderSettingCustomer()
     }            
     public function checkPermistionPost($id_post=0,$permistion)
     {
-        $id_employee_post= (int)Db::getInstance()->getValue('SELECT id_employee_post FROM '._DB_PREFIX_.'ybc_blog_employee WHERE id_employee='.(int)$this->context->customer->id.' AND is_customer=1 AND status<=0');
+        $id_employee_post= (int)Db::getInstance()->getValue('SELECT id_employee_post FROM `'._DB_PREFIX_.'ybc_blog_employee` WHERE id_employee='.(int)$this->context->customer->id.' AND is_customer=1 AND status<=0');
         if($id_employee_post)
             return false;
        
@@ -12286,7 +13205,7 @@ public function renderSettingCustomer()
         {
              
             if($permistion=='edit_blog' || $permistion=='delete_blog')
-                return Db::getInstance()->getRow('SELECT * FROM '._DB_PREFIX_.'ybc_blog_post WHERE id_post="'.(int)$id_post.'" AND added_by="'.(int)$this->context->customer->id.'" AND is_customer=1');
+                return Db::getInstance()->getRow('SELECT * FROM `'._DB_PREFIX_.'ybc_blog_post` WHERE id_post="'.(int)$id_post.'" AND added_by="'.(int)$this->context->customer->id.'" AND is_customer=1');
             else
                 return true;
             
@@ -12299,11 +13218,15 @@ public function renderSettingCustomer()
             return $this->displayError($this->l('Sorry, you do not have permission'));
         else
         {
-            $ybc_comment=new Ybc_blog_comment_class(Tools::getValue('id_comment'));
+            $id_comment = (int)Tools::getValue('id_comment');
+            $ybc_comment= new Ybc_blog_comment_class($id_comment);
+            $tabmanagament = Tools::getValue('tabmanagament','comment_other');
+            if(!Validate::isCleanHtml($tabmanagament))
+                $tabmanagament = 'comment_other';
             $this->context->smarty->assign(
                 array(
                     'ybc_comment'=> $ybc_comment,
-                    'link_back_list' => $this->context->link->getModuleLink($this->name,'managementcomments',array('tabmanagament'=>Tools::getValue('tabmanagament','comment_other'))),
+                    'link_back_list' => $this->context->link->getModuleLink($this->name,'managementcomments',array('tabmanagament'=>$tabmanagament)),
                     'edit_approved' => $ybc_comment->id_user!=$this->context->customer->id,
                 )
             );
@@ -12325,17 +13248,17 @@ public function renderSettingCustomer()
             $ok=false ; 
         elseif($this->checkGroupAuthor())
         {
-            if(Tools::getValue('tabmanagament')=='comment' || $action!='')
+            if(($tabmanagament = Tools::getValue('tabmanagament')) && $tabmanagament=='comment' || $action!='')
             {
                 if($action=='reply' && !in_array('reply_comments',$privileges))
                     $ok=false;
                 elseif(!in_array('manage_comments',$privileges) && $action!='reply')
                     $ok=false;
                 else
-                    $ok= Db::getInstance()->getValue('SELECT p.id_post FROM '._DB_PREFIX_.'ybc_blog_post p, '._DB_PREFIX_.'ybc_blog_comment c WHERE p.id_post=c.id_post AND c.id_comment="'.(int)$id_comment.'" AND p.added_by="'.(int)$this->context->customer->id.'" AND p.is_customer=1');
+                    $ok= Db::getInstance()->getValue('SELECT p.id_post FROM `'._DB_PREFIX_.'ybc_blog_post` p, `'._DB_PREFIX_.'ybc_blog_comment` c WHERE p.id_post=c.id_post AND c.id_comment="'.(int)$id_comment.'" AND p.added_by="'.(int)$this->context->customer->id.'" AND p.is_customer=1');
             }
         }
-        if(!$ok && Db::getInstance()->getValue('SELECT id_comment FROM '._DB_PREFIX_.'ybc_blog_comment WHERE id_user="'.(int)$this->context->customer->id.'" AND id_comment='.(int)$id_comment))
+        if(!$ok && Db::getInstance()->getValue('SELECT id_comment FROM `'._DB_PREFIX_.'ybc_blog_comment` WHERE id_user="'.(int)$this->context->customer->id.'" AND id_comment='.(int)$id_comment))
         {
             if ($action=='edit' && Configuration::get('YBC_BLOG_ALLOW_EDIT_COMMENT'))
                 $ok=true;
@@ -12362,7 +13285,7 @@ public function renderSettingCustomer()
     }
     public function getProfiles()
     {
-        $sql = 'SELECT * FROM '._DB_PREFIX_.'profile_lang WHERE id_lang='.(int)$this->context->language->id;
+        $sql = 'SELECT * FROM `'._DB_PREFIX_.'profile_lang` WHERE id_lang='.(int)$this->context->language->id;
         return Db::getInstance()->executeS($sql);
     }
     public function hookBlogCategoryBlock($params)
@@ -12371,9 +13294,9 @@ public function renderSettingCustomer()
         {
             if(Configuration::get('YBC_BLOG_SHOW_CATEGORIES_BLOCK_HOME') && $limit=(int)Configuration::get('YBC_BLOG_CATEGORY_POST_NUMBER_HOME'))
             {
-                $sql='SELECT * FROM '._DB_PREFIX_.'ybc_blog_category c
-                INNER JOIN '._DB_PREFIX_.'ybc_blog_category_shop cs ON (c.id_category=cs.id_category)
-                LEFT JOIN '._DB_PREFIX_.'ybc_blog_category_lang cl ON (c.id_category=cl.id_category AND cl.id_lang="'.(int)$this->context->language->id.'")
+                $sql='SELECT * FROM `'._DB_PREFIX_.'ybc_blog_category` c
+                INNER JOIN `'._DB_PREFIX_.'ybc_blog_category_shop` cs ON (c.id_category=cs.id_category)
+                LEFT JOIN `'._DB_PREFIX_.'ybc_blog_category_lang` cl ON (c.id_category=cl.id_category AND cl.id_lang="'.(int)$this->context->language->id.'")
                 WHERE c.enabled=1 AND c.id_category IN ('.implode(',',array_map('intval',explode(',',Configuration::get('YBC_BLOG_SHOW_CATEGORIES_BLOCK_HOME')))).')
                 AND cs.id_shop ="'.(int)$this->context->shop->id.'"';
                 $categoires = Db::getInstance()->executeS($sql);
@@ -12397,7 +13320,7 @@ public function renderSettingCustomer()
                             {
                                 $post['link'] = $this->getLink('blog',array('id_post' => $post['id_post']));
                                 if($post['thumb'])
-                                    $post['thumb'] = $this->_path.'views/img/post/thumb/'.$post['thumb'];
+                                    $post['thumb'] = $this->context->link->getMediaLink(_PS_YBC_BLOG_IMG_.'post/thumb/'.$post['thumb']);
                                 $post['comments_num'] = $this->countCommentsWithFilter(' AND bc.id_post='.$post['id_post'].' AND approved=1');
                                 $post['liked'] = $this->isLikedPost($post['id_post']);
                                 $post['categories'] = $this->getCategoriesByIdPost($post['id_post'],false,true);
@@ -12439,7 +13362,7 @@ public function renderSettingCustomer()
     {
         if($this->context->customer->logged)
         {
-            if(Db::getInstance()->getRow('SELECT * FROM '._DB_PREFIX_.'ybc_blog_log_like WHERE id_customer="'.(int)$this->context->customer->id.'" AND id_post="'.(int)$id_post.'"'))
+            if(Db::getInstance()->getRow('SELECT * FROM `'._DB_PREFIX_.'ybc_blog_log_like` WHERE id_customer="'.(int)$this->context->customer->id.'" AND id_post="'.(int)$id_post.'"'))
             {
                 return true;
             }
@@ -12471,7 +13394,7 @@ public function renderSettingCustomer()
     }
     public function getSelectedRelatedCategories($id_post)
     {
-        $categories = Db::getInstance()->executeS('SELECT * FROM '._DB_PREFIX_.'ybc_blog_post_related_categories WHERE id_post='.(int)$id_post);
+        $categories = Db::getInstance()->executeS('SELECT * FROM `'._DB_PREFIX_.'ybc_blog_post_related_categories` WHERE id_post='.(int)$id_post);
         $relateds= array();
         if($categories)
         {
@@ -12482,9 +13405,14 @@ public function renderSettingCustomer()
         }
         return $relateds;
     }
+    public function hookDisplayFooterCategory()
+    {
+        $id_category = (int)Tools::getValue('id_category');
+        return $this->displayPostRelatedCategories($id_category);
+    }
     public function displayPostRelatedCategories($id_category)
     {
-        if(!Configuration::get('YBC_BLOG_DISPLAY_CATEGORY_PAGE') || !Configuration::get('YBC_BLOG_NUMBER_POST_IN_CATEGORY'))
+        if(!Configuration::get('YBC_BLOG_DISPLAY_CATEGORY_PAGE') || !Configuration::get('YBC_BLOG_NUMBER_POST_IN_CATEGORY') || !$id_category)
             return '';         
         $posts= $this->getPostsWithFilter(' AND p.enabled=1 AND rpc.id_category='.(int)$id_category,$this->sort,0,Configuration::get('YBC_BLOG_NUMBER_POST_IN_CATEGORY',8),false);
         if($posts)
@@ -12492,7 +13420,7 @@ public function renderSettingCustomer()
             {
                 $post['link'] = $this->getLink('blog',array('id_post' => $post['id_post']));
                 if($post['thumb'])
-                    $post['thumb'] = $this->_path.'views/img/post/thumb/'.$post['thumb'];
+                    $post['thumb'] = $this->context->link->getMediaLink(_PS_YBC_BLOG_IMG_.'post/thumb/'.$post['thumb']);
                 $post['comments_num'] = $this->countCommentsWithFilter(' AND bc.id_post='.$post['id_post'].' AND approved=1');
                 $post['liked'] = $this->isLikedPost($post['id_post']);
                 $post['categories'] = $this->getCategoriesByIdPost($post['id_post'],false,true);
@@ -12514,69 +13442,85 @@ public function renderSettingCustomer()
     }
     public function displayReplyComment()
     {
-        $id_comment = Tools::getValue('id_comment');
+        $id_comment = (int)Tools::getValue('id_comment');
+        $control = Tools::getValue('control');
+        if(!in_array($control,$this->controls))
+            $control ='comment';
         if($id_comment)
         {
             $comment= new Ybc_blog_comment_class($id_comment);
-            $comment->viewed=1;
-            $comment->update();
-            $comment->comment = str_replace("\n",'<'.'b'.'r/'.'>',$comment->comment);
-            $replies= Db::getInstance()->executeS('SELECT * FROM '._DB_PREFIX_.'ybc_blog_reply WHERE id_comment='.(int)$id_comment);
-            if($replies)
+            if(!Validate::isLoadedObject($comment))
             {
-                foreach($replies as &$reply)
-                {
-                    $reply['reply'] = str_replace("\n",'<'.'b'.'r/'.'>',$reply['reply']);
-                    if($reply['id_employee'])
-                    {
-                        if($name= Db::getInstance()->getValue('SELECT name FROM '._DB_PREFIX_.'ybc_blog_employee WHERE id_employee="'.(int)$reply['id_employee'].'" AND is_customer=0'))
-                            $reply['name']= $name;
-                        elseif($name = Db::getInstance()->getValue('SELECT CONCAT(firstname," ",lastname) FROM '._DB_PREFIX_.'employee WHERE id_employee='.(int)$reply['id_employee']))
-                            $reply['name']= $name;
-                    }
-                    if($reply['id_user'])
-                    {
-                        if($name= Db::getInstance()->getValue('SELECT name FROM '._DB_PREFIX_.'ybc_blog_employee WHERE id_employee="'.(int)$reply['id_user'].'" AND is_customer=1'))
-                            $reply['name']= $name;
-                        elseif($name = Db::getInstance()->getValue('SELECT CONCAT(firstname," ",lastname) FROM '._DB_PREFIX_.'customer WHERE id_customer='.(int)$reply['id_user']))
-                            $reply['name']= $name;
-                    }
-                }    
+                $this->_html .= $this->displayWarning($this->l('Comment not exists'));
+                return '';
             }
-            $this->context->smarty->assign(
-                array(
-                    'comment'=>$comment,
-                    'replies'=>$replies,
-                    'post_class' => new Ybc_blog_post_class($comment->id_post,$this->context->language->id),
-                    'curenturl' => $this->context->link->getAdminLink('AdminModules').'&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&control='.Tools::getValue('control').'&id_comment='.(int)$id_comment,
-                    'link_back'=> $this->context->link->getAdminLink('AdminModules').'&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&control=comment&list=true',
-                    'post_link' => $this->getLink('blog',array('id_post'=>$comment->id_post)),
-                    'link_delete' => $this->context->link->getAdminLink('AdminModules').'&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&control=comment&id_comment='.(int)$id_comment.'&del=1',
-                )
-            );
+            else
+            {
+                $comment->viewed=1;
+                $comment->update();
+                $comment->comment = str_replace("\n",'<'.'b'.'r/'.'>',$comment->comment);
+                $replies= Db::getInstance()->executeS('SELECT * FROM `'._DB_PREFIX_.'ybc_blog_reply` WHERE id_comment='.(int)$id_comment);
+                if($replies)
+                {
+                    foreach($replies as &$reply)
+                    {
+                        $reply['reply'] = str_replace("\n",'<'.'b'.'r/'.'>',$reply['reply']);
+                        if($reply['id_employee'])
+                        {
+                            if($name= Db::getInstance()->getValue('SELECT name FROM `'._DB_PREFIX_.'ybc_blog_employee` WHERE id_employee="'.(int)$reply['id_employee'].'" AND is_customer=0'))
+                                $reply['name']= $name;
+                            elseif($name = Db::getInstance()->getValue('SELECT CONCAT(firstname," ",lastname) FROM `'._DB_PREFIX_.'employee` WHERE id_employee='.(int)$reply['id_employee']))
+                                $reply['name']= $name;
+                        }
+                        if($reply['id_user'])
+                        {
+                            if($name= Db::getInstance()->getValue('SELECT name FROM `'._DB_PREFIX_.'ybc_blog_employee` WHERE id_employee="'.(int)$reply['id_user'].'" AND is_customer=1'))
+                                $reply['name']= $name;
+                            elseif($name = Db::getInstance()->getValue('SELECT CONCAT(firstname," ",lastname) FROM `'._DB_PREFIX_.'customer` WHERE id_customer='.(int)$reply['id_user']))
+                                $reply['name']= $name;
+                        }
+                    }    
+                }
+                $this->context->smarty->assign(
+                    array(
+                        'comment'=>$comment,
+                        'replies'=>$replies,
+                        'post_class' => new Ybc_blog_post_class($comment->id_post,$this->context->language->id),
+                        'curenturl' => $this->context->link->getAdminLink('AdminModules').'&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&control='.$control.'&id_comment='.(int)$id_comment,
+                        'link_back'=> $this->context->link->getAdminLink('AdminModules').'&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&control=comment&list=true',
+                        'post_link' => $this->getLink('blog',array('id_post'=>$comment->id_post)),
+                        'link_delete' => $this->context->link->getAdminLink('AdminModules').'&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&control=comment&id_comment='.(int)$id_comment.'&del=1',
+                    )
+                );
+            }
+            
         }
         $this->_html .= $this->display(__FILE__,'reply_comment.tpl');
     }
     public function _posstReply()
-    {
+    {   
+        $id_comment = (int)Tools::getValue('id_comment');
+        $control = Tools::getValue('control');
+        if(!in_array($control,$this->controls))
+            $control='post';
         $errors=array();
-        if(Tools::isSubmit('submitBulkActionReply') && Tools::getValue('reply_readed') && $bulk_action_reply =Tools::getValue('bulk_action_reply'))
+        if(Tools::isSubmit('submitBulkActionReply') && ($reply_readed = Tools::getValue('reply_readed')) && Ybc_blog::validateArray($reply_readed) && ($bulk_action_reply =Tools::getValue('bulk_action_reply')) )
         {
             Hook::exec('actionUpdateBlog', array(
-                'id_comment' => (int)Tools::getValue('id_comment'),
+                'id_comment' => (int)$id_comment,
             ));
             if($bulk_action_reply=='delete_selected')
             {
-                foreach(Tools::getValue('reply_readed') as $id_reply => $value)
+                foreach($reply_readed as $id_reply => $value)
                 {
                     if($value)
                     {
-                        Db::getInstance()->execute('DELETE FROM '._DB_PREFIX_.'ybc_blog_reply WHERE id_reply='.(int)$id_reply);
+                        Db::getInstance()->execute('DELETE FROM `'._DB_PREFIX_.'ybc_blog_reply` WHERE id_reply='.(int)$id_reply);
                     }
                 }
                 die(Tools::jsonEncode(
                     array(
-                        'url_reload' => $this->context->link->getAdminLink('AdminModules').'&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&control='.Tools::getValue('control').'&id_comment='.(int)Tools::getValue('id_comment').'&conf=2',
+                        'url_reload' => $this->context->link->getAdminLink('AdminModules').'&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&control='.$control.'&id_comment='.(int)$id_comment.'&conf=2',
                     )
                 ));
             }
@@ -12592,32 +13536,33 @@ public function renderSettingCustomer()
                     $value_field=0;
                     $field='approved';
                 }
-                foreach(Tools::getValue('reply_readed') as $id_reply => $value)
+                foreach($reply_readed as $id_reply => $value)
                 {
                     if($value)
                     {
-                        Db::getInstance()->execute('UPDATE '._DB_PREFIX_.'ybc_blog_reply SET `'.pSQL($field).'`='.(int)$value_field.' WHERE id_reply='.(int)$id_reply);
+                        Db::getInstance()->execute('UPDATE `'._DB_PREFIX_.'ybc_blog_reply` SET `'.pSQL($field).'`='.(int)$value_field.' WHERE id_reply='.(int)$id_reply);
                     }
                 }
                 die(Tools::jsonEncode(
                     array(
-                        'url_reload' => $this->context->link->getAdminLink('AdminModules').'&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&control='.Tools::getValue('control').'&id_comment='.(int)Tools::getValue('id_comment').'&conf=4',
+                        'url_reload' => $this->context->link->getAdminLink('AdminModules').'&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&control='.$control.'&id_comment='.(int)$id_comment.'&conf=4',
                     )
                 ));
             }
         }
-        if(Tools::isSubmit('change_approved') && $id_reply=Tools::getValue('id_reply'))
+        if(Tools::isSubmit('change_approved') && ($id_reply=(int)Tools::getValue('id_reply')) )
         {
+            $change_approved = (int)Tools::getValue('change_approved');
             Hook::exec('actionUpdateBlog', array(
-                'id_comment' => (int)Tools::getValue('id_comment'),
+                'id_comment' => (int)$id_comment,
             ));
-            $reply_old = Db::getInstance()->getRow('SELECT * FROM '._DB_PREFIX_.'ybc_blog_reply WHERE id_reply='.(int)$id_reply);
-            Db::getInstance()->execute('UPDATE '._DB_PREFIX_.'ybc_blog_reply SET approved="'.(int)Tools::getValue('change_approved').'",datetime_updated="'.pSQL(date('Y-m-d H:i:s')).'" WHERE id_reply='.(int)$id_reply);
-            if(Tools::getValue('change_approved'))
+            $reply_old = Db::getInstance()->getRow('SELECT * FROM `'._DB_PREFIX_.'ybc_blog_reply` WHERE id_reply='.(int)$id_reply);
+            Db::getInstance()->execute('UPDATE `'._DB_PREFIX_.'ybc_blog_reply` SET approved="'.(int)$change_approved.'",datetime_updated="'.pSQL(date('Y-m-d H:i:s')).'" WHERE id_reply='.(int)$id_reply);
+            if($change_approved)
                 $title = $this->l('Click to mark as unapproved');
             else
                 $title = $this->l('Click to mark as approved');
-            if($reply_old['approved']!=Tools::getValue('change_approved') && Tools::getValue('change_approved')==1)
+            if($reply_old['approved']!=$change_approved && $change_approved==1)
             {
                 $this->sendMailRepyCustomer($reply_old['id_comment'],$reply_old['name'],$reply_old['reply']);
             }
@@ -12625,58 +13570,61 @@ public function renderSettingCustomer()
             {
                 die(Tools::jsonEncode(array(
                     'listId' => $id_reply,
-                    'enabled' => Tools::getValue('change_approved'),
+                    'enabled' => $change_approved,
                     'field' => 'approved',
                     'message' => $this->displaySuccessMessage($this->l('The status has been successfully updated')) ,
                     'messageType'=>'success',
                     'title'=>$title,
-                    'href' => $this->context->link->getAdminLink('AdminModules').'&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&control='.Tools::getValue('control').'&id_comment='.(int)Tools::getValue('id_comment').'&change_approved='.(Tools::getValue('change_approved') ? '0' : '1').'&id_reply='.$id_reply,
+                    'href' => $this->context->link->getAdminLink('AdminModules').'&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&control='.$control.'&id_comment='.(int)$id_comment.'&change_approved='.($change_approved ? '0' : '1').'&id_reply='.(int)$id_reply,
                 )));
             }
             Tools::redirectAdmin($this->context->link->getAdminLink('AdminModules', true).'&conf=4&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&control=post&list=true');
         } 
-        if(Tools::isSubmit('change_comment_approved') && $id_comment=Tools::getValue('id_comment'))
+        if(Tools::isSubmit('change_comment_approved') && $id_comment)
         {
+            $change_comment_approved = (int)Tools::getValue('change_comment_approved');
             Hook::exec('actionUpdateBlog', array(
-                'id_comment' => (int)Tools::getValue('id_comment'),
+                'id_comment' => (int)$id_comment,
             ));
-            Db::getInstance()->execute('UPDATE '._DB_PREFIX_.'ybc_blog_comment SET approved="'.(int)Tools::getValue('change_comment_approved').'" WHERE id_comment='.(int)$id_comment);
+            Db::getInstance()->execute('UPDATE `'._DB_PREFIX_.'ybc_blog_comment` SET approved="'.(int)$change_comment_approved.'" WHERE id_comment='.(int)$id_comment);
             if(Tools::isSubmit('ajax'))
             {
                 die(Tools::jsonEncode(array(
                     'listId' => $id_reply,
-                    'enabled' => Tools::getValue('change_comment_approved'),
+                    'enabled' => $change_comment_approved,
                     'field' => 'approved',
-                    'href' => $this->context->link->getAdminLink('AdminModules').'&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&control='.Tools::getValue('control').'&id_comment='.(int)Tools::getValue('id_comment').'&change_comment_approved='.(Tools::getValue('change_comment_approved') ? '0' : '1'),
+                    'href' => $this->context->link->getAdminLink('AdminModules').'&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&control='.$control.'&id_comment='.(int)$id_comment.'&change_comment_approved='.($change_comment_approved ? '0' : '1'),
                 )));
             }
-            Tools::redirectAdmin($this->context->link->getAdminLink('AdminModules', true).'&conf=5&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&control='.Tools::getValue('control').'&id_comment='.(int)Tools::getValue('id_comment'));
+            Tools::redirectAdmin($this->context->link->getAdminLink('AdminModules', true).'&conf=5&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&control='.$control.'&id_comment='.(int)$id_comment);
         }
-        if(Tools::isSubmit('delreply') && $id_reply=Tools::getValue('id_reply'))
+        if(Tools::isSubmit('delreply') && ($id_reply=(int)Tools::getValue('id_reply')))
         {
+            
             Hook::exec('actionUpdateBlog', array(
-                'id_comment' => (int)Tools::getValue('id_comment'),
+                'id_comment' => (int)$id_comment,
             ));
-            Db::getInstance()->execute('DELETE FROM '._DB_PREFIX_.'ybc_blog_reply WHERE id_reply='.(int)$id_reply);
-            Tools::redirectAdmin($this->context->link->getAdminLink('AdminModules').'&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&control='.Tools::getValue('control').'&id_comment='.(int)Tools::getValue('id_comment').'&conf=2');
+            Db::getInstance()->execute('DELETE FROM `'._DB_PREFIX_.'ybc_blog_reply` WHERE id_reply='.(int)$id_reply);
+            Tools::redirectAdmin($this->context->link->getAdminLink('AdminModules').'&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&control='.$control.'&id_comment='.(int)$id_comment.'&conf=2');
         } 
-        if(Tools::isSubmit('addReplyComment') && $id_comment=Tools::getValue('id_comment'))
+        if(Tools::isSubmit('addReplyComment') && $id_comment )
         {
             Hook::exec('actionUpdateBlog', array(
-                'id_comment' => (int)Tools::getValue('id_comment'),
+                'id_comment' => $id_comment,
             ));
-            if(Tools::strlen(Tools::getValue('reply_comwent_text')) < 20)
-                $errors[] = $this->l('Reply need to be at least 20 characters');
-            if(!Validate::isCleanHtml(Tools::getValue('reply_comwent_text'),false))
-                $errors[] = $this->l('Reply need to be clean HTML');
-            if(Tools::strlen(Tools::getValue('reply_comwent_text')) >2000)
-                $errors[] = $this->l('Reply can not be longer than 2000 characters'); 
+            $reply_comment_text = Tools::getValue('reply_comwent_text');
+            if(Tools::strlen($reply_comment_text) < 20)
+                $errors[] = $this->l('Reply needs to be at least 20 characters');
+            if(!Validate::isCleanHtml($reply_comment_text,false))
+                $errors[] = $this->l('Reply needs to be clean HTML');
+            if(Tools::strlen($reply_comment_text) >2000)
+                $errors[] = $this->l('Reply cannot be longer than 2000 characters');
             if(!$errors)
             {
-                $sql= "INSERT INTO "._DB_PREFIX_."ybc_blog_reply(id_comment,id_user,name,email,reply,id_employee,approved,datetime_added,datetime_updated) values('".(int)$id_comment."', '0','".pSQL($this->context->employee->firstname)." ".pSQL($this->context->employee->lastname)."','".pSQL($this->context->employee->email)."','".pSQL(Tools::getValue('reply_comwent_text'))."','".(int)$this->context->employee->id."',1,'".pSQL(date('Y-m-d H:i:s'))."','".pSQL(date('Y-m-d H:i:s'))."')";
+                $sql= "INSERT INTO `"._DB_PREFIX_."ybc_blog_reply`(id_comment,id_user,name,email,reply,id_employee,approved,datetime_added,datetime_updated) values('".(int)$id_comment."', '0','".pSQL($this->context->employee->firstname)." ".pSQL($this->context->employee->lastname)."','".pSQL($this->context->employee->email)."','".pSQL($reply_comment_text)."','".(int)$this->context->employee->id."',1,'".pSQL(date('Y-m-d H:i:s'))."','".pSQL(date('Y-m-d H:i:s'))."')";
                 Db::getInstance()->execute($sql);
                 $this->sendMailRepyCustomer($id_comment,$this->context->employee->firstname.' '.$this->context->employee->lastname);
-                $this->sendMailReplyAdmin($id_comment,$this->context->employee->firstname.' '.$this->context->employee->lastname,1,Tools::getValue('reply_comwent_text'));
+                $this->sendMailReplyAdmin($id_comment,$this->context->employee->firstname.' '.$this->context->employee->lastname,1,$reply_comment_text);
                 $this->_html .= $this->displaySuccessMessage($this->l('Reply has been submitted'));
             }
             else
@@ -12684,7 +13632,7 @@ public function renderSettingCustomer()
                 $this->context->smarty->assign(
                     array(
                         'replyCommentsave' => $id_comment,
-                        'reply_comwent_text' => Tools::getValue('reply_comwent_text'),
+                        'reply_comwent_text' => $reply_comment_text,
                     )
                 );
                 $this->_html .= $this->displayError($errors);
@@ -12747,9 +13695,10 @@ public function renderSettingCustomer()
     }
     public function redirect($url)
     {
-        header("HTTP/1.1 301 Moved Permanently"); 
-        call_user_func('header',"Location: $url");
-        exit; 
+        Tools::redirect($url);
+        //header("HTTP/1.1 301 Moved Permanently"); 
+//        call_user_func('header',"Location: $url");
+//        exit; 
     }
     public static function checkIframeHTML($content)
     {
@@ -12773,5 +13722,232 @@ public function renderSettingCustomer()
             return preg_match(Tools::cleanNonUnicodeSupport('/^[_a-zA-Z\x{0600}-\x{06FF}\pL\pS-]{1}[_a-zA-Z0-9\x{0600}-\x{06FF}\pL\pS-]+$/u'), $link);
         }
         return preg_match('/^[_a-zA-Z\-]{1}[_a-zA-Z0-9\-]+$/', $link);
+    }
+    private function duplicateRowsFromDefaultShopLang($tableName, $shopId,$identifier)
+    {
+        $shopDefaultLangId = Configuration::get('PS_LANG_DEFAULT');
+        $fields = array();
+        $shop_field_exists = $primary_key_exists = false;
+        $columns = Db::getInstance()->executeS('SHOW COLUMNS FROM `' . $tableName . '`');
+        foreach ($columns as $column) {
+            $fields[] = '`' . $column['Field'] . '`';
+            if ($column['Field'] == 'id_shop') {
+                $shop_field_exists = true;
+            }
+            if ($column['Field'] == $identifier) {
+                $primary_key_exists = true;
+            }
+        }
+        $fields = implode(',', $fields);
+
+        if (!$primary_key_exists) {
+            return true;
+        }
+
+        $sql = 'INSERT IGNORE INTO `' . $tableName . '` (' . $fields . ') (SELECT ';
+
+        // For each column, copy data from default language
+        reset($columns);
+        $selectQueries = array();
+        foreach ($columns as $column) {
+            if ($identifier != $column['Field'] && $column['Field'] != 'id_lang') {
+                $selectQueries[] = '(
+							SELECT `' . bqSQL($column['Field']) . '`
+							FROM `' . bqSQL($tableName) . '` tl
+							WHERE tl.`id_lang` = ' . (int) $shopDefaultLangId . '
+							' . ($shop_field_exists ? ' AND tl.`id_shop` = ' . (int) $shopId : '') . '
+							AND tl.`' . bqSQL($identifier) . '` = `' . bqSQL(str_replace('_lang', '', $tableName)) . '`.`' . bqSQL($identifier) . '`
+						)';
+            } else {
+                $selectQueries[] = '`' . bqSQL($column['Field']) . '`';
+            }
+        }
+        $sql .= implode(',', $selectQueries);
+        $sql .= ' FROM `' . _DB_PREFIX_ . 'lang` CROSS JOIN `' . bqSQL(str_replace('_lang', '', $tableName)) . '` ';
+
+        // prevent insert with where initial data exists
+        $sql .= ' WHERE `' . bqSQL($identifier) . '` IN (SELECT `' . bqSQL($identifier) . '` FROM `' . bqSQL($tableName) . '`) )';
+        return Db::getInstance()->execute($sql);
+    }
+    public function hookActionObjectLanguageAddAfter()
+    {
+       $this->duplicateRowsFromDefaultShopLang(_DB_PREFIX_.'ybc_blog_category_lang',$this->context->shop->id,'id_category');
+       $this->duplicateRowsFromDefaultShopLang(_DB_PREFIX_.'ybc_blog_employee_lang',$this->context->shop->id,'id_employee_post');
+       $this->duplicateRowsFromDefaultShopLang(_DB_PREFIX_.'ybc_blog_gallery_lang',$this->context->shop->id,'id_gallery');
+       $this->duplicateRowsFromDefaultShopLang(_DB_PREFIX_.'ybc_blog_post_lang',$this->context->shop->id,'id_post'); 
+       $this->duplicateRowsFromDefaultShopLang(_DB_PREFIX_.'ybc_blog_slide_lang',$this->context->shop->id,'id_slide');
+       $this->duplicateRowsFromDefaultShopLang(_DB_PREFIX_.'ybc_blog_email_template_lang',$this->context->shop->id,'id_ybc_blog_email_template');
+       $this->_copyForderMail();
+    }
+    public function createNewFileName($dir,$name)
+    {
+        $i=1;
+        $file_name = $name;
+        while(file_exists($dir.$file_name))
+        {
+            $file_name =$i.'-'.$name;
+            $i++;
+        }
+        return $file_name;
+    }
+    public function getTextLang($text, $lang, $file = '')
+    {
+        $modulePath = rtrim(_PS_MODULE_DIR_, '/') . '/' . $this->name;
+        $fileTransDir = $modulePath . '/translations/' . $lang['iso_code'] . '.' . 'php';
+        if (!@file_exists($fileTransDir)) {
+            return $text;
+        }
+        $fileContent = Tools::file_get_contents($fileTransDir);
+        $strMd5 = md5($text);
+        $keyMd5 = '<{' . $this->name . '}prestashop>' . ($file ?: $this->name) . '_' . $strMd5;
+        preg_match('/(\$_MODULE\[\'' . preg_quote($keyMd5) . '\'\]\s*=\s*\')(.*)(\';)/', $fileContent, $matches);
+        if ($matches && isset($matches[2])) {
+            return $matches[2];
+        }
+        return $text;
+    }
+    public function getLanguageLink($idLang, Context $context = null)
+    {
+        if (!$context) {
+            $context = Context::getContext();
+        }
+        $controller = Dispatcher::getInstance()->getController();
+        if (!empty($context->controller->php_self)) {
+            $controller = $context->controller->php_self;
+        }
+        $params = Tools::getAllValues();
+        if(isset($params['controller']))
+            unset($params['controller']);
+        if(isset($params['id_lang']))
+            unset($params['id_lang']);
+        $id_post = (int)Tools::getValue('id_post');
+        if(!$id_post && ($post_url_alias = Tools::getValue('post_url_alias')) && Validate::isLinkRewrite($post_url_alias))
+        {
+            $id_post = (int)Db::getInstance()->getValue('SELECT ps.id_post FROM `'._DB_PREFIX_.'ybc_blog_post_lang` pl ,`'._DB_PREFIX_.'ybc_blog_post_shop` ps WHERE ps.id_post= pl.id_post AND ps.id_shop="'.(int)$context->shop->id.'" AND pl.id_lang="'.(int)$context->language->id.'" AND pl.url_alias ="'.pSQL($post_url_alias).'"');
+        }
+        if($id_post)
+            $params['id_post'] = $id_post;
+        $id_category = (int)trim(Tools::getValue('id_category'));
+        if(!$id_category && ($category_url_alias = Tools::getValue('category_url_alias')) && Validate::isLinkRewrite($category_url_alias))
+        {
+            $id_category = (int)Db::getInstance()->getValue('SELECT cs.id_category FROM `'._DB_PREFIX_.'ybc_blog_category_lang` cl,`'._DB_PREFIX_.'ybc_blog_category_shop` cs WHERE cs.id_category=cl.id_category AND cs.id_shop="'.(int)$context->shop->id.'" AND cl.url_alias ="'.pSQL($category_url_alias).'"');
+        }
+        if($id_category)
+            $params['id_category'] = $id_category;
+        return $this->getLink($controller,$params,$idLang);
+    }
+    public static function validateArray($array,$validate='isCleanHtml')
+    {
+        if($array)
+        {
+            if(!is_array($array))
+            return false;
+            if(method_exists('Validate',$validate))
+            {
+                if($array && is_array($array))
+                {
+                    $ok= true;
+                    foreach($array as $val)
+                    {
+                        if(!is_array($val))
+                        {
+                            if($val && !Validate::$validate($val))
+                            {
+                                $ok= false;
+                                break;
+                            }
+                        }
+                        else
+                            $ok = self::validateArray($val,$validate);
+                    }
+                    return $ok;
+                }
+            }
+        }
+        return true;
+    }
+    public function initEmailTemplate($default=true)
+    {
+         return Ybc_blog_email_template_class::getInstance()-> initEmailTemplate($default);
+    }
+    public function submitSaveEamilTemplate()
+    {
+        if(Tools::isSubmit('change_enabled'))
+        {
+            $status = (int)Tools::getValue('change_enabled') ?  1 : 0;
+            $field = Tools::getValue('field');    
+            if(($id_ybc_blog_email_template = (int)Tools::getValue('id_ybc_blog_email_template')) && ($email_template = new Ybc_blog_email_template_class($id_ybc_blog_email_template)) && Validate::isLoadedObject($email_template))
+            {
+                $email_template->active = $status;
+                if($email_template->update())
+                {
+                    if($status==1)
+                        $title= $this->l('Click to disabled');
+                    else
+                        $title=$this->l('Click to enabled');
+                    if(Tools::isSubmit('ajax'))
+                    {
+                        die(Tools::jsonEncode(array(
+                            'listId' => $id_ybc_blog_email_template,
+                            'enabled' => $status,
+                            'field' => $field,
+                            'message' => $this->displaySuccessMessage($this->l('The status has been successfully updated')) ,
+                            'messageType'=>'success',
+                            'title'=>$title,
+                            'href' => $this->context->link->getAdminLink('AdminModules', true).'&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name.'&control=email&change_enabled='.($status ? '0' : '1').'&field='.$field.'&id_ybc_blog_email_template='.$id_ybc_blog_email_template,
+                        )));
+                    }
+                }
+                else
+                {
+                    die(Tools::jsonEncode(array(
+                        'message' => $this->displaySuccessMessage($this->l('Update status failed')) ,
+                        'messageType'=>'error',
+                    )));
+                }
+            }
+            else
+            {
+                die(Tools::jsonEncode(array(
+                    'message' => $this->displaySuccessMessage($this->l('Email template is not valid')) ,
+                    'messageType'=>'error',
+                )));
+            }
+        }
+        else
+        {
+            $errors = array();
+            if(($id_ybc_blog_email_template = (int)Tools::getValue('id_ybc_blog_email_template')) && ($email_template = new Ybc_blog_email_template_class($id_ybc_blog_email_template)) && Validate::isLoadedObject($email_template))
+            {
+                $email_template->submitForm($errors);
+            }
+            else
+                $errors[] = $this->l("Email template is not valid");
+            if($errors)
+                $this->errorMessage = $this->displayError($errors);
+            else
+                Tools::redirectAdmin($this->baseAdminPath.'&control=email&conf=4');
+        }  
+    }
+    public function displayText($content=null,$tag,$class=null,$id=null,$href=null,$blank=false,$src = null,$name = null,$value = null,$type = null,$data_id_product = null,$rel = null,$attr_datas=null)
+    {
+        $this->smarty->assign(
+            array(
+                'content' =>$content,
+                'tag' => $tag,
+                'tag_class'=> $class,
+                'tag_id' => $id,
+                'href' => $href,
+                'blank' => $blank,
+                'src' => $src,
+                'attr_name' => $name,
+                'value' => $value,
+                'type' => $type,
+                'data_id_product' => $data_id_product,
+                'attr_datas' => $attr_datas,
+                'rel' => $rel,
+            )
+        );
+        return $this->display(__FILE__,'html.tpl');
     }
 }

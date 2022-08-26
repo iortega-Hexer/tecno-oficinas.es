@@ -2,7 +2,7 @@
 
 ## About
 
-Adds information about your registered customers (such as gender and age) to the Stats dashboard.
+Enrich your stats, add information about your registered customers and learn more about them!
 
 ## Reporting issues
 

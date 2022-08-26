@@ -2,8 +2,8 @@
 <module>
     <name>ps_dataprivacy</name>
     <displayName><![CDATA[Bloque de privacidad de datos del cliente]]></displayName>
-    <version><![CDATA[2.0.0]]></version>
-    <description><![CDATA[A&ntilde;ade un bloque que muestra un mensaje sobre la privacidad de los datos del cliente.]]></description>
+    <version><![CDATA[2.1.0]]></version>
+    <description><![CDATA[Da seguridad a tus clientes, muestra una peque&ntilde;a notificaci&oacute;n para que sepan que te preocupas por su privacidad.]]></description>
     <author><![CDATA[PrestaShop]]></author>
     <tab><![CDATA[]]></tab>
     <is_configurable>1</is_configurable>

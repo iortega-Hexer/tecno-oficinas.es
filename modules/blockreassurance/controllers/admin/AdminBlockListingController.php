@@ -25,8 +25,11 @@
  */
 class AdminBlockListingController extends ModuleAdminController
 {
+    /** @var blockreassurance */
+    public $module;
+
     /**
-     * @param $content
+     * @param string $content
      *
      * @throws PrestaShopException
      */
@@ -73,7 +76,7 @@ class AdminBlockListingController extends ModuleAdminController
             $result = true;
             // Remove Custom icon
             if (!empty($blockPSR['custom_icon'])) {
-                $filePath = str_replace(__PS_BASE_URI__, _PS_ROOT_DIR_ . DIRECTORY_SEPARATOR, $blockPSR['custom_icon']);
+                $filePath = _PS_ROOT_DIR_ . $blockPSR['custom_icon'];
                 if (file_exists($filePath)) {
                     $result = unlink($filePath);
                 }
@@ -155,26 +158,26 @@ class AdminBlockListingController extends ModuleAdminController
         $blockPsr = new ReassuranceActivity($id_block);
         if (!$id_block) {
             // Last position
-            $blockPsr->position = Db::getInstance()->getValue('SELECT MAX(position) AS max FROM ' . _DB_PREFIX_ . 'psreassurance');
+            $blockPsr->position = (int) Db::getInstance()->getValue('SELECT MAX(position) AS max FROM ' . _DB_PREFIX_ . 'psreassurance');
             $blockPsr->position = $blockPsr->position ? $blockPsr->position + 1 : 1;
             $blockPsr->status = false;
         }
         $blockPsr->handleBlockValues($psr_languages, $type_link, $id_cms);
         $blockPsr->icon = $picto;
-        if (empty($picto)) {
+        if (!empty($picto)) {
             $blockPsr->custom_icon = '';
         }
         $blockPsr->date_add = date('Y-m-d H:i:s');
-        $blockPsr->date_update = date('Y-m-d H:i:s');
+        $blockPsr->date_upd = date('Y-m-d H:i:s');
 
-        if (isset($_FILES) && !empty($_FILES)) {
+        if (!empty($_FILES)) {
             $customImage = $_FILES['file'];
             $fileTmpName = $customImage['tmp_name'];
             $filename = $customImage['name'];
 
             // validateUpload return false if no error (false -> OK)
             $authExtensions = ['gif', 'jpg', 'jpeg', 'jpe', 'png', 'svg'];
-            $authMimeType = ['image/gif', 'image/jpg', 'image/jpeg', 'image/pjpeg', 'image/png', 'image/x-png', 'image/svg'];
+            $authMimeType = ['image/gif', 'image/jpg', 'image/jpeg', 'image/pjpeg', 'image/png', 'image/x-png', 'image/svg', 'image/svg+xml'];
             if (version_compare(_PS_VERSION_, '1.7.7.0', '>=')) {
                 // PrestaShop 1.7.7.0+
                 $validUpload = ImageManager::validateUpload(
@@ -186,7 +189,7 @@ class AdminBlockListingController extends ModuleAdminController
             } else {
                 // PrestaShop < 1.7.7
                 $validUpload = false;
-                $mimeType = $this->getMimeType($customImage['tmp_name']);
+                $mimeType = ReassuranceActivity::getMimeType($customImage['tmp_name']);
                 if ($mimeType && (
                     !in_array($mimeType, $authMimeType)
                     || !ImageManager::isCorrectImageFileExt($customImage['name'], $authExtensions)
@@ -229,6 +232,7 @@ class AdminBlockListingController extends ModuleAdminController
         $result = false;
 
         if (!empty($blocks) && is_array($blocks)) {
+            $updateResult = true;
             foreach ($blocks as $key => $id_block) {
                 // Set the position of the Reassurance block
                 $position = $key + 1;
@@ -247,43 +251,5 @@ class AdminBlockListingController extends ModuleAdminController
 
         // Response
         $this->ajaxRenderJson($result ? 'success' : 'error');
-    }
-
-    /**
-     * @return string|bool
-     */
-    private function getMimeType(string $filename)
-    {
-        $mimeType = false;
-        // Try with GD
-        if (function_exists('getimagesize')) {
-            $imageInfo = @getimagesize($filename);
-            if ($imageInfo) {
-                $mimeType = $imageInfo['mime'];
-            }
-        }
-        // Try with FileInfo
-        if (!$mimeType && function_exists('finfo_open')) {
-            $const = defined('FILEINFO_MIME_TYPE') ? FILEINFO_MIME_TYPE : FILEINFO_MIME;
-            $finfo = finfo_open($const);
-            $mimeType = finfo_file($finfo, $filename);
-            finfo_close($finfo);
-        }
-        // Try with Mime
-        if (!$mimeType && function_exists('mime_content_type')) {
-            $mimeType = mime_content_type($filename);
-        }
-        // Try with exec command and file binary
-        if (!$mimeType && function_exists('exec')) {
-            $mimeType = trim(exec('file -b --mime-type ' . escapeshellarg($filename)));
-            if (!$mimeType) {
-                $mimeType = trim(exec('file --mime ' . escapeshellarg($filename)));
-            }
-            if (!$mimeType) {
-                $mimeType = trim(exec('file -bi ' . escapeshellarg($filename)));
-            }
-        }
-
-        return $mimeType;
     }
 }

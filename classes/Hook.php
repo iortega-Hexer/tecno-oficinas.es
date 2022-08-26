@@ -49,6 +49,11 @@ class HookCore extends ObjectModel
     public $position = false;
 
     /**
+     * @var bool
+     */
+    public $active = true;
+
+    /**
      * @var array List of executed hooks on this page
      */
     public static $executed_hooks = [];
@@ -66,6 +71,7 @@ class HookCore extends ObjectModel
             'title' => ['type' => self::TYPE_STRING, 'validate' => 'isGenericName'],
             'description' => ['type' => self::TYPE_HTML, 'validate' => 'isCleanHtml'],
             'position' => ['type' => self::TYPE_BOOL, 'validate' => 'isBool'],
+            'active' => ['type' => self::TYPE_BOOL, 'validate' => 'isBool'],
         ],
     ];
 
@@ -112,6 +118,7 @@ class HookCore extends ObjectModel
 
         // Controller
         'actionAjaxDieBefore' => ['from' => '1.6.1.1'],
+        'actionGetProductPropertiesAfter' => ['from' => '1.7.8.0'],
     ];
 
     const MODULE_LIST_BY_HOOK_KEY = 'hook_module_exec_list_';
@@ -119,8 +126,18 @@ class HookCore extends ObjectModel
     public function add($autodate = true, $null_values = false)
     {
         Cache::clean('hook_idsbyname');
+        Cache::clean('hook_idsbyname_withalias');
+        Cache::clean('active_hooks');
 
         return parent::add($autodate, $null_values);
+    }
+
+    public function clearCache($all = false)
+    {
+        Cache::clean('hook_idsbyname');
+        Cache::clean('hook_idsbyname_withalias');
+        Cache::clean('active_hooks');
+        parent::clearCache($all);
     }
 
     /**
@@ -481,7 +498,7 @@ class HookCore extends ObjectModel
         }
 
         $results = Db::getInstance(_PS_USE_SQL_SLAVE_)->executeS(
-            'SELECT h.id_hook, h.name as h_name, title, description, h.position, hm.position as hm_position, m.id_module, m.name, active
+            'SELECT h.id_hook, h.name as h_name, title, description, h.position, hm.position as hm_position, m.id_module, m.name, m.active
             FROM `' . _DB_PREFIX_ . 'hook_module` hm
             STRAIGHT_JOIN `' . _DB_PREFIX_ . 'hook` h ON (h.id_hook = hm.id_hook AND hm.id_shop = ' . (int) Context::getContext()->shop->id . ')
             STRAIGHT_JOIN `' . _DB_PREFIX_ . 'module` as m ON (m.id_module = hm.id_module)
@@ -766,8 +783,8 @@ class HookCore extends ObjectModel
         $id_shop = null,
         $chain = false
     ) {
-        if (defined('PS_INSTALLATION_IN_PROGRESS')) {
-            return null;
+        if (defined('PS_INSTALLATION_IN_PROGRESS') || !self::getHookStatusByName($hook_name)) {
+            return $array_return ? [] : null;
         }
 
         $hookRegistry = static::getHookRegistry();
@@ -992,6 +1009,11 @@ class HookCore extends ObjectModel
 
     public static function coreRenderWidget($module, $hook_name, $params)
     {
+        $context = Context::getContext();
+        if (!Module::isEnabled($module->name) || $context->isMobile() && !Module::isEnabledForMobileDevices($module->name)) {
+            return null;
+        }
+
         return $module->renderWidget($hook_name, $params);
     }
 
@@ -1239,5 +1261,34 @@ class HookCore extends ObjectModel
     private static function getMethodName(string $hookName): string
     {
         return 'hook' . ucfirst($hookName);
+    }
+
+    /**
+     * Return status from a given hook name.
+     *
+     * @param string $hook_name Hook name
+     *
+     * @return bool
+     */
+    public static function getHookStatusByName($hook_name): bool
+    {
+        $hook_names = [];
+        if (Cache::isStored('active_hooks')) {
+            $hook_names = Cache::retrieve('active_hooks');
+        } else {
+            $sql = new DbQuery();
+            $sql->select('lower(name) as name');
+            $sql->from('hook', 'h');
+            $sql->where('h.active = 1');
+            $active_hooks = Db::getInstance()->executeS($sql);
+            if (!empty($active_hooks)) {
+                $hook_names = array_column($active_hooks, 'name');
+                if (is_array($hook_names)) {
+                    Cache::store('active_hooks', $hook_names);
+                }
+            }
+        }
+
+        return in_array(strtolower($hook_name), $hook_names);
     }
 }

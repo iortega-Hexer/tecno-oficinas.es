@@ -12,7 +12,7 @@
  * @author    Cyril Nicodème <contact@prestaddons.net>
  * @copyright Copyright (C) April 2014 prestaddons.net <@email:contact@prestaddons.net>. All rights reserved.
  * @since     2014-04-15
- * @version   2.7.8
+ * @version   2.7.9
  * @license   Nicodème Cyril
  */
 

@@ -1,6 +1,6 @@
 <?php
 /**
- * 2007-2019 ETS-Soft
+ * 2007-2022 ETS-Soft
  *
  * NOTICE OF LICENSE
  *
@@ -15,7 +15,7 @@
  * needs please contact us for extra customization service at an affordable price
  *
  *  @author ETS-Soft <etssoft.jsc@gmail.com>
- *  @copyright  2007-2019 ETS-Soft
+ *  @copyright  2007-2022 ETS-Soft
  *  @license    Valid for 1 website (or project) for each purchase of license
  *  International Registered Trademark & Property of ETS-Soft
  */
@@ -28,10 +28,11 @@ class Ybc_blog_link_class extends LinkCore
 	{
 		if (!$context)
 			$context = Context::getContext();
-
 		if ((!$this->allow && in_array($id_shop, array($context->shop->id,  null))) || !Language::isMultiLanguageActivated($id_shop) || !(int)Configuration::get('PS_REWRITING_SETTINGS', null, null, $id_shop))
 			return '';
-
+        if(Module::isEnabled('ets_seo') && Language::isMultiLanguageActivated($id_shop) && (int)Configuration::get('ETS_SEO_ENABLE_REMOVE_LANG_CODE_IN_URL') && $id_lang == (int)Configuration::get('PS_LANG_DEFAULT')){
+            return '';
+        }
 		if (!$id_lang)
 			$id_lang = $context->language->id;
 

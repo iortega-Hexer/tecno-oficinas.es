@@ -1,6 +1,6 @@
 <?php
 /**
- * 2007-2019 ETS-Soft
+ * 2007-2022 ETS-Soft
  *
  * NOTICE OF LICENSE
  *
@@ -15,7 +15,7 @@
  * needs please contact us for extra customization service at an affordable price
  *
  *  @author ETS-Soft <etssoft.jsc@gmail.com>
- *  @copyright  2007-2019 ETS-Soft
+ *  @copyright  2007-2022 ETS-Soft
  *  @license    Valid for 1 website (or project) for each purchase of license
  *  International Registered Trademark & Property of ETS-Soft
  */
@@ -42,6 +42,21 @@ class Ybc_blogManagementcommentsModuleFrontController extends ModuleFrontControl
 		parent::init();
         //Sorry, you do not have permission');
 	}
+    public function getAlternativeLangsUrl()
+    {
+        $alternativeLangs = array();
+        $languages = Language::getLanguages(true, $this->context->shop->id);
+
+        if ($languages < 2) {
+            // No need to display alternative lang if there is only one enabled
+            return $alternativeLangs;
+        }
+
+        foreach ($languages as $lang) {
+            $alternativeLangs[$lang['language_code']] = $this->module->getLanguageLink($lang['id_lang']);
+        }
+        return $alternativeLangs;
+    }
 	public function initContent()
 	{
 	    parent::initContent();
@@ -51,15 +66,19 @@ class Ybc_blogManagementcommentsModuleFrontController extends ModuleFrontControl
                 
             Tools::redirect('index.php?controller=authentication');
         }
+        $tabmanagament = Tools::getValue('tabmanagament');
+        if($tabmanagament && !Validate::isCleanHtml($tabmanagament))
+            $tabmanagament ='comment';
         $form_html_post ='';
         if(Tools::isSubmit('submitComment') || Tools::isSubmit('submitCommentStay'))
             $this->_saveComment();
-        if(Tools::isSubmit('commentapproved') && $id_comment=Tools::getValue('id_comment'))
+        if(Tools::isSubmit('commentapproved') && ($id_comment=(int)Tools::getValue('id_comment')))
         {
                if($this->module->checkPermisionComment())
                {
-                    Db::getInstance()->execute('UPDATE '._DB_PREFIX_.'ybc_blog_comment SET approved="'.(int)Tools::getValue('commentapproved').'" WHERE id_comment='.(int)$id_comment);
-                    Tools::redirectLink($this->context->link->getModuleLink($this->module->name,'managementcomments',array('tabmanagament'=>Tools::getValue('tabmanagament'),'updateComment'=>1)));
+                    $commentapproved = (int)Tools::getValue('commentapproved');
+                    Db::getInstance()->execute('UPDATE `'._DB_PREFIX_.'ybc_blog_comment` SET approved="'.(int)$commentapproved.'" WHERE id_comment='.(int)$id_comment);
+                    Tools::redirectLink($this->context->link->getModuleLink($this->module->name,'managementcomments',array('tabmanagament'=>$tabmanagament,'updateComment'=>1)));
                }
                else
                {
@@ -82,7 +101,7 @@ class Ybc_blogManagementcommentsModuleFrontController extends ModuleFrontControl
         {
             if($this->module->checkPermisionComment('delete'))
             {
-                Db::getInstance()->execute('DELETE FROM '._DB_PREFIX_.'ybc_blog_comment WHERE id_comment="'.(int)$id_comment.'"');
+                Db::getInstance()->execute('DELETE FROM `'._DB_PREFIX_.'ybc_blog_comment` WHERE id_comment="'.(int)$id_comment.'"');
                 if(Tools::isSubmit('ajax'))
                 {
                     die(
@@ -94,7 +113,7 @@ class Ybc_blogManagementcommentsModuleFrontController extends ModuleFrontControl
                     );
                 }
                 else
-                    Tools::redirectLink($this->context->link->getModuleLink($this->module->name,'managementcomments',array('tabmanagament'=>Tools::getValue('tabmanagament'),'deletedcomment'=>1)));
+                    Tools::redirectLink($this->context->link->getModuleLink($this->module->name,'managementcomments',array('tabmanagament'=>$tabmanagament,'deletedcomment'=>1)));
             }
             else
             {
@@ -135,37 +154,55 @@ class Ybc_blogManagementcommentsModuleFrontController extends ModuleFrontControl
     {
         if($this->module->checkPermisionComment())
         {
-            $ybc_comment= new Ybc_blog_comment_class(Tools::getValue('id_comment'));
-            if(!Tools::getValue('subject'))
+            $id_comment = (int)Tools::getValue('id_comment');
+            $ybc_comment= new Ybc_blog_comment_class($id_comment);
+            if(!($subject = Tools::getValue('subject')))
                 $this->_errros[]= $this->module->l('Subject is required','managementcomments');
+            elseif(!Validate::isCleanHtml($subject))
+                $this->_errros[]= $this->module->l('Subject is not valid','managementcomments');
             else
-                $ybc_comment->subject=Tools::getValue('subject');
-            if(!Tools::getValue('comment'))
+                $ybc_comment->subject = $subject;
+            if(!($comment = Tools::getValue('comment')))
                 $this->_errros[] = $this->module->l('Comment is requied','managementcomments');
-            elseif(Tools::strlen(Tools::getValue('comment'))<20)
-                $this->_errros[]=$this->module->l('Comment need to be at least 20 characters','managementcomments');
+            elseif(Tools::strlen($comment)<20)
+                $this->_errros[]=$this->module->l('Comment needs to be at least 20 characters','managementcomments');
+            elseif(!Validate::isCleanHtml($comment,true))
+                $this->_errros[] = $this->module->l('Comment is not valid','managementcomments');
             else
                 $ybc_comment->comment = Tools::getValue('comment');
             if(Tools::isSubmit('reply'))
             {
-                $ybc_comment->reply = Tools::getValue('reply');
-                if(Tools::getValue('reply'))
-                {
-                    $ybc_comment->replied_by= $this->context->customer->id;
-                    $ybc_comment->customer_reply=1;
-                }
+                $reply = Tools::getValue('reply');
+                if($reply && !Validate::isCleanHtml($reply,true))
+                    $this->_errros[] = $this->module->l('Reply is not valid','managementcomments');
                 else
-                    $ybc_comment->customer_reply=0;
+                {
+                    $ybc_comment->reply = $reply;
+                    if($reply)
+                    {
+                        $ybc_comment->replied_by = $this->context->customer->id;
+                        $ybc_comment->customer_reply=1;
+                    }
+                    else
+                        $ybc_comment->customer_reply=0;
+                }
+                
             }
             if(Tools::isSubmit('approved'))
-                $ybc_comment->approved =Tools::getValue('approved');
+            {
+                $approved = (int)Tools::getValue('approved');
+                $ybc_comment->approved = $approved;
+            }
+            $tabmanagament = Tools::getValue('tabmanagament');
+            if($tabmanagament && !Validate::isCleanHtml($tabmanagament))
+                $tabmanagament ='post';
             if(!$this->_errros)
             {
                 $ybc_comment->update();
                 if(Tools::isSubmit('submitComment'))
-                    Tools::redirectLink($this->context->link->getModuleLink($this->module->name,'managementcomments',array('tabmanagament'=>Tools::getValue('tabmanagament'),'updateComment'=>1)));
+                    Tools::redirectLink($this->context->link->getModuleLink($this->module->name,'managementcomments',array('tabmanagament'=>$tabmanagament,'updateComment'=>1)));
                 else
-                    $this->_sussecfull = $this->l('Comment updated');
+                    $this->_sussecfull = $this->module->l('Comment updated','managementcomments');
             }
                 
         }

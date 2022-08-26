@@ -1,0 +1,59 @@
+/*GENERAL STYLES **********************************************/
+.clearfix:before, .clearfix:after {
+	content: " ";
+	display: table;
+}
+.clearfix:after {
+	clear: both;
+}
+#welcome_page .read_more {
+	cursor:pointer;
+	font-style: italic;
+}
+#welcome_page .under_line{
+	text-decoration: underline;
+}
+#welcome_page .module_name{
+	color: #2D6FCD;
+	font-weight: bold;
+}
+#welcome_page .title_block{
+	font-weight: bold;
+	font-size:13px;
+}
+#welcome_page .count_me_in{
+	color: #00aff0;
+}
+#welcome_page .button_link{
+	color: #555;
+}
+#welcome_page ul{
+	padding-left: 20px;
+}
+#welcome_page ul li{
+	line-height: 170%;
+	list-style-position: inside;
+	list-style-type: none;
+	font-size: 13px;
+}
+#welcome_page .description{
+	font-style: italic;
+}
+#welcome_page .sub_title{
+	font-size: 13px;
+}
+#welcome_page .sub_title span.vote_star a{
+	color: #fcdf17;
+}
+#welcome_page p.sub_title, #welcome_page p.description{
+	margin:2px 0;
+}
+.prestashop_15 p.title_block{
+	margin:12px 0 0;
+}
+#welcome_page a{
+	color: #2d6fcd;
+}
+.read_more{
+    cursor: pointer;
+}

@@ -1,0 +1,341 @@
+
+/* New code css for redesign layout*/
+.hsma_quantity input{
+    margin-right: 5px;
+    width: 35px !important;
+    padding: 10px 0;
+    height: 30px !important;
+    margin-left: 5px !important;
+}
+.hsma_accessory_group .title
+{
+    background-color: #1abc9c;
+}
+.hsma_product_setting, .hsma_accessory_group{
+    -webkit-border-radius: 5px;
+    -moz-border-radius: 5px;
+    border-radius: 5px;
+    margin-bottom: 15px;
+}
+.hsma_product_setting{
+    border: 1px solid #F58339;
+}
+.hsma_product_setting .title{
+    background-color: #F58339;
+}
+
+#hsma-accessories .title{
+    color: #FFF;
+    -webkit-border-radius: 5px 5px 0 0;
+    -moz-border-radius: 5px 5px 0 0;
+    border-radius: 5px 5px 0 0;
+    padding: 10px;
+    margin-top: -1px;
+    margin-bottom: 10px;
+}
+#hsma-accessories .title .icon {
+    padding-right: 5px;
+    cursor: pointer;
+}
+.autocomplete_group
+{
+    border-color: #F58339 !important;
+    height: 35px !important;
+}
+.hsma_accessory_group{
+    border: 1px solid #1abc9c;
+}
+.content_group{
+    margin: 10px;
+}
+
+.hsma_quantity a {
+    background: #ddd none repeat scroll 0 0;
+    display: block;
+    height: 14px;
+    line-height: 12px;
+    position: relative;
+    text-align: center;
+    top: 0;
+    width: 15px;
+    margin-bottom: 2px;
+    -webkit-border-radius: 2px;
+    -moz-border-radius: 2px;
+    border-radius: 2px;
+    padding-top: 1px;
+}
+.hsma_quantity a:hover{
+    text-decoration: none;
+}
+td.hsma_quantity span{
+    float: left;
+}
+#hsma-accessories .table
+{
+    border-collapse:collapse;
+    margin-top: 10px;
+}
+#hsma-accessories .table thead > tr > th{
+    /*border-top: 1px solid #CCC;*/
+}
+#hsma-accessories .table tbody > tr > td
+{
+    border-bottom: none;
+    border-top: 1px solid #a0d0eb;
+}
+#hsma-accessories h4{
+    cursor: pointer;
+}
+.icon_hsma_accessories{
+    background: url("../img/icon_accessory.png") no-repeat scroll 0 0px;
+    padding: 0 10px !important;
+}
+.buy_together_required{
+    width: 70px !important;
+}
+#hsma-accessories .expand{
+    display: block;
+}
+#hsma-accessories .collapse{
+    display: none;
+}
+#hsma-accessories .show{
+    display: block !important;
+}
+#hsma-accessories .hide{
+    display: none !important;
+}
+#hsma-accessories .table .empty
+{
+    line-height: 1.42;
+    padding: 10px;
+}
+.save_name, .img_edit_name{
+    float: right;
+    /*margin-top: -1px;*/
+    cursor: pointer;
+    margin-bottom: 10px;
+    opacity: 0.5;
+    width: 20px;
+}
+
+.content_group .col-lg-8, .content_group .col-lg-9, .content_group .col-lg-2{
+    padding-left: 0 !important;
+    float: left;
+    /*margin-bottom: 10px !important;*/
+}
+.content_group .col-lg-2{
+    padding-right: 2px !important;
+    text-align: center;
+}
+
+.content_group .dropdown_combination{
+    width: 98% !important;
+}
+.content_group .form-group
+{
+    margin-left: 0px !important;
+}
+
+#hsma-accessories .table .image img{
+    width: 60px;
+}
+
+#hsma-accessories .delete img{
+    width: 20px;
+}
+
+#hsma-accessories .discount_value{
+    margin-right: 5px;
+    float:left;
+}
+
+#hsma-accessories .discount_type{    
+    float:right;
+    width: 63%;
+}
+
+#hsma-accessories .positions{
+    width: 30px;
+}
+#hsma-accessories .position-heading{
+    width: 30px;
+    padding: 8px 0px 8px 0px;
+}
+
+#hsma-accessories .position-value{
+    width: 30px;
+}
+#hsma-accessories .error{
+    border: 1px solid red;
+}
+#hsma-accessories .btn-default{
+    margin-bottom: 5px;
+}
+
+#hsma-accessories .hsma_discount{
+    max-width: 90px;
+}
+#hsma-accessories .discount_block{
+    padding-top: 15px;
+}
+
+#hsma-accessories .hsma_discount .help-block{
+    font-size: 11px !important;
+}
+
+/* For 1259px or less */  
+@media screen and (max-width: 1259px){  
+
+    #hsma-accessories .discount_value{
+        width: 100%;
+        margin-bottom: 5px;
+    }
+
+    #hsma-accessories .discount_type{            
+        width: 100%;
+    } 
+}
+
+/** Css for version 1.7 */
+.hsma_accessories_17 .form-group {
+    margin: 5px -5px;
+}
+.hsma_accessories_17 .form-group::before, .hsma_accessories_17 .form-group::after {
+    content: " ";
+    display: table;
+}
+.hsma_accessories_17 .form-group::after {
+    clear: both;
+}
+.hsma_accessories_17 .form-control, .hsma_accessories_17 input[type="text"], .hsma_accessories_17 input[type="search"], .hsma_accessories_17 input[type="password"], .hsma_accessories_17 textarea, .hsma_accessories_17 select {
+    background-color: #f5f8f9;
+    background-image: none;
+    border: 1px solid #c7d6db;
+    border-radius: 3px;
+    color: #555;
+    display: block;
+    font-size: 12px;
+    height: 31px;
+    line-height: 1.42857;
+    padding: 6px 8px;
+    transition: border-color 0.15s ease-in-out 0s, box-shadow 0.15s ease-in-out 0s;
+    width: 100%;
+}
+
+.hsma_accessories_17 label.control-label span.label-tooltip {
+    -moz-border-bottom-colors: none;
+    -moz-border-left-colors: none;
+    -moz-border-right-colors: none;
+    -moz-border-top-colors: none;
+    background-color: #edf7fb;
+    border-color: currentcolor currentcolor #d8edf7;
+    border-image: none;
+    border-radius: 3px;
+    border-style: none none solid;
+    border-width: medium medium 1px;
+    color: #3586ae;
+    font-size: 13px;
+    padding: 0 5px;
+    text-decoration: none;
+}
+
+.hsma_accessories_17 .form-group .control-label {
+    text-align: right;
+    margin-right: 5px;
+    float: left;
+}
+.hsma_accessories_17 .col-lg-3 {
+    float: left;
+}
+#module_hsmultiaccessoriespro {
+    background: rgba(0, 0, 0, 0) url("../img/icon_accessory.png") no-repeat scroll 0 0;
+}
+#module_hsmultiaccessoriespro .name {
+    margin-left: 20px;
+}
+.hsma_accessories_17 {
+    border: none;
+}
+.accessory_group_product tbody tr:nth-of-type(2n+1) {
+    background-color: #dff5f9;
+}
+
+.hsma_accessories_17 table.tableDnD td {
+    transition-duration: 0.2s;
+    transition-property: all;
+    transition-timing-function: ease-out;
+}
+
+
+.ui-helper-hidden-accessible{
+    display: none !important;
+}
+.ui-autocomplete {
+    max-width: 100%;
+}
+
+
+.hsma_accessories_17 .table.tableDnD td {
+    transition-duration: 0.2s;
+    transition-property: all;
+    transition-timing-function: ease-out;
+}
+.hsma_accessories_17 .table td.dragHandle .dragGroup {
+    border-radius: 5px;
+    cursor: move;
+    font-size: 14px;
+    padding: 4px 4px 4px 20px;
+    position: relative;
+    text-align: center;
+    width: 80px;
+    background: rgba(0, 0, 0, 0) url("../img/icon_cursor_move.png") no-repeat scroll 6px 8px;
+}
+.hsma_accessories_17 .table td.dragHandle .dragGroup:hover {
+    background-color: #00aff0;
+    color: #fff;
+}
+.hsma_accessories_17 .table td.dragHandle .dragGroup::before {
+    display: block;
+    height: 16px;
+    left: 6px;
+    position: absolute;
+    top: 8px;
+    width: 16px;
+}
+.hsma_accessories_17 .table td.dragHandle .dragGroup .positions {
+    background-color: #eee;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2) inset;
+    color: #aaa;
+    display: inline-block;
+    padding: 0 5px;
+    text-shadow: 1px 1px #fff;
+    width: 43px;
+}
+.hsma_accessories_17 .table tr.myDragClass {
+    background-color: #eee;
+    padding: 10px;
+}
+.hsma_accessories_17 .table tr.myDragClass td {
+    background-color: #00aff0;
+    color: #fff;
+    transform: translate(5px, 10px);
+}
+.col-md-offset-1{
+    margin-left: 0px !important;
+}
+.col-md-10{
+    width: 100% !important;
+}
+
+#module_form .col-lg-3{
+    width: 40%;
+}
+#module_form .col-lg-9 {
+    width: 60%;
+}
+.jconfirm {
+    font-size: .88rem;
+}

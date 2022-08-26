@@ -1,6 +1,6 @@
 <?php
 /**
- * 2007-2019 ETS-Soft
+ * 2007-2022 ETS-Soft
  *
  * NOTICE OF LICENSE
  *
@@ -15,7 +15,7 @@
  * needs please contact us for extra customization service at an affordable price
  *
  *  @author ETS-Soft <etssoft.jsc@gmail.com>
- *  @copyright  2007-2019 ETS-Soft
+ *  @copyright  2007-2022 ETS-Soft
  *  @license    Valid for 1 website (or project) for each purchase of license
  *  International Registered Trademark & Property of ETS-Soft
  */
@@ -42,6 +42,21 @@ class Ybc_blogManagementMyinfoModuleFrontController extends ModuleFrontControlle
 		parent::init();
         //Sorry, you do not have permission');
 	}
+    public function getAlternativeLangsUrl()
+    {
+        $alternativeLangs = array();
+        $languages = Language::getLanguages(true, $this->context->shop->id);
+
+        if ($languages < 2) {
+            // No need to display alternative lang if there is only one enabled
+            return $alternativeLangs;
+        }
+
+        foreach ($languages as $lang) {
+            $alternativeLangs[$lang['language_code']] = $this->module->getLanguageLink($lang['id_lang']);
+        }
+        return $alternativeLangs;
+    }
 	public function initContent()
 	{
 	    parent::initContent();
@@ -56,7 +71,7 @@ class Ybc_blogManagementMyinfoModuleFrontController extends ModuleFrontControlle
         {
             $this->_sussecfull = $this->module->l('Information updated','managementmyinfo');
         }
-        if(Tools::isSubmit('deletedimage'))
+        if(Tools::isSubmit('delemployeeimage'))
             $this->_sussecfull = $this->module->l('Image deleted','managementmyinfo');
         $this->context->smarty->assign(
             array(
@@ -76,9 +91,9 @@ class Ybc_blogManagementMyinfoModuleFrontController extends ModuleFrontControlle
     {
         if(Tools::isSubmit('delemployeeimage'))
         {
-            $id_employee_post= (int)Db::getInstance()->getValue('SELECT id_employee_post FROM '._DB_PREFIX_.'ybc_blog_employee WHERE id_employee='.(int)$this->context->customer->id.' AND is_customer="1"');
+            $id_employee_post= (int)Db::getInstance()->getValue('SELECT id_employee_post FROM `'._DB_PREFIX_.'ybc_blog_employee` WHERE id_employee='.(int)$this->context->customer->id.' AND is_customer="1"');
             $employeePost = new Ybc_blog_post_employee_class($id_employee_post);
-            @unlink(dirname(__FILE__).'/../views/img/avata/'.$employeePost->avata);
+            @unlink(_PS_YBC_BLOG_IMG_DIR_.'avata/'.$employeePost->avata);
             $employeePost->avata='';
             $employeePost->update();     
             Tools::redirectLink($this->context->link->getModuleLink($this->module->name,'managementmyinfo',array('deletedimage'=>1)));      
@@ -87,7 +102,7 @@ class Ybc_blogManagementMyinfoModuleFrontController extends ModuleFrontControlle
         }
         if(Tools::isSubmit('submitAuthorManagement'))
         {
-            $id_employee_post= (int)Db::getInstance()->getValue('SELECT id_employee_post FROM '._DB_PREFIX_.'ybc_blog_employee WHERE id_employee='.(int)$this->context->customer->id);
+            $id_employee_post= (int)Db::getInstance()->getValue('SELECT id_employee_post FROM `'._DB_PREFIX_.'ybc_blog_employee` WHERE id_employee='.(int)$this->context->customer->id);
             if($id_employee_post)
             {
                 $employeePost= new Ybc_blog_post_employee_class($id_employee_post);
@@ -99,24 +114,29 @@ class Ybc_blogManagementMyinfoModuleFrontController extends ModuleFrontControlle
             }
             $employeePost->id_employee=$this->context->customer->id;
             $employeePost->is_customer=1;
+            $author_description = Tools::getValue('author_description');
+            if($author_description && !Validate::isCleanHtml($author_description,true))
+                $this->_errros[] = $this->l('Introduction info is not valid');
             if($id_employee_post)
             {
-                $employeePost->description[$this->context->language->id]= Tools::getValue('author_description');
+                $employeePost->description[$this->context->language->id] = $author_description;
             }
             else
             {
-               $languages= Language::getLanguages(false);
+                $languages= Language::getLanguages(false);
                 foreach($languages as $language)
                 {
-                    $employeePost->description[$language['id_lang']]= Tools::getValue('author_description');
+                    $employeePost->description[$language['id_lang']] = $author_description;
                 } 
             }
             $oldImage = false;
+            $newImage = false;
             if(isset($_FILES['author_avata']['tmp_name']) && isset($_FILES['author_avata']['name']) && $_FILES['author_avata']['name'])
             {
-                if(file_exists(dirname(__FILE__).'/../../views/img/avata/'.$_FILES['author_avata']['name']))
+                $_FILES['author_avata']['name'] = str_replace(' ','-',$_FILES['author_avata']['name']);
+                if(file_exists(_PS_YBC_BLOG_IMG_DIR_.'avata/'.$_FILES['author_avata']['name']))
                 {
-                    $file_name = Tools::substr(sha1(microtime()),0,10).'-'.$_FILES['author_avata']['name'];
+                    $file_name = $this->module->createNewFileName(_PS_YBC_BLOG_IMG_DIR_.'avata/',$_FILES['author_avata']['name']);
                 } 
                 else
                    $file_name = $_FILES['author_avata']['name'];                
@@ -130,14 +150,15 @@ class Ybc_blogManagementMyinfoModuleFrontController extends ModuleFrontControlle
     				if ($error = ImageManager::validateUpload($_FILES['author_avata']))
     					$this->_errros[] = $error;
     				elseif (!$temp_name || !move_uploaded_file($_FILES['author_avata']['tmp_name'], $temp_name))
-    					$this->_errros[] = $this->l('Can not upload the file');
-    				elseif (!ImageManager::resize($temp_name, dirname(__FILE__).'/../../views/img/avata/'.$file_name, Configuration::get('YBC_BLOG_IMAGE_AVATA_WIDTH'), Configuration::get('YBC_BLOG_IMAGE_AVATA_HEIGHT'), $type))
+    					$this->_errros[] = $this->module->l('Cannot upload the file','managementmyinfo');
+    				elseif (!ImageManager::resize($temp_name, _PS_YBC_BLOG_IMG_DIR_.'avata/'.$file_name, Configuration::get('YBC_BLOG_IMAGE_AVATA_WIDTH'), Configuration::get('YBC_BLOG_IMAGE_AVATA_HEIGHT'), $type))
     					$this->_errros[] = $this->module->displayError($this->module->l('An error occurred during the image upload process.','managementmyinfo'));
     				if (isset($temp_name))
     					@unlink($temp_name);
                     if($employeePost->avata)
-                        $oldImage = dirname(__FILE__).'/../../views/img/avata/'.$employeePost->avata;
-                    $employeePost->avata = $file_name;			
+                        $oldImage = _PS_YBC_BLOG_IMG_DIR_.'avata/'.$employeePost->avata;
+                    $employeePost->avata = $file_name;	
+                    $newImage = _PS_YBC_BLOG_IMG_DIR_.'avata/'.$employeePost->avata;		
     			}
                 elseif(isset($_FILES['author_avata']) &&				
     				!empty($_FILES['author_avata']['tmp_name']) &&
@@ -152,19 +173,35 @@ class Ybc_blogManagementMyinfoModuleFrontController extends ModuleFrontControlle
                 if($id_employee_post)
                 {
                     if(!$employeePost->update())
+                    {
+                        if ($newImage)
+                            @unlink($newImage);
                         $this->_errros[] = $this->module->displayError($this->module->l('The author info could not be updated.','managementmyinfo'));
+                    }
                     else
+                    {
+                        if (!count($this->_errros) && $oldImage)
+                            @unlink($oldImage);
                         Tools::redirectLink($this->context->link->getModuleLink($this->module->name,'managementmyinfo',array('updated'=>1)));
+                    }
                 }
                 else
                     if(!$employeePost->add())
-                        $this->_errros[] = $this->module->displayError($this->l('The author info could not be updated.'));
+                    {
+                        if ($newImage)
+                            @unlink($newImage);
+                        $this->_errros[] = $this->module->displayError($this->module->l('The author info could not be updated.','managementmyinfo'));
+                    } 
                     else
+                    {
+                        if (!count($this->_errros) && $oldImage)
+                            @unlink($oldImage);
                         Tools::redirectLink($this->context->link->getModuleLink($this->module->name,'managementmyinfo',array('updated'=>1)));
-                        
+                    }  
             }
-            if (!count($this->_errros) && $oldImage)
-                @unlink($oldImage);
+            elseif($newImage)
+                @unlink($newImage);
+            
         }
     }
     public function getBreadCrumb()

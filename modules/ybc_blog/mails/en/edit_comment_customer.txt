@@ -1,5 +1,5 @@
 Hi {customer},
-Your comment have been updated
+Your comment has been updated
 Subject: {subject}
 Comment: {comment}
 Rating: {rating}

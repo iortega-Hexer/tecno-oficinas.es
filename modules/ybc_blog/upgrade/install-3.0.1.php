@@ -1,6 +1,6 @@
 <?php
 /**
- * 2007-2019 ETS-Soft
+ * 2007-2022 ETS-Soft
  *
  * NOTICE OF LICENSE
  *
@@ -15,7 +15,7 @@
  * needs please contact us for extra customization service at an affordable price
  *
  *  @author ETS-Soft <etssoft.jsc@gmail.com>
- *  @copyright  2007-2019 ETS-Soft
+ *  @copyright  2007-2022 ETS-Soft
  *  @license    Valid for 1 website (or project) for each purchase of license
  *  International Registered Trademark & Property of ETS-Soft
  */
@@ -85,12 +85,12 @@ function upgrade_module_3_0_1($object)
         Db::getInstance()->execute($query);
         if($object->checkCreatedColumn('ybc_blog_post','url_alias'))
         {
-            $posts = Db::getInstance()->executeS('SELECT url_alias,id_post FROM '._DB_PREFIX_.'ybc_blog_post');
+            $posts = Db::getInstance()->executeS('SELECT url_alias,id_post FROM `'._DB_PREFIX_.'ybc_blog_post`');
             if($posts)
             {
                 foreach($posts as $post)
                 {
-                     Db::getInstance()->execute('UPDATE '._DB_PREFIX_.'ybc_blog_post_lang SET url_alias="'.pSQL($post['url_alias']).'" WHERE id_post='.(int)$post['id_post']) ; 
+                     Db::getInstance()->execute('UPDATE `'._DB_PREFIX_.'ybc_blog_post_lang` SET url_alias="'.pSQL($post['url_alias']).'" WHERE id_post='.(int)$post['id_post']) ;
                 }   
             } 
             Db::getInstance()->execute('ALTER TABLE `'._DB_PREFIX_.'ybc_blog_post` DROP `url_alias`');   
@@ -102,15 +102,15 @@ function upgrade_module_3_0_1($object)
         Db::getInstance()->execute($query);
         if($object->checkCreatedColumn('ybc_blog_category','url_alias'))
         {
-            $categories = Db::getInstance()->executeS('SELECT url_alias,id_category FROM '._DB_PREFIX_.'ybc_blog_category');
+            $categories = Db::getInstance()->executeS('SELECT url_alias,id_category FROM `'._DB_PREFIX_.'ybc_blog_category`');
             if($categories)
             {
                 foreach($categories as $category)
                 {
-                    Db::getInstance()->execute('UPDATE '._DB_PREFIX_.'ybc_blog_category_lang SET url_alias="'.pSQL($category['url_alias']).'" WHERE id_category='.(int)$category['id_category']);
+                    Db::getInstance()->execute('UPDATE `'._DB_PREFIX_.'ybc_blog_category_lang` SET url_alias="'.pSQL($category['url_alias']).'" WHERE id_category='.(int)$category['id_category']);
                 }
             }
-            Db::getInstance()->execute('ALTER TABLE '._DB_PREFIX_.'ybc_blog_category DROP `url_alias`');
+            Db::getInstance()->execute('ALTER TABLE `'._DB_PREFIX_.'ybc_blog_category` DROP `url_alias`');
         }
     }
     if(!$object->checkCreatedColumn('ybc_blog_slide_lang','url'))
@@ -119,15 +119,15 @@ function upgrade_module_3_0_1($object)
         Db::getInstance()->execute($query);
         if($object->checkCreatedColumn('ybc_blog_slide','url'))
         {
-            $slides= Db::getInstance()->executeS('SELECT id_slide,url FROM '._DB_PREFIX_.'ybc_blog_slide');
+            $slides= Db::getInstance()->executeS('SELECT id_slide,url FROM `'._DB_PREFIX_.'ybc_blog_slide`');
             if($slides)
             {
                 foreach($slides as $slide)
                 {
-                    Db::getInstance()->execute('UPDATE '._DB_PREFIX_.'ybc_blog_slide_lang SET url="'.pSQL($slide['url']).'" WHERE id_slide='.(int)$slide['id_slide']);
+                    Db::getInstance()->execute('UPDATE `'._DB_PREFIX_.'ybc_blog_slide_lang` SET url="'.pSQL($slide['url']).'" WHERE id_slide='.(int)$slide['id_slide']);
                 }
             }
-            Db::getInstance()->execute('ALTER TABLE '._DB_PREFIX_.'ybc_blog_slide DROP `url`');
+            Db::getInstance()->execute('ALTER TABLE `'._DB_PREFIX_.'ybc_blog_slide` DROP `url`');
         }
     }
     Configuration::updateValue('YBC_BLOG_HOME_PER_ROW',4);
@@ -137,14 +137,14 @@ function upgrade_module_3_0_1($object)
     `browser` varchar(70) DEFAULT NULL,
     `id_customer` INT (11) DEFAULT NULL,
     `datetime_added` datetime NOT NULL
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8';
+    ) ENGINE="._MYSQL_ENGINE_." DEFAULT CHARSET=UTF8';
     $sqls[] = 'CREATE TABLE IF NOT EXISTS `'._DB_PREFIX_.'ybc_blog_log_like`(
     `ip` varchar(50) DEFAULT NULL,
     `id_post` INT(11) NOT NULL,
     `browser` varchar(70) DEFAULT NULL,
     `id_customer` INT (11) DEFAULT NULL,
     `datetime_added` datetime NOT NULL
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8';
+    ) ENGINE="._MYSQL_ENGINE_." DEFAULT CHARSET=UTF8';
     $sqls[] = "CREATE TABLE IF NOT EXISTS `"._DB_PREFIX_."ybc_blog_reply` (
       `id_reply` int(10) unsigned NOT NULL AUTO_INCREMENT,
       `id_comment` int(11) DEFAULT NULL,
@@ -157,11 +157,11 @@ function upgrade_module_3_0_1($object)
       `datetime_added` datetime NOT NULL,
       `datetime_updated` datetime NOT NULL,
       PRIMARY KEY (`id_reply`)
-    )";
+    ) ENGINE="._MYSQL_ENGINE_." DEFAULT CHARSET=UTF8";
     $sqls[] ="CREATE TABLE IF NOT EXISTS `"._DB_PREFIX_."ybc_blog_post_related_categories` ( 
         `id_post` INT(11) NOT NULL , 
         `id_category` INT(11) NOT NULL )
-    ENGINE = InnoDB";
+    ENGINE="._MYSQL_ENGINE_." DEFAULT CHARSET=UTF8";
     $sqls[]="CREATE TABLE IF NOT EXISTS `"._DB_PREFIX_."ybc_blog_polls` ( 
     `id_polls` INT(11) NOT NULL AUTO_INCREMENT ,
     `id_user` INT(11) NOT NULL , 
@@ -171,7 +171,7 @@ function upgrade_module_3_0_1($object)
     `polls` INT(1) NOT NULL , 
     `feedback` TEXT CHARACTER SET utf8 NOT NULL, 
     `dateadd` DATETIME NOT NULL ,
-     PRIMARY KEY (`id_polls`)) ENGINE = InnoDB";
+     PRIMARY KEY (`id_polls`)) ENGINE="._MYSQL_ENGINE_." DEFAULT CHARSET=UTF8";
     foreach($sqls as $sql)
     {
         Db::getInstance()->execute($sql);

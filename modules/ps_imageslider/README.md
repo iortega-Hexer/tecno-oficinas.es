@@ -2,7 +2,7 @@
 
 ## About
 
-Adds an image slider to your PrestaShop homepage.
+Add sliding images to your homepage to welcome your visitors in a visual and friendly way.
 
 ## Multistore compatibility
 

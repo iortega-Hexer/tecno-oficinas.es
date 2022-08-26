@@ -26,15 +26,18 @@
 
 namespace PrestaShopBundle\Twig;
 
+use Currency;
 use Exception;
 use PrestaShop\PrestaShop\Adapter\Configuration;
 use PrestaShop\PrestaShop\Adapter\Currency\CurrencyDataProvider;
 use PrestaShop\PrestaShop\Adapter\LegacyContext;
+use PrestaShop\PrestaShop\Core\Domain\Shop\ValueObject\ShopConstraint;
+use Twig\Extension\GlobalsInterface;
 
 /**
  * This class is used by Twig_Environment and provide layout methods callable from a twig template.
  */
-class LayoutExtension extends \Twig_Extension implements \Twig_Extension_GlobalsInterface
+class LayoutExtension extends \Twig_Extension implements GlobalsInterface
 {
     /** @var LegacyContext */
     private $context;
@@ -96,6 +99,7 @@ class LayoutExtension extends \Twig_Extension implements \Twig_Extension_Globals
         return [
             'theme' => $this->context->getContext()->shop->theme,
             'default_currency' => $defaultCurrency,
+            'default_currency_symbol' => $defaultCurrency instanceof Currency ? $defaultCurrency->getSymbol() : null,
             'root_url' => $rootUrl,
             'js_translatable' => [],
         ];
@@ -109,7 +113,7 @@ class LayoutExtension extends \Twig_Extension implements \Twig_Extension_Globals
     public function getFilters()
     {
         return [
-            new \Twig_SimpleFilter('configuration', [$this, 'getConfiguration']),
+            new \Twig_SimpleFilter('configuration', [$this, 'getConfiguration'], ['deprecated' => true]),
         ];
     }
 
@@ -124,6 +128,7 @@ class LayoutExtension extends \Twig_Extension implements \Twig_Extension_Globals
             new \Twig_SimpleFunction('getLegacyLayout', [$this, 'getLegacyLayout']),
             new \Twig_SimpleFunction('getAdminLink', [$this, 'getAdminLink']),
             new \Twig_SimpleFunction('youtube_link', [$this, 'getYoutubeLink']),
+            new \Twig_SimpleFunction('configuration', [$this, 'getConfiguration']),
         ];
     }
 
@@ -131,12 +136,14 @@ class LayoutExtension extends \Twig_Extension implements \Twig_Extension_Globals
      * Returns a legacy configuration key.
      *
      * @param string $key
+     * @param mixed $default Default value is null
+     * @param ShopConstraint $shopConstraint Default value is null
      *
-     * @return array An array of functions
+     * @return mixed
      */
-    public function getConfiguration($key)
+    public function getConfiguration($key, $default = null, ShopConstraint $shopConstraint = null)
     {
-        return $this->configuration->get($key);
+        return $this->configuration->get($key, $default, $shopConstraint);
     }
 
     /**
@@ -206,39 +213,51 @@ EOF;
             $useRegularH1Structure
         );
 
-        //test if legacy template from "content.tpl" has '{$content}'
+        // There is nothing to display no legacy layout are generated
+        if ($layout === '') {
+            return '';
+        }
+
+        // Test if legacy template from "content.tpl" has '{$content}'
         if (false === strpos($layout, '{$content}')) {
             throw new Exception('PrestaShopBundle\Twig\LayoutExtension cannot find the {$content} string in legacy layout template', 1);
         }
 
-        $content = str_replace(
-            [
-                '{$content}',
-                'var currentIndex = \'index.php\';',
-                '</head>',
-                '</body>',
-            ],
-            [
-                '{% block content_header %}{% endblock %}
-                 {% block content %}{% endblock %}
-                 {% block content_footer %}{% endblock %}
-                 {% block sidebar_right %}{% endblock %}',
-                'var currentIndex = \'' . $this->context->getAdminLink($controllerName) . '\';',
-                '{% block stylesheets %}{% endblock %}{% block extra_stylesheets %}{% endblock %}</head>',
-                '{% block javascripts %}{% endblock %}{% block extra_javascripts %}{% endblock %}{% block translate_javascripts %}{% endblock %}</body>',
-            ],
-            $layout
-        );
+        $explodedLayout = explode('{$content}', $layout);
+        $header = explode('</head>', $explodedLayout[0]);
+        $footer = explode('</body>', $explodedLayout[1]);
 
-        return $content;
+        return $this->escapeSmarty(str_replace('var currentIndex = \'index.php\';', 'var currentIndex = \'' . $this->context->getAdminLink($controllerName) . '\';', $header[0]))
+            . '{% block stylesheets %}{% endblock %}{% block extra_stylesheets %}{% endblock %}</head>'
+            . $this->escapeSmarty($header[1])
+            . '{% block content_header %}{% endblock %}'
+            . '{% block content %}{% endblock %}'
+            . '{% block content_footer %}{% endblock %}'
+            . '{% block sidebar_right %}{% endblock %}'
+            . $this->escapeSmarty($footer[0])
+            . '{% block javascripts %}{% endblock %}{% block extra_javascripts %}{% endblock %}{% block translate_javascripts %}{% endblock %}</body>'
+            . $this->escapeSmarty($footer[1]);
+    }
+
+    private function escapeSmarty(string $template): string
+    {
+        // Hard limit of twig filter at 8191 characters (2^13 - 1)
+        // Split the string in multiple chunks
+        $strings = str_split($template, 2000);
+        $return = '';
+        foreach ($strings as $string) {
+            $return .= '{{ \'' . addcslashes($string, "\\'\0") . '\' | raw }}';
+        }
+
+        return $return;
     }
 
     /**
      * This is a Twig port of the Smarty {$link->getAdminLink()} function.
      *
-     * @param string $controller the controller name
+     * @param string $controllerName
      * @param bool $withToken
-     * @param array[string] $extraParams
+     * @param array<string> $extraParams
      *
      * @return string
      */
@@ -248,7 +267,7 @@ EOF;
     }
 
     /**
-     * KISS function to get an embeded iframe from Youtube.
+     * KISS function to get an embedded iframe from Youtube.
      */
     public function getYoutubeLink($watchUrl)
     {

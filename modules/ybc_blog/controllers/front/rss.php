@@ -1,6 +1,6 @@
 <?php
 /**
- * 2007-2019 ETS-Soft
+ * 2007-2022 ETS-Soft
  *
  * NOTICE OF LICENSE
  *
@@ -15,7 +15,7 @@
  * needs please contact us for extra customization service at an affordable price
  *
  *  @author ETS-Soft <etssoft.jsc@gmail.com>
- *  @copyright  2007-2019 ETS-Soft
+ *  @copyright  2007-2022 ETS-Soft
  *  @license    Valid for 1 website (or project) for each purchase of license
  *  International Registered Trademark & Property of ETS-Soft
  */
@@ -39,13 +39,28 @@ class Ybc_blogRssModuleFrontController extends ModuleFrontController
 	{
 		parent::init();
 	}
+    public function getAlternativeLangsUrl()
+    {
+        $alternativeLangs = array();
+        $languages = Language::getLanguages(true, $this->context->shop->id);
+
+        if ($languages < 2) {
+            // No need to display alternative lang if there is only one enabled
+            return $alternativeLangs;
+        }
+
+        foreach ($languages as $lang) {
+            $alternativeLangs[$lang['language_code']] = $this->module->getLanguageLink($lang['id_lang']);
+        }
+        return $alternativeLangs;
+    }
 	public function initContent()
 	{
     	   parent::initContent();   
            $this->module->setMetas();
            if(Configuration::get('YBC_BLOG_ENABLE_RSS'))
            {
-                if(Tools::isSubmit('id_category') && $id_category=(int)Tools::getValue('id_category'))
+                if($id_category =(int)Tools::getValue('id_category') )
                 {
                     $ybc_category= new Ybc_blog_category_class($id_category,$this->context->language->id);
                     $posts = $this->module->getPostsByIdCategory($id_category);
@@ -54,9 +69,9 @@ class Ybc_blogRssModuleFrontController extends ModuleFrontController
                         foreach($posts as &$post)
                         {
                             if($post['thumb'])
-                                $post['thumb'] =trim($this->module->getBaseLink(),'/') .'/modules/'.$this->module->name.'/views/img/post/thumb/'.$post['thumb'];
+                                $post['thumb'] =$this->context->link->getMediaLink(_PS_YBC_BLOG_IMG_.'post/thumb/'.$post['thumb']);
                             if($post['image'])
-                                $post['image'] = trim($this->module->getBaseLink(),'/') .'/modules/'.$this->module->name.'/views/img/post/'.$post['image'];
+                                $post['image'] = $this->context->link->getMediaLink(_PS_YBC_BLOG_IMG_.'post/'.$post['image']);
                             $post['link'] = $this->module->getLink('blog',array('id_post'=>$post['id_post']));
                         }
                     }
@@ -68,7 +83,7 @@ class Ybc_blogRssModuleFrontController extends ModuleFrontController
                         if($ybc_category->image)
                         {
                             $xml .='<image>'."\n";
-                            $xml .='<url>'.trim($this->module->getBaseLink(),'/') .'/modules/'.$this->module->name.'/views/img/category/'.$ybc_category->image.'</url>'."\n";
+                            $xml .='<url>'.$this->context->link->getMediaLink(_PS_YBC_BLOG_IMG_.'category/'.$ybc_category->image).'</url>'."\n";
                             $xml .='<title>'.$this->cleanUTF8($ybc_category->title).'</title>'."\n";
                             $xml .='<link>'.$this->module->getLink().'</link>'."\n";
                             $xml .='</image>'."\n";
@@ -87,7 +102,7 @@ class Ybc_blogRssModuleFrontController extends ModuleFrontController
                     }
                     header("Content-Type: application/rss+xml; charset=UTF-8");
                     mb_internal_encoding('UTF-8');
-                    die(utf8_encode($xml));
+                    die($xml);
                }
                if(Tools::isSubmit('latest'))
                {
@@ -97,9 +112,9 @@ class Ybc_blogRssModuleFrontController extends ModuleFrontController
                         foreach($posts as &$post)
                         {
                             if($post['thumb'])
-                                $post['thumb'] = trim($this->module->getBaseLink(),'/') .'/modules/'.$this->module->name.'/views/img/post/thumb/'.$post['thumb'];
+                                $post['thumb'] = $this->context->link->getMediaLink(_PS_YBC_BLOG_IMG_.'post/thumb/'.$post['thumb']);
                             if($post['image'])
-                                $post['image'] = trim($this->module->getBaseLink(),'/') .'/modules/'.$this->module->name.'/views/img/post/'.$post['image'];
+                                $post['image'] = $this->context->link->getMediaLink(_PS_YBC_BLOG_IMG_.'post/'.$post['image']);
                             $post['link'] = $this->module->getLink('blog',array('id_post'=>$post['id_post']));
                         }
                     }
@@ -121,7 +136,7 @@ class Ybc_blogRssModuleFrontController extends ModuleFrontController
                     }
                     header("Content-Type: application/rss+xml; charset=UTF-8");
                     mb_internal_encoding('UTF-8');
-                    die(utf8_encode($xml));
+                    die($xml);
                     
                }     
                if(Tools::isSubmit('popular'))
@@ -132,9 +147,9 @@ class Ybc_blogRssModuleFrontController extends ModuleFrontController
                         foreach($posts as &$post)
                         {
                             if($post['thumb'])
-                                $post['thumb'] = trim($this->module->getBaseLink(),'/') .'/modules/'.$this->module->name.'/views/img/post/thumb/'.$post['thumb'];
+                                $post['thumb'] = $this->context->link->getMediaLink(_PS_YBC_BLOG_IMG_.'post/thumb/'.$post['thumb']);
                             if($post['image'])
-                                $post['image'] = trim($this->module->getBaseLink(),'/') .'/modules/'.$this->module->name.'/views/img/post/'.$post['image'];
+                                $post['image'] = $this->context->link->getMediaLink(_PS_YBC_BLOG_IMG_.'post/'.$post['image']);
                             $post['link'] = $this->module->getLink('blog',array('id_post'=>$post['id_post']));
                         }
                     }
@@ -156,7 +171,7 @@ class Ybc_blogRssModuleFrontController extends ModuleFrontController
                     }
                     header("Content-Type: application/rss+xml; charset=UTF-8");
                     mb_internal_encoding('UTF-8');
-                    die(utf8_encode($xml)); 
+                    die($xml); 
                }
                if(Tools::isSubmit('featured'))
                {
@@ -166,9 +181,9 @@ class Ybc_blogRssModuleFrontController extends ModuleFrontController
                         foreach($posts as &$post)
                         {
                             if($post['thumb'])
-                                $post['thumb'] = trim($this->module->getBaseLink(),'/') .'/modules/'.$this->module->name.'/views/img/post/thumb/'.$post['thumb'];
+                                $post['thumb'] = $this->context->link->getMediaLink(_PS_YBC_BLOG_IMG_.'post/thumb/'.$post['thumb']);
                             if($post['image'])
-                                $post['image'] = trim($this->module->getBaseLink(),'/') .'/modules/'.$this->module->name.'/views/img/post/'.$post['image'];
+                                $post['image'] = $this->context->link->getMediaLink(_PS_YBC_BLOG_IMG_.'post/'.$post['image']);
                             $post['link'] = $this->module->getLink('blog',array('id_post'=>$post['id_post']));
                         }
                     }
@@ -190,19 +205,20 @@ class Ybc_blogRssModuleFrontController extends ModuleFrontController
                     }
                     header("Content-Type: application/rss+xml; charset=UTF-8");
                     mb_internal_encoding('UTF-8');
-                    die(utf8_encode($xml));   
+                    die($xml);   
                 }
-                if($id_author=(int)Tools::getValue('id_author'))
+                if($id_author= (int)Tools::getValue('id_author'))
                 {
-                    $posts = $this->module->getPostsWithFilter(' AND p.added_by="'.(int)$id_author.'" AND p.is_customer="'.(int)Tools::getValue('is_customer').'"',$this->module->sort);
+                    $is_customer = (int)Tools::getValue('is_customer') ? 1 :0;
+                    $posts = $this->module->getPostsWithFilter(' AND p.added_by="'.(int)$id_author.'" AND p.is_customer="'.(int)$is_customer.'"',$this->module->sort);
                     if($posts)
                     {
                         foreach($posts as &$post)
                         {
                             if($post['thumb'])
-                                $post['thumb'] = trim($this->module->getBaseLink(),'/') .'/modules/'.$this->module->name.'/views/img/post/thumb/'.$post['thumb'];
+                                $post['thumb'] = $this->context->link->getMediaLink(_PS_YBC_BLOG_IMG_.'post/thumb/'.$post['thumb']);
                             if($post['image'])
-                                $post['image'] = trim($this->module->getBaseLink(),'/') .'/modules/'.$this->module->name.'/views/img/post/'.$post['image'];
+                                $post['image'] = $this->context->link->getMediaLink(_PS_YBC_BLOG_IMG_.'post/'.$post['image']);
                             $post['link'] = $this->module->getLink('blog',array('id_post'=>$post['id_post']));
                         }
                     }
@@ -224,15 +240,17 @@ class Ybc_blogRssModuleFrontController extends ModuleFrontController
                     }
                     header("Content-Type: application/rss+xml; charset=UTF-8");
                     mb_internal_encoding('UTF-8');
-                    die(utf8_encode($xml));   
+                    die($xml);   
                 }         
                 $prettySkin = Configuration::get('YBC_BLOG_GALLERY_SKIN');
                 $randomcode = time();
+                $rating = (int)Tools::getValue('rating');
+                $id_post = (int)Tools::getValue('id_post');
                 $this->context->smarty->assign(
                     array(
                         'allowComments' => (int)Configuration::get('YBC_BLOG_ALLOW_COMMENT'),
                         'allowGuestsComments' => (int)Configuration::get('YBC_BLOG_ALLOW_GUEST_COMMENT') ? true : false,
-                        'blogCommentAction' => $this->module->getLink('blog',array('id_post'=>(int)Tools::getValue('id_post'))),
+                        'blogCommentAction' => $this->module->getLink('blog',array('id_post'=>(int)$id_post)),
                         'hasLoggedIn' => $this->context->customer->isLogged(true), 
                         'YBC_BLOC_RSS_TYPE' => Configuration::get('YBC_BLOC_RSS_TYPE')? explode(',',Configuration::get('YBC_BLOC_RSS_TYPE')):array(),
                         'link_latest_posts' => $this->module->getLink('rss',array('latest_posts'=>1)),
@@ -241,7 +259,7 @@ class Ybc_blogRssModuleFrontController extends ModuleFrontController
                         'allow_report_comment' =>(int)Configuration::get('YBC_BLOG_ALLOW_REPORT') ? true : false,
                         'display_related_products' =>(int)Configuration::get('YBC_BLOG_SHOW_RELATED_PRODUCTS') ? true : false,
                         'allow_rating' => (int)Configuration::get('YBC_BLOG_ALLOW_RATING') ? true : false,
-                        'default_rating' => (int)Tools::getValue('rating') > 0 && (int)Tools::getValue('rating') <=5 ? (int)Tools::getValue('rating')  :(int)Configuration::get('YBC_BLOG_DEFAULT_RATING'),
+                        'default_rating' => (int)$rating > 0 && (int)$rating <=5 ? (int)$rating  :(int)Configuration::get('YBC_BLOG_DEFAULT_RATING'),
                         'use_capcha' => (int)Configuration::get('YBC_BLOG_USE_CAPCHA') ? true : false,
                         'use_facebook_share' => (int)Configuration::get('YBC_BLOG_ENABLE_FACEBOOK_SHARE') ? true : false,
                         'use_google_share' => (int)Configuration::get('YBC_BLOG_ENABLE_GOOGLE_SHARE') ? true : false,
@@ -264,7 +282,7 @@ class Ybc_blogRssModuleFrontController extends ModuleFrontController
                         'blog_template_dir' => dirname(__FILE__).'/../../views/templates/front',
                         'breadcrumb' => $this->module->is17 ? $this->module->getBreadCrumb() : false,
                         'blog_dir' => $this->module->blogDir,
-                        'image_folder' => trim($this->module->getBaseLink(),'/') .'/modules/'.$this->module->name.'/views/img/',
+                        'image_folder' => _PS_YBC_BLOG_IMG_,
                     )
                 );
            }           

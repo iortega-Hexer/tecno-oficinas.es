@@ -77,7 +77,7 @@ class OrderHistoryCore extends ObjectModel
      * Sets the new state of the given order.
      *
      * @param int $new_order_state
-     * @param int/object $id_order
+     * @param int|Order $id_order
      * @param bool $use_existing_payment
      */
     public function changeIdOrderState($new_order_state, $id_order, $use_existing_payment = false)
@@ -375,11 +375,11 @@ class OrderHistoryCore extends ObjectModel
 
         // set orders as paid
         if ($new_os->paid == 1) {
-            $invoices = $order->getInvoicesCollection();
             if ($order->total_paid != 0) {
                 $payment_method = Module::getInstanceByName($order->module);
             }
 
+            $invoices = $order->getInvoicesCollection();
             foreach ($invoices as $invoice) {
                 /** @var OrderInvoice $invoice */
                 $rest_paid = $invoice->getRestPaid();
@@ -388,26 +388,22 @@ class OrderHistoryCore extends ObjectModel
                     $payment->order_reference = Tools::substr($order->reference, 0, 9);
                     $payment->id_currency = $order->id_currency;
                     $payment->amount = $rest_paid;
-
-                    if ($order->total_paid != 0) {
-                        $payment->payment_method = $payment_method->displayName;
-                    } else {
-                        $payment->payment_method = null;
-                    }
+                    $payment->payment_method = $payment_method ? $payment_method->displayName : null;
+                    $payment->conversion_rate = $order->conversion_rate;
+                    $payment->save();
 
                     // Update total_paid_real value for backward compatibility reasons
-                    if ($payment->id_currency == $order->id_currency) {
-                        $order->total_paid_real += $payment->amount;
-                    } else {
-                        $order->total_paid_real += Tools::ps_round(Tools::convertPrice($payment->amount, $payment->id_currency, false), Context::getContext()->getComputingPrecision());
-                    }
+                    $order->total_paid_real += $rest_paid;
                     $order->save();
 
-                    $payment->conversion_rate = ($order ? $order->conversion_rate : 1);
-                    $payment->save();
-                    Db::getInstance()->execute('
-                    INSERT INTO `' . _DB_PREFIX_ . 'order_invoice_payment` (`id_order_invoice`, `id_order_payment`, `id_order`)
-                    VALUES(' . (int) $invoice->id . ', ' . (int) $payment->id . ', ' . (int) $order->id . ')');
+                    Db::getInstance()->insert(
+                        'order_invoice_payment',
+                        [
+                            'id_order_invoice' => (int) $invoice->id,
+                            'id_order_payment' => (int) $payment->id,
+                            'id_order' => (int) $order->id,
+                        ]
+                    );
                 }
             }
         }
@@ -483,6 +479,12 @@ class OrderHistoryCore extends ObjectModel
         return true;
     }
 
+    /**
+     * @param Order $order
+     * @param array|false $template_vars
+     *
+     * @return bool
+     */
     public function sendEmail($order, $template_vars = false)
     {
         $result = Db::getInstance()->getRow('
@@ -527,6 +529,10 @@ class OrderHistoryCore extends ObjectModel
             if (Validate::isLoadedObject($order)) {
                 // Attach invoice and / or delivery-slip if they exists and status is set to attach them
                 if (($result['pdf_invoice'] || $result['pdf_delivery'])) {
+                    $currentLanguage = $context->language;
+                    $orderLanguage = new Language((int) $order->id_lang);
+                    $context->language = $orderLanguage;
+                    $context->getTranslator()->setLocale($orderLanguage->locale);
                     $invoice = $order->getInvoicesCollection();
                     $file_attachement = [];
 
@@ -540,9 +546,12 @@ class OrderHistoryCore extends ObjectModel
                     if ($result['pdf_delivery'] && $order->delivery_number) {
                         $pdf = new PDF($invoice, PDF::TEMPLATE_DELIVERY_SLIP, $context->smarty);
                         $file_attachement['delivery']['content'] = $pdf->render(false);
-                        $file_attachement['delivery']['name'] = Configuration::get('PS_DELIVERY_PREFIX', Context::getContext()->language->id, null, $order->id_shop) . sprintf('%06d', $order->delivery_number) . '.pdf';
+                        $file_attachement['delivery']['name'] = Configuration::get('PS_DELIVERY_PREFIX', (int) $order->id_lang, null, $order->id_shop) . sprintf('%06d', $order->delivery_number) . '.pdf';
                         $file_attachement['delivery']['mime'] = 'application/pdf';
                     }
+
+                    $context->language = $currentLanguage;
+                    $context->getTranslator()->setLocale($currentLanguage->locale);
                 } else {
                     $file_attachement = null;
                 }

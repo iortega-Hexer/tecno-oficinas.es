@@ -35,6 +35,16 @@
         <target state="final">No puedes establecer una posición mayor al número total de productos en la categoría menos 1 (el número de posición comienza en 0).</target>
         <note>Line: 6171</note>
       </trans-unit>
+      <trans-unit id="30a367ba686890c829937e768d588b8f" approved="yes">
+        <source>You cannot set 0 or a negative position, the minimum is 1.</source>
+        <target state="final">No puede establecer una posición negativa o 0, el mínimo es 1.</target>
+        <note>Line: 7107</note>
+      </trans-unit>
+      <trans-unit id="cf99dad7d7306d9ac01ba5a2e2d2c715" approved="yes">
+        <source>You cannot set a position greater than the total number of products in the category, starting at 1.</source>
+        <target state="final">No puede establecer una posición mayor que el número total de productos en la categoría, comenzando en 1.</target>
+        <note>Line: 7128</note>
+      </trans-unit>
     </body>
   </file>
   <file original="classes/QqUploadedFileForm.php" source-language="en" target-language="es-ES" datatype="plaintext">
@@ -51,12 +61,12 @@
       <trans-unit id="fc2c8663d58c42bc29edd45a79b4358c" approved="yes">
         <source>The discount was successfully generated.</source>
         <target state="final">El descuento ha sido generado correctamente.</target>
-        <note>Line: 496</note>
+        <note>Line: 511</note>
       </trans-unit>
       <trans-unit id="801982917ddd7afd63f9e103ba4699bd" approved="yes">
         <source>The root category of the shop %shop% is not associated with the current shop. You can't access this page. Please change the root category of the shop.</source>
         <target state="final">La categoría raíz de la tienda %shop% no está asociada con la tienda actual. No puedes acceder a esta página. Por favor, cambia la categoría raíz de la tienda.</target>
-        <note>Line: 502</note>
+        <note>Line: 517</note>
       </trans-unit>
     </body>
   </file>
@@ -79,7 +89,7 @@
       <trans-unit id="7e4621194575d7804ebfbbafcae9067a" approved="yes">
         <source>You cannot update the available stock when it depends on stock.</source>
         <target state="final">No puedes actualizar las existencias disponibles cuando esto depende del stock.</target>
-        <note>Line: 108</note>
+        <note>Line: 120</note>
       </trans-unit>
     </body>
   </file>
@@ -164,37 +174,37 @@
       <trans-unit id="fdf5ec6ad9d20c9985038e5d6521159f" approved="yes">
         <source>The voucher cannot end before it begins.</source>
         <target state="final">El cupón de descuento no puede finalizar antes de que comience.</target>
-        <note>Line: 216</note>
+        <note>Line: 222</note>
       </trans-unit>
       <trans-unit id="5c7f52b03569889081067d1413b5edbd" approved="yes">
         <source>The minimum amount cannot be lower than zero.</source>
         <target state="final">La cantidad mínima no puede ser inferior a cero.</target>
-        <note>Line: 219</note>
+        <note>Line: 225</note>
       </trans-unit>
       <trans-unit id="93c331edf337bac96fcbac751a492fe1" approved="yes">
         <source>Reduction percentage must be between 0% and 100%</source>
         <target state="final">El porcentaje de descuento debe ser entre 0% y 100%</target>
-        <note>Line: 222</note>
+        <note>Line: 228</note>
       </trans-unit>
       <trans-unit id="a3ad09e600d30676504b705e29be782d" approved="yes">
         <source>Reduction amount cannot be lower than zero.</source>
         <target state="final">El valor del descuento no puede ser inferior a 0.</target>
-        <note>Line: 225</note>
+        <note>Line: 231</note>
       </trans-unit>
       <trans-unit id="7f5ef3543345170784cc954cffa697d6" approved="yes">
         <source>This cart rule code is already used (conflict with cart rule %rulename%)</source>
         <target state="final">Este código de regla de carrito ya está en uso (conflicto con la regla de carrito %rulename%)</target>
-        <note>Line: 228</note>
+        <note>Line: 234</note>
       </trans-unit>
       <trans-unit id="bbc6a34f03def2d56def8e7685a3fcae" approved="yes">
         <source>An action is required for this cart rule.</source>
         <target state="final">Una acción es requerida para esta regla de carrito.</target>
-        <note>Line: 231</note>
+        <note>Line: 237</note>
       </trans-unit>
       <trans-unit id="b4be93136a337fcef40c9eb87004c9d0" approved="yes">
         <source>No product has been found.</source>
         <target state="final">No se ha encontrado ningún producto.</target>
-        <note>Line: 599</note>
+        <note>Line: 609</note>
       </trans-unit>
     </body>
   </file>
@@ -203,37 +213,37 @@
       <trans-unit id="c1a4c1b929c4f5c81f80ece2d7b196aa" approved="yes">
         <source>Invalid product</source>
         <target state="final">Producto no válido</target>
-        <note>Line: 456</note>
+        <note>Line: 467</note>
       </trans-unit>
       <trans-unit id="e5b55dc69d10c8673f9d5db587591526" approved="yes">
         <source>Invalid combination</source>
         <target state="final">Combinación no válida</target>
-        <note>Line: 373</note>
+        <note>Line: 384</note>
       </trans-unit>
       <trans-unit id="7cc92687130ea12abb80556681538001" approved="yes">
         <source>An error occurred during the image upload process.</source>
         <target state="final">Se ha producido un error durante el proceso de subida de la imagen.</target>
-        <note>Line: 429</note>
+        <note>Line: 440</note>
       </trans-unit>
       <trans-unit id="b164de93448b61c61dd1c0f68c2c5884" approved="yes">
         <source>An order has already been placed with this cart.</source>
         <target state="final">Una pedido ya ha sido realizado con este carrito.</target>
-        <note>Line: 454</note>
+        <note>Line: 465</note>
       </trans-unit>
       <trans-unit id="89ecb554b799211aca0441e691419963" approved="yes">
         <source>This product cannot be added to the cart.</source>
         <target state="final">Este producto no se puede añadir al carrito.</target>
-        <note>Line: 475</note>
+        <note>Line: 486</note>
       </trans-unit>
       <trans-unit id="de10fc28511b894f704c1a67fcff7b4f" approved="yes">
         <source>You already have the maximum quantity available for this product.</source>
         <target state="final">Ya tiene la cantidad máxima disponible para este producto.</target>
-        <note>Line: 487</note>
+        <note>Line: 498</note>
       </trans-unit>
       <trans-unit id="fac7c1f73a2c97252e59cac143ae1930" approved="yes">
         <source>Invalid voucher.</source>
         <target state="final">Cupón de descuento no válido.</target>
-        <note>Line: 630</note>
+        <note>Line: 641</note>
       </trans-unit>
     </body>
   </file>
@@ -431,7 +441,7 @@
       <trans-unit id="0c58058923630a64ce3f415a07cbb00d" approved="yes">
         <source>An error occurred while adding tags.</source>
         <target state="final">Se ha producido un error al añadir etiquetas.</target>
-        <note>Line: 2350</note>
+        <note>Line: 2361</note>
       </trans-unit>
       <trans-unit id="32caa1cdf0ea26b2e1267d45a57beacf" approved="yes">
         <source>This %1$s field is required at least in %2$s</source>
@@ -441,67 +451,67 @@
       <trans-unit id="0e2338b37ab3dfeed544e8233b53d4e0" approved="yes">
         <source>The %1$s field is too long (%2$d chars max).</source>
         <target state="final">El campo %1$s es demasiado largo. (%2$d caracteres máximos)</target>
-        <note>Line: 2095</note>
+        <note>Line: 2106</note>
       </trans-unit>
       <trans-unit id="95c0b24839f6e4ffe0e395d8d26ce4ee" approved="yes">
         <source>This %1$s field (%2$s) is too long: %3$d chars max (current count %4$d).</source>
         <target state="final">Este campo %1$s (%2$s) es demasiado largo: %3$d caracteres máximos (caracteres actuales %4$d).</target>
-        <note>Line: 2076</note>
+        <note>Line: 2087</note>
       </trans-unit>
       <trans-unit id="2ac6fe3cbae5ffcef53a6bdddf888d70" approved="yes">
         <source>The expiration-date attribute is required.</source>
         <target state="final">El atributo fecha de expiración es requerido.</target>
-        <note>Line: 2252</note>
+        <note>Line: 2263</note>
       </trans-unit>
       <trans-unit id="5e2457ed64286c209f67a9333ed52a17" approved="yes">
         <source>An error occurred while attempting to delete previous tags.</source>
         <target state="final">Se ha producido un error al intentar eliminar las etiquetas anteriores.</target>
-        <note>Line: 2340</note>
+        <note>Line: 2351</note>
       </trans-unit>
       <trans-unit id="4177a725868ed37e7de5c8c65f4a8b0e" approved="yes">
         <source>The selected currency is not valid</source>
         <target state="final">La moneda seleccionada no es válida</target>
-        <note>Line: 2534</note>
+        <note>Line: 2545</note>
       </trans-unit>
       <trans-unit id="48b51a11285fae0b1f416165ae8fd489" approved="yes">
         <source>An error occurred while copying image, the file does not exist anymore.</source>
         <target state="final">Se ha producido un error al copiar la imagen, el archivo no existe.</target>
-        <note>Line: 2850</note>
+        <note>Line: 2861</note>
       </trans-unit>
       <trans-unit id="9f26cf683839613815feebc0b1e1c6b9" approved="yes">
         <source>An error occurred while copying image, the file width is 0px.</source>
         <target state="final">Se ha producido un error al copiar la imagen, la anchura del archivo es 0px.</target>
-        <note>Line: 2855</note>
+        <note>Line: 2866</note>
       </trans-unit>
       <trans-unit id="de880a806b9948f168a2e70fff130160" approved="yes">
         <source>An error occurred while copying image, check your memory limit.</source>
         <target state="final">Se ha producido un error al copiar la imagen, comprueba el límite de memoria.</target>
-        <note>Line: 2860</note>
+        <note>Line: 2871</note>
       </trans-unit>
       <trans-unit id="06b778accab7c14a499bc6e7a68138ec" approved="yes">
         <source>An error occurred while copying the image.</source>
         <target state="final">Se ha producido un error al cargar la imagen.</target>
-        <note>Line: 2865</note>
+        <note>Line: 2876</note>
       </trans-unit>
       <trans-unit id="c88e73613e3f68ead933cd57e2828323" approved="yes">
         <source>You can't add product packs into a pack</source>
         <target state="final">No puedes añadir packs de productos dentro de un pack</target>
-        <note>Line: 3145</note>
+        <note>Line: 3156</note>
       </trans-unit>
       <trans-unit id="5de4038e3ea0841bf6179f99103fcccd" approved="yes">
         <source>An error occurred while attempting to add products to the pack.</source>
         <target state="final">Se ha producido un error al intentar añadir productos al pack.</target>
-        <note>Line: 3147</note>
+        <note>Line: 3158</note>
       </trans-unit>
       <trans-unit id="608860b0f96a18f3737756fc6b7766f9" approved="yes">
         <source>Cannot add image because product creation failed.</source>
         <target state="final">No se puede añadir la imagen porque la creación del producto ha fallado.</target>
-        <note>Line: 2804</note>
+        <note>Line: 2815</note>
       </trans-unit>
       <trans-unit id="c200140aea36e1efbf655fabf3f3b59e" approved="yes">
         <source>Error while creating additional image</source>
         <target state="final">Error al crear imagen adicional</target>
-        <note>Line: 2837</note>
+        <note>Line: 2848</note>
       </trans-unit>
     </body>
   </file>
@@ -533,7 +543,7 @@
       <trans-unit id="15d30198621ad33274fc94b08cff5009" approved="yes">
         <source>Could not delete #%i</source>
         <target state="final">No se pudo eliminar #%i</target>
-        <note>Line: 170</note>
+        <note>Line: 171</note>
       </trans-unit>
     </body>
   </file>
@@ -542,17 +552,17 @@
       <trans-unit id="3535b3934d0e2d6e7759649d78c7da58" approved="yes">
         <source>Missing id_hook</source>
         <target state="final">id_hook no encontrado</target>
-        <note>Line: 200</note>
+        <note>Line: 256</note>
       </trans-unit>
       <trans-unit id="36ccadce9e530e36cf265145bdba5c1c" approved="yes">
         <source>Missing block_name</source>
         <target state="final">block_name no encontrado</target>
-        <note>Line: 208</note>
+        <note>Line: 264</note>
       </trans-unit>
       <trans-unit id="12f4f6b7d1d17838950e3c6107144f2a" approved="yes">
         <source>Missing block_name value for language %s</source>
         <target state="final">Valor de block_name no encontrado para idioma %s</target>
-        <note>Line: 235</note>
+        <note>Line: 272</note>
       </trans-unit>
       <trans-unit id="ba88eb1dd9466f0be32b7dc7a82297ad" approved="yes">
         <source>Missing %s value in custom [%s] for language %s</source>
@@ -562,7 +572,7 @@
       <trans-unit id="504ca7ea96dde692360e88a97e98fc91" approved="yes">
         <source>Missing %s value in custom[%s] for language %s</source>
         <target state="final">Valor de %s faltante en personlización [%s] para idioma %s</target>
-        <note>Line: 245</note>
+        <note>Line: 294</note>
       </trans-unit>
     </body>
   </file>
@@ -609,32 +619,32 @@
       <trans-unit id="162c051f703406dd4fab3fde66296a6e" approved="yes">
         <source>Submitted reduction value (0-100) is out-of-range</source>
         <target state="final">Valor de descuento indicado, se encuentra fuera de rango (0-100)</target>
-        <note>Line: 301</note>
+        <note>Line: 312</note>
       </trans-unit>
       <trans-unit id="9f0a59f1609218c049435abd2351bd84" approved="yes">
         <source>An error occurred while updating the specific price.</source>
         <target state="final">Se ha producido un error al actualizar un precio específico.</target>
-        <note>Line: 353</note>
+        <note>Line: 364</note>
       </trans-unit>
       <trans-unit id="22385bf735f96dbe1a4778d0b0d5345d" approved="yes">
         <source>No reduction value has been submitted</source>
         <target state="final">No se ha indicado ningún valor de descuento</target>
-        <note>Line: 297</note>
+        <note>Line: 308</note>
       </trans-unit>
       <trans-unit id="184a2ae304c9a05459cca0cbf8755b3a" approved="yes">
         <source>The specific price ID is invalid.</source>
         <target state="final">El ID del precio específico no es válido.</target>
-        <note>Line: 548</note>
+        <note>Line: 562</note>
       </trans-unit>
       <trans-unit id="0f8b5843f1391991d17f744ce9771e98" approved="yes">
         <source>An error occurred while attempting to delete the specific price.</source>
         <target state="final">Se ha producido un error al eliminar el precio específico.</target>
-        <note>Line: 552</note>
+        <note>Line: 566</note>
       </trans-unit>
       <trans-unit id="c7e56badecce297feefe2a9b50a68794" approved="yes">
         <source>Invalid date range</source>
         <target state="final">Rango de fechas no válido</target>
-        <note>Line: 299</note>
+        <note>Line: 310</note>
       </trans-unit>
     </body>
   </file>
@@ -691,47 +701,47 @@
       <trans-unit id="f4158fa3500ce1523a52bee74971f5f2" approved="yes">
         <source>Product(s) successfully activated.</source>
         <target state="final">Producto(s) activado(s) correctamente.</target>
-        <note>Line: 763</note>
+        <note>Line: 782</note>
       </trans-unit>
       <trans-unit id="25b325c47f9b5f88d7820b079bafa02e" approved="yes">
         <source>Product(s) successfully deactivated.</source>
         <target state="final">Producto(s) desactivado(s) correctamente.</target>
-        <note>Line: 792</note>
+        <note>Line: 811</note>
       </trans-unit>
       <trans-unit id="01996897996faf465514bdf1091b6d4d" approved="yes">
         <source>Product(s) successfully deleted.</source>
         <target state="final">Producto(s) eliminado(s) correctamente.</target>
-        <note>Line: 821</note>
+        <note>Line: 840</note>
       </trans-unit>
       <trans-unit id="290ed9aa59dd098c9e112c4f9770407d" approved="yes">
         <source>Product(s) successfully duplicated.</source>
         <target state="final">Producto(s) duplicado(s) correctamente.</target>
-        <note>Line: 850</note>
+        <note>Line: 869</note>
       </trans-unit>
       <trans-unit id="c1746190e47d69ea7f0db7f098de7cab" approved="yes">
         <source>Products successfully sorted.</source>
         <target state="final">Productos ordenados correctamente.</target>
-        <note>Line: 954</note>
+        <note>Line: 973</note>
       </trans-unit>
       <trans-unit id="7bdb2828f248bbd55bba16dcc63223d9" approved="yes">
         <source>Product successfully deleted.</source>
         <target state="final">El producto se eliminó correctamente.</target>
-        <note>Line: 1042</note>
+        <note>Line: 1061</note>
       </trans-unit>
       <trans-unit id="85d8f7e3038017826a8215396b96865b" approved="yes">
         <source>Product successfully duplicated.</source>
         <target state="final">El producto se duplicó correctamente.</target>
-        <note>Line: 1068</note>
+        <note>Line: 1087</note>
       </trans-unit>
       <trans-unit id="98434b0cd2f3cf08418ea1f0a9c55f0a" approved="yes">
         <source>Product successfully activated.</source>
         <target state="final">Producto activado correctamente.</target>
-        <note>Line: 1094</note>
+        <note>Line: 1113</note>
       </trans-unit>
       <trans-unit id="fd1d6d9c7d146c9f81572224bae86951" approved="yes">
         <source>Product successfully deactivated.</source>
         <target state="final">Producto desactivado correctamente.</target>
-        <note>Line: 1120</note>
+        <note>Line: 1139</note>
       </trans-unit>
     </body>
   </file>
@@ -769,22 +779,27 @@
       <trans-unit id="b50f440e3c9f14988bd0086683e77095" approved="yes">
         <source>You cannot remove this category because one of your shops uses it as a root category.</source>
         <target state="final">No puedes eliminar esta categoría porque una de tus tiendas la utiliza como categoría raíz.</target>
-        <note>Line: 790</note>
+        <note>Line: 861</note>
       </trans-unit>
       <trans-unit id="a874ef298164bbd4d00d55901225cd87" approved="yes">
         <source>An error occurred while uploading the image:</source>
         <target state="final">Se ha producido un error al subir la imagen:</target>
-        <note>Line: 807</note>
+        <note>Line: 882</note>
       </trans-unit>
       <trans-unit id="3d85438a25723cc56bd4aefb9b368bc0" approved="yes">
         <source>An error occurred while creating the category.</source>
         <target state="final">Se produjo un error al crear la categoría.</target>
-        <note>Line: 794</note>
+        <note>Line: 865</note>
       </trans-unit>
       <trans-unit id="175ad2b319a95a0b7c580dbc4205fdac" approved="yes">
         <source>An error occurred while editing the category.</source>
         <target state="final">Se produjo un error al editar la categoría.</target>
-        <note>Line: 798</note>
+        <note>Line: 873</note>
+      </trans-unit>
+      <trans-unit id="17668cbc24213c8d43211a67139c3939" approved="yes">
+        <source>The root category of a shop cannot be edited.</source>
+        <target state="final">La categoría raíz de una tienda no se puede editar.</target>
+        <note>Line: 869</note>
       </trans-unit>
     </body>
   </file>
@@ -799,6 +814,15 @@
         <source><![CDATA[The display of your brands is disabled on your store. Go to %sShop Parameters > General%s to edit settings.]]></source>
         <target state="final"><![CDATA[La visualización de tus marcas está desactivada en tu tienda. Dirígete a %sParámetros de la Tienda > Configuración%s para editar la configuración.]]></target>
         <note>Line: 781</note>
+      </trans-unit>
+    </body>
+  </file>
+  <file original="src/PrestaShopBundle/Controller/Admin/Sell/Catalog/Product/ProductController.php" source-language="en" target-language="es-ES" datatype="plaintext">
+    <body>
+      <trans-unit id="f07403f2e9d7e44c0090ab06678d4eb3" approved="yes">
+        <source>The experimental product page is not enabled. To enable it, go to the %sExperimental Features%s page.</source>
+        <target state="final">La página de producto experimental no está habilitada. Para habilitarla, vaya a la página %sCaracterísticas experimentales%s.</target>
+        <note>Line: 276</note>
       </trans-unit>
     </body>
   </file>
@@ -831,7 +855,12 @@
       <trans-unit id="2cb44aa56605e05e0b912131875edcb7" approved="yes">
         <source>There are not enough products in stock.</source>
         <target state="final">No hay suficientes productos en stock.</target>
-        <note>Line: 591</note>
+        <note>Line: 604</note>
+      </trans-unit>
+      <trans-unit id="891d308560a0cca2452fd2f482dded8c" approved="yes">
+        <source><![CDATA[Product customization could not be found. Go to Catalog > Products to customize the product.]]></source>
+        <target state="final"><![CDATA[No se pudo encontrar la personalización del producto. Vaya a Catálogo > Productos para personalizar el producto.]]></target>
+        <note>Line: 596</note>
       </trans-unit>
     </body>
   </file>
@@ -840,7 +869,7 @@
       <trans-unit id="4fce600d4fc0429af2f5bc5861eefb3e" approved="yes">
         <source>Selected products were successfully canceled.</source>
         <target state="final">Los productos seleccionados han sido eliminados correctamente.</target>
-        <note>Line: 1531</note>
+        <note>Line: 1677</note>
       </trans-unit>
     </body>
   </file>
@@ -858,7 +887,55 @@
       <trans-unit id="8bc6a12d95b969fb603306eab1f0603b" approved="yes">
         <source>This pack is empty. You must add at least one product item.</source>
         <target state="final">Este pack está vacío. Debes añadir al menos un producto.</target>
-        <note>Line: 331</note>
+        <note>Line: 392</note>
+      </trans-unit>
+    </body>
+  </file>
+  <file original="src/PrestaShopBundle/Form/Admin/Sell/Product/HeaderType.php" source-language="en" target-language="es-ES" datatype="plaintext">
+    <body>
+      <trans-unit id="2b260d6a8a4b747672d790f18c2ab780" approved="yes">
+        <source>Are you sure you want to change the product type?</source>
+        <target state="final">¿Está seguro de que desea cambiar el tipo de producto?</target>
+        <note>Line: 70</note>
+      </trans-unit>
+      <trans-unit id="da531a2761eef5012cadd0a2e31acab6" approved="yes">
+        <source>Change product type</source>
+        <target state="final">Cambia el tipo de producto</target>
+        <note>Line: 71</note>
+      </trans-unit>
+      <trans-unit id="178b6141eb15b94fb25e5940625ecd01" approved="yes">
+        <source>Changing the product type will immediately save the product and refresh the page.</source>
+        <target state="final">Cambiar el tipo de producto guardará inmediatamente el producto y actualizará la página.</target>
+        <note>Line: 73</note>
+      </trans-unit>
+      <trans-unit id="d125a0ad5887eb2575a57c2149a12c1d" approved="yes">
+        <source>This will delete all combinations.</source>
+        <target state="final">Esto eliminará todas las combinaciones.</target>
+        <note>Line: 74</note>
+      </trans-unit>
+      <trans-unit id="6b7844c384e54ed301c7f3f6b4aac389" approved="yes">
+        <source>This will delete the list of products in this pack.</source>
+        <target state="final">Esto eliminará la lista de productos de este pack.</target>
+        <note>Line: 75</note>
+      </trans-unit>
+      <trans-unit id="4882c6b9d11d6aacd193fa21547fd727" approved="yes">
+        <source>This will delete the associated virtual file.</source>
+        <target state="final">Esto eliminará el archivo virtual asociado.</target>
+        <note>Line: 76</note>
+      </trans-unit>
+    </body>
+  </file>
+  <file original="src/PrestaShopBundle/Form/Admin/Sell/Product/Image/ImageDropzoneType.php" source-language="en" target-language="es-ES" datatype="plaintext">
+    <body>
+      <trans-unit id="9a906b85c45f31efeb25eef56aad240b" approved="yes">
+        <source>Image replaced</source>
+        <target state="final">Imagen reemplazada</target>
+        <note>Line: 56</note>
+      </trans-unit>
+      <trans-unit id="02708462d504c68df426d48cd6aae23f" approved="yes">
+        <source>Are you sure you want to delete the selected image?|Are you sure you want to delete the %filesNb% selected images?</source>
+        <target state="final">¿Está seguro de que desea eliminar la imagen seleccionada?|¿Está seguro de que desea eliminar las %filesNb% imágenes seleccionadas?</target>
+        <note>Line: 79</note>
       </trans-unit>
     </body>
   </file>
@@ -867,7 +944,7 @@
       <trans-unit id="cf456ee90912d9e25795925d067f8952" approved="yes">
         <source>This value is too long. It should have %limit% characters or less.</source>
         <target state="final">Este valor es demasiado largo. Debe tener %limit% caracteres o menos.</target>
-        <note>Line: 46</note>
+        <note>Line: 72</note>
       </trans-unit>
     </body>
   </file>
@@ -876,7 +953,7 @@
       <trans-unit id="1aa1527fa7dfdbe44acb4be33af88e4c" approved="yes">
         <source>There is no result for this search. Update your filters to view other products.</source>
         <target state="final">No existen resultados para esta búsqueda, Actualiza tus filtros para ver otros productos.</target>
-        <note>Line: 141</note>
+        <note>Line: 153</note>
       </trans-unit>
     </body>
   </file>
@@ -885,82 +962,82 @@
       <trans-unit id="90094f8ca4b0c893b2f7aef48fd2e73e" approved="yes">
         <source>Duplication in progress...</source>
         <target state="final">Duplicado en proceso...</target>
-        <note>Line: 116</note>
+        <note>Line: 120</note>
       </trans-unit>
       <trans-unit id="1c4a67678ffecd99e46e9686e3639789" approved="yes">
         <source>Duplication failed.</source>
         <target state="final">Falló el duplicado.</target>
-        <note>Line: 118</note>
+        <note>Line: 122</note>
       </trans-unit>
       <trans-unit id="e927fc858b3eccca1323ed79add38ed6" approved="yes">
         <source>Activation in progress...</source>
         <target state="final">Activación en proceso...</target>
-        <note>Line: 138</note>
+        <note>Line: 142</note>
       </trans-unit>
       <trans-unit id="0eb7963a4b19bb1a361d2dfb0ef13ccf" approved="yes">
         <source>Activation failed.</source>
         <target state="final">Error de activación.</target>
-        <note>Line: 140</note>
+        <note>Line: 144</note>
       </trans-unit>
       <trans-unit id="58b01b30d683cbdb393f9ede59bdb697" approved="yes">
         <source>Deactivation in progress...</source>
         <target state="final">Desactivación en curso...</target>
-        <note>Line: 160</note>
+        <note>Line: 164</note>
       </trans-unit>
       <trans-unit id="036a5e2d815eaa9bddaebf0c12f94e17" approved="yes">
         <source>Deactivation failed.</source>
         <target state="final">La desactivación falló.</target>
-        <note>Line: 162</note>
+        <note>Line: 166</note>
       </trans-unit>
       <trans-unit id="557c57932d4eb9b108efcf050b9db862" approved="yes">
         <source>Deletion in progress...</source>
         <target state="final">Eliminación en curso...</target>
-        <note>Line: 182</note>
+        <note>Line: 186</note>
       </trans-unit>
       <trans-unit id="51d0bf7f10d8d28ecd64d2aa3a5ca141" approved="yes">
         <source>Deletion failed.</source>
         <target state="final">Error al eliminar.</target>
-        <note>Line: 184</note>
+        <note>Line: 188</note>
       </trans-unit>
       <trans-unit id="fc483403c3f9b9aa31a570b83cdfa6f3" approved="yes">
         <source>Duplicating products</source>
         <target state="final">Duplicando productos</target>
-        <note>Line: 106</note>
+        <note>Line: 110</note>
       </trans-unit>
       <trans-unit id="34202dac3bbd97da03f56d3b2cf1386b" approved="yes">
         <source>Duplicating...</source>
         <target state="final">Duplicando...</target>
-        <note>Line: 110</note>
+        <note>Line: 114</note>
       </trans-unit>
       <trans-unit id="6d7447cf0c9efdaeb3a700de594a70cf" approved="yes">
         <source>Activating products</source>
         <target state="final">Activando productos</target>
-        <note>Line: 128</note>
+        <note>Line: 132</note>
       </trans-unit>
       <trans-unit id="b850e16adbf88a6b6cb724630eff2c97" approved="yes">
         <source>Activating...</source>
         <target state="final">Activando...</target>
-        <note>Line: 132</note>
+        <note>Line: 136</note>
       </trans-unit>
       <trans-unit id="c1714105baaadc64c8e502f13ca10988" approved="yes">
         <source>Deactivating products</source>
         <target state="final">Desactivando productos</target>
-        <note>Line: 150</note>
+        <note>Line: 154</note>
       </trans-unit>
       <trans-unit id="fe38be28e7e43dc0fb4c4d7ca1d60f90" approved="yes">
         <source>Deactivating...</source>
         <target state="final">Desactivando...</target>
-        <note>Line: 154</note>
+        <note>Line: 158</note>
       </trans-unit>
       <trans-unit id="ccfc7b0a56346cdac7fd40d2edd01c5a" approved="yes">
         <source>Deleting products</source>
         <target state="final">Eliminando productos</target>
-        <note>Line: 172</note>
+        <note>Line: 176</note>
       </trans-unit>
       <trans-unit id="1294e8c29fb59da902198447bd9a256c" approved="yes">
         <source>Deleting...</source>
         <target state="final">Eliminando...</target>
-        <note>Line: 176</note>
+        <note>Line: 180</note>
       </trans-unit>
     </body>
   </file>
@@ -1021,7 +1098,7 @@
       <trans-unit id="d80ebf39e80e164a170987dcd4212136" approved="yes">
         <source>When enabling advanced stock management for a pack, please make sure it is also enabled for its product(s) – if you choose to decrement product quantities.</source>
         <target state="final">Cuando activas la administración avanzada de stock para un pack, por favor, asegúrate de que también esté activada para tu(s) producto(s) - si eliges decrementar las cantidades del producto.</target>
-        <note>Line: 159</note>
+        <note>Line: 171</note>
       </trans-unit>
     </body>
   </file>
@@ -1030,7 +1107,7 @@
       <trans-unit id="e1cc7a5b4545de2fa898ab70a12e2d54" approved="yes">
         <source>You can't add or edit a product in this shop context: select a shop instead of a group of shops.</source>
         <target state="final">No puedes añadir o editar un producto en este contexto de tienda: Selecciona una tienda en lugar de un grupo de tiendas.</target>
-        <note>Line: 31</note>
+        <note>Line: 34</note>
       </trans-unit>
     </body>
   </file>
@@ -1039,7 +1116,7 @@
       <trans-unit id="1b89ef639dabfd2f6eb19886f7c9f8c8" approved="yes">
         <source>This will delete all the combinations. Do you wish to proceed?</source>
         <target state="final">Esto eliminará todas las combinaciones. ¿Deseas continuar?</target>
-        <note>Line: 332</note>
+        <note>Line: 340</note>
       </trans-unit>
       <trans-unit id="ff8a012ee6cba99838a649d92ad1b34b" approved="yes">
         <source>This will delete the specific price. Do you wish to proceed?</source>
@@ -1049,12 +1126,12 @@
       <trans-unit id="dfd19ad4f089996c7eabcd5935f75e98" approved="yes">
         <source>A pack of products can't have combinations.</source>
         <target state="final">Un pack de productos no puede tener combinaciones.</target>
-        <note>Line: 352</note>
+        <note>Line: 359</note>
       </trans-unit>
       <trans-unit id="5b75fdc0df647e8ac5275e31554dd0f9" approved="yes">
         <source>A virtual product can't have combinations.</source>
         <target state="final">Un producto virtual no puede tener combinaciones.</target>
-        <note>Line: 353</note>
+        <note>Line: 360</note>
       </trans-unit>
     </body>
   </file>
@@ -1081,7 +1158,7 @@
       <trans-unit id="3fcbe6bd34e9279ec2c7b13adf7e4095" approved="yes">
         <source>You have reached the limit (%s) of files to upload, please remove files to continue uploading</source>
         <target state="final">Has alcanzado el límite (%s) de archivos para subir, por favor, elimina archivos para continuar subiendo</target>
-        <note>Line: 116</note>
+        <note>Line: 120</note>
       </trans-unit>
     </body>
   </file>
@@ -1103,12 +1180,35 @@
       </trans-unit>
     </body>
   </file>
+  <file original="src/PrestaShopBundle/Resources/views/Admin/Sell/Catalog/Product/Combination/paginated_list.html.twig" source-language="en" target-language="es-ES" datatype="plaintext">
+    <body>
+      <trans-unit id="d077aab0da809b9037b3e3974da6bad3" approved="yes">
+        <source>Discard changes?</source>
+        <target state="final">¿Descartar cambios?</target>
+        <note>Line: 45</note>
+      </trans-unit>
+      <trans-unit id="e202ea17abd88b9634fb9939f6253ea9" approved="yes">
+        <source>All unsaved modifications made on the combination [1]%combinationName%[/1] will be lost.</source>
+        <target state="final">Se perderán todas las modificaciones que no se hayan guardado en la combinación [1]%combinationName%[/1].</target>
+        <note>Line: 46</note>
+      </trans-unit>
+    </body>
+  </file>
+  <file original="src/PrestaShopBundle/Resources/views/Admin/Sell/Catalog/Product/edit.html.twig" source-language="en" target-language="es-ES" datatype="plaintext">
+    <body>
+      <trans-unit id="fd7c4e2dcae282ac5305265c45be0bc2" approved="yes">
+        <source>This is the experimental product page.</source>
+        <target state="final">Esta es la página de producto experimental.</target>
+        <note>Line: 69</note>
+      </trans-unit>
+    </body>
+  </file>
   <file original="src/PrestaShopBundle/Resources/views/Admin/Stock/overview.html.twig" source-language="en" target-language="es-ES" datatype="plaintext">
     <body>
       <trans-unit id="8597e9c43b2587a888fee6b31dad5335" approved="yes">
         <source>You can't manage your stock in this shop context: select a shop instead of a group of shops.</source>
         <target state="final">No puedes administrar tu stock en este contexto de tienda: selecciona una tienda en lugar de un grupo de tiendas.</target>
-        <note>Line: 35</note>
+        <note>Line: 39</note>
       </trans-unit>
     </body>
   </file>
@@ -1117,7 +1217,7 @@
       <trans-unit id="b385b71f1d14c0afa6d7ca6cb18927b3" approved="yes">
         <source>There is no attachment yet.</source>
         <target state="final">No existe ningún archivo adjunto por el momento.</target>
-        <note>Line: 473</note>
+        <note>Line: 559</note>
       </trans-unit>
     </body>
   </file>

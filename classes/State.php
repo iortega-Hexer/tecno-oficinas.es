@@ -54,7 +54,7 @@ class StateCore extends ObjectModel
             'id_country' => ['type' => self::TYPE_INT, 'validate' => 'isUnsignedId', 'required' => true],
             'id_zone' => ['type' => self::TYPE_INT, 'validate' => 'isUnsignedId', 'required' => true],
             'iso_code' => ['type' => self::TYPE_STRING, 'validate' => 'isStateIsoCode', 'required' => true, 'size' => 7],
-            'name' => ['type' => self::TYPE_STRING, 'validate' => 'isGenericName', 'required' => true, 'size' => 32],
+            'name' => ['type' => self::TYPE_STRING, 'validate' => 'isGenericName', 'required' => true, 'size' => 80],
             'active' => ['type' => self::TYPE_BOOL, 'validate' => 'isBool'],
         ],
     ];
@@ -203,21 +203,33 @@ class StateCore extends ObjectModel
      *
      * @param int $idCountry Country ID
      * @param bool $active true if the state must be active
+     * @param string $orderBy order by field
+     * @param string $sort sort key (ASC or DESC)
      *
      * @return array|false|mysqli_result|PDOStatement|resource|null
      */
-    public static function getStatesByIdCountry($idCountry, $active = false)
+    public static function getStatesByIdCountry($idCountry, $active = false, $orderBy = null, $sort = 'ASC')
     {
         if (empty($idCountry)) {
             die(Tools::displayError());
         }
 
-        return Db::getInstance()->executeS(
-            '
-			SELECT *
-			FROM `' . _DB_PREFIX_ . 'state` s
-			WHERE s.`id_country` = ' . (int) $idCountry . ($active ? ' AND s.active = 1' : '')
-        );
+        $available_sort = ['DESC', 'ASC', 'asc', 'desc'];
+
+        $sql = new DbQuery();
+        $sql->select('*');
+        $sql->from('state', 's');
+        $sql->where('s.id_country = ' . (int) $idCountry . ($active ? ' AND s.active = 1' : ''));
+
+        if (array_key_exists($orderBy, static::$definition['fields'])) {
+            $sort = trim($sort);
+            if (in_array($sort, $available_sort)) {
+                $orderBy = $orderBy . ' ' . $sort;
+            }
+            $sql->orderBy($orderBy);
+        }
+
+        return Db::getInstance()->executeS($sql);
     }
 
     /**

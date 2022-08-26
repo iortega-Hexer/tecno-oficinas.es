@@ -1,5 +1,5 @@
 {*
-* 2007-2019 ETS-Soft
+* 2007-2022 ETS-Soft
 *
 * NOTICE OF LICENSE
 *
@@ -14,7 +14,7 @@
 * needs, please contact us for extra customization service at an affordable price
 *
 *  @author ETS-Soft <etssoft.jsc@gmail.com>
-*  @copyright  2007-2019 ETS-Soft
+*  @copyright  2007-2022 ETS-Soft
 *  @license    Valid for 1 website (or project) for each purchase of license
 *  International Registered Trademark & Property of ETS-Soft
 *}
@@ -24,7 +24,7 @@
         {l s='My information' mod='ybc_blog'}
         </div>
     </div>
-    <form class="defaultForm form-horizontal" novalidate="" enctype="multipart/form-data" method="post" action="">
+    <form class="defaultForm form-horizontal" novalidate="" enctype="multipart/form-data" method="post" action="{$action_link|escape:'html':'UTF-8'}">
         <section class="form-fields">
             <div class="form-group row ">
                 <label class="col-md-3 form-control-label" for="author_name">{l s='Name' mod='ybc_blog'}</label>

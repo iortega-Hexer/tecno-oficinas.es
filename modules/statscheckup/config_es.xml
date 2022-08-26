@@ -2,8 +2,8 @@
 <module>
     <name>statscheckup</name>
     <displayName><![CDATA[Evaluaci&oacute;n del cat&aacute;logo]]></displayName>
-    <version><![CDATA[2.0.1]]></version>
-    <description><![CDATA[A&ntilde;ade una evaluaci&oacute;n r&aacute;pida de la calidad del cat&aacute;logo de tu tienda al Panel de Control de Estad&iacute;sticas.]]></description>
+    <version><![CDATA[2.0.2]]></version>
+    <description><![CDATA[Enrich your stats, give your catalog a quick evaluation to better analyze your activity.]]></description>
     <author><![CDATA[PrestaShop]]></author>
     <tab><![CDATA[analytics_stats]]></tab>
     <is_configurable>0</is_configurable>

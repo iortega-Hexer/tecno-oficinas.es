@@ -4,11 +4,16 @@
 
 namespace Composer\Autoload;
 
-class ComposerStaticInit5d0a5dd5941f4bc7ce0ee99a07e2ae4a
+class ComposerStaticInitfb9560b2dab49a5b1403884325ab8151
 {
+    public static $classMap = array (
+        'Ps_Wirepayment' => __DIR__ . '/../..' . '/ps_wirepayment.php',
+    );
+
     public static function getInitializer(ClassLoader $loader)
     {
         return \Closure::bind(function () use ($loader) {
+            $loader->classMap = ComposerStaticInitfb9560b2dab49a5b1403884325ab8151::$classMap;
 
         }, null, ClassLoader::class);
     }

@@ -178,28 +178,26 @@
     </div>
 </div>-->
             
-<div data-type="{ShippingRule::IS_FREE_SHIPPING|intval}">
+<div data-type="{ShippingRule::IS_FREE_SHIPPING|intval},{ShippingRule::IS_PERCENT|intval},{ShippingRule::IS_AMOUNT|intval},{ShippingRule::IS_FORMULA|intval}">
+    <hr />
+    
     <div class="form-group">
             <label class="control-label col-lg-3">
-                {l s='Offer shipping if' mod='orderfees_shipping'}
+                {l s='Apply if' mod='orderfees_shipping'}
             </label>
             <div class="col-lg-6">
                 <div class="row">
                     <div class="col-lg-12">
-                        <select name="free_shipping">
-                            <option value="{ShippingRule::FREE_SHIPPING_LEAST|intval}" {if $controller->getFieldValue($rule, 'type') & ShippingRule::FREE_SHIPPING_LEAST}selected="selected"{/if}>{l s='At least one product in the cart meets the conditions' mod='orderfees_shipping'}</option>
-                            <option value="{ShippingRule::FREE_SHIPPING_ALL|intval}" {if $controller->getFieldValue($rule, 'type') & ShippingRule::FREE_SHIPPING_ALL}selected="selected"{/if}>{l s='All products in the cart meet the conditions' mod='orderfees_shipping'}</option>
+                        <select name="apply_if">
+                            <option value="{ShippingRule::APPLY_IF_LEAST|intval}" {if $controller->getFieldValue($rule, 'type') & ShippingRule::APPLY_IF_LEAST}selected="selected"{/if}>{l s='At least one product in the cart meets the conditions' mod='orderfees_shipping'}</option>
+                            <option value="{ShippingRule::APPLY_IF_ALL|intval}" {if $controller->getFieldValue($rule, 'type') & ShippingRule::APPLY_IF_ALL}selected="selected"{/if}>{l s='All products in the cart meet the conditions' mod='orderfees_shipping'}</option>
                         </select>
                     </div>
                 </div>
             </div>
     </div>
-</div>
                         
-<div data-type="{ShippingRule::IS_PERCENT|intval},{ShippingRule::IS_AMOUNT|intval},{ShippingRule::IS_FORMULA|intval}">
-    <hr />
-    
-    <div class="form-group">
+    <div class="form-group" data-type="{ShippingRule::IS_PERCENT|intval},{ShippingRule::IS_AMOUNT|intval},{ShippingRule::IS_FORMULA|intval}">
             <label class="control-label col-lg-3">
                 {l s='Compatibility with basic shipping costs' mod='orderfees_shipping'}
             </label>
@@ -218,7 +216,7 @@
                 <a href="#" tabindex="0" data-trigger="focus" data-html="true" class="help-link" data-toggle="popover" data-placement="top" data-content="{l s='Define the behavior of this rule with the shipping costs you have defined in the "Carriers" menu.' mod='orderfees_shipping'}"><i class="process-icon-help"></i></a>
             </div>
     </div>
-</div>              
+</div>             
             
 <input type="hidden" name="quantity_per_product" value="{$controller->getFieldValue($rule, 'quantity_per_product')|intval}" />
             

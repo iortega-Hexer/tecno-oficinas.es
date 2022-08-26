@@ -1,5 +1,5 @@
 {*
-* 2007-2019 ETS-Soft
+* 2007-2022 ETS-Soft
 *
 * NOTICE OF LICENSE
 *
@@ -14,7 +14,7 @@
 * needs, please contact us for extra customization service at an affordable price
 *
 *  @author ETS-Soft <etssoft.jsc@gmail.com>
-*  @copyright  2007-2019 ETS-Soft
+*  @copyright  2007-2022 ETS-Soft
 *  @license    Valid for 1 website (or project) for each purchase of license
 *  International Registered Trademark & Property of ETS-Soft
 *}
@@ -24,6 +24,7 @@
             <div class="block ybc_block_category {$blog_config.YBC_BLOG_RTL_CLASS|escape:'html':'UTF-8'} {if isset($page) && $page}page_{$page|escape:'html':'UTF-8'}{else}page_blog{/if} {if isset($page) && $page=='home'}{if isset($blog_config.YBC_BLOG_HOME_POST_TYPE) && $blog_config.YBC_BLOG_HOME_POST_TYPE=='default' || count($category.posts)<=1}ybc_block_default{else}ybc_block_slider{/if}{else}{if isset($blog_config.YBC_BLOG_SIDEBAR_POST_TYPE) && $blog_config.YBC_BLOG_SIDEBAR_POST_TYPE=='default' || count($category.posts)<=1}ybc_block_default{else}ybc_block_slider{/if}{/if}">
                 <h4 class="title_blog title_block">{$category.title|escape:'html':'UTF-8'}</h4>
                 {assign var='product_row' value=$blog_config.YBC_BLOG_HOME_PER_ROW|intval}
+                <div class="block_content row">
                 <ul class="block_content {if  count($category.posts)>=1 && $blog_config.YBC_BLOG_SIDEBAR_POST_TYPE!='default'}owl-carousel{/if}">
                     {foreach from=$category.posts item='post'}
                         <li {if $page=='home'}class="col-xs-12 col-sm-4 col-lg-{12/$product_row|intval}"{/if}> 
@@ -94,6 +95,7 @@
                         <a href="{$category.link_all|escape:'html':'UTF-8'}" class="view_all_link" title="{l s='View all posts' mod='ybc_blog'}">{l s='View all posts' mod='ybc_blog'}</a>
                     </div>
                 {/if}
+                </div>
                 <div class="clear"></div>
             </div>
         {/if}

@@ -2,8 +2,8 @@
 <module>
     <name>statscatalog</name>
     <displayName><![CDATA[Cat&aacute;logo de estad&iacute;sticas]]></displayName>
-    <version><![CDATA[2.0.1]]></version>
-    <description><![CDATA[A&ntilde;ade una pesta&ntilde;a que contiene estad&iacute;sticas generales sobre tu cat&aacute;logo en el Panel de Control de Estad&iacute;sticas.]]></description>
+    <version><![CDATA[2.0.2]]></version>
+    <description><![CDATA[Enrich your stats, have a look at your catalog&rsquo;s general statistics.]]></description>
     <author><![CDATA[PrestaShop]]></author>
     <tab><![CDATA[analytics_stats]]></tab>
     <is_configurable>0</is_configurable>

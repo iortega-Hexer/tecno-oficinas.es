@@ -1,4 +1,4 @@
 Hi {customer_name}
-Your comment has been successfully submitted on {post_title} and is waiting  for approval
+Your comment has been successfully submitted on {post_title} and is waiting for approval
 Review post
 

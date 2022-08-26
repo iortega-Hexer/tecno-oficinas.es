@@ -1,0 +1,124 @@
+.ybc-blog-post-footer .read_more:hover,
+.blog-managament-information button[type="submit"]:hover,
+.ybc-blog-tag-a:hover,
+#form_blog .btn.edit_view_post:hover,
+.form_reply_comment input[type="submit"]:hover,
+.form_reply input.btn.btn-primary.btn-default[name="addReplyComment"]:hover,
+.form-polls-body button[name="polls_cancel"]:hover,
+.form-polls-body button:hover
+{
+    background:#474747;
+    border-color:#474747;
+}
+.ybc-blog-like-span.active, .be-tag-block .be-tags a, .be-tag-block .be-tags,
+.ybc-blog-related-posts-meta-categories > a,
+.view_post,
+.comment-content h4.comment_name span,
+.ybc_block_categories .active > a,
+.comment-content .post_title span a,
+.blog-managament-information .help-block a,
+.ybc-blog-comment-info .post-author .ybc_title_block {
+  color:#f29400;
+}
+.ybc-block-comment-reply:hover,
+.ybc_title_block:hover,
+.read_more:hover,
+.form_reply input.btn.btn-primary.btn-default[name="addReplyComment"] + .btn.btn-default:hover,
+.comment-content .post_title span a:hover,
+.list_category_item .sub_category li a:hover,
+.ybc_block_categories .active > a:hover,
+.ybc-blog-comment-info .post-author .ybc_title_block:hover,
+.blog-managament-information .help-block a:hover,
+#form_blog a.ybc_button_backtolist:hover{
+    color: #474747;
+}
+.ybc-blog-thumbnail-list.carousel .ybc-blog-thumbnail-item.slick-current:before,
+.ybc-blog-slider.carousel .slick-dots .slick-active button{
+    border-color: #f29400;
+}
+.ybc-blog-form-comment .blog-submit .button,
+.blog-managament-information button[type="submit"],
+.ybc-blog-slider.carousel .slick-dots .slick-active button,
+.blog_view_all, .view_all_link,
+.blog_view_all_button a,
+.form-polls-body button,
+.form_reply input.btn.btn-primary.btn-default[name="addReplyComment"],
+.add_new_post_blog a,
+#form_blog button[type="submit"],
+#form_blog .btn.edit_view_post,
+.form_reply_comment input[type="submit"],
+.ets_blog_loading .squaresWaveG
+{
+  background:#f29400; 
+}
+
+.ybc-blog-form-comment .blog-submit .button:hover,
+.blog_view_all:hover, .view_all_link:hover,
+.blog_view_all_button a:hover,
+.add_new_post_blog a:hover,
+#form_blog button[type='submit']:hover
+{
+  background:#474747; 
+}
+.ybc_blog_ltr_mode a:hover, 
+.ybc-blog-wrapper-detail a:hover,
+.ybc-blog-like-span:hover, 
+.blog-main-page a:hover,
+.ybc_button_backtolist:hover,
+.ybc-block-comment-report:hover{
+    color: #474747;
+}
+.form-polls-body button,
+.form_reply_comment input[type="submit"]{
+    border: 1px solid #f29400;
+}
+
+@keyframes bounce_squaresWaveG {
+    0% {
+        background-color: #f29400;
+    }
+
+    100% {
+        background-color: rgb(255, 255, 255);
+    }
+}
+
+@-o-keyframes bounce_squaresWaveG {
+    0% {
+        background-color: #f29400;
+    }
+
+    100% {
+        background-color: rgb(255, 255, 255);
+    }
+}
+
+@-ms-keyframes bounce_squaresWaveG {
+    0% {
+        background-color: #f29400;
+    }
+
+    100% {
+        background-color: rgb(255, 255, 255);
+    }
+}
+
+@-webkit-keyframes bounce_squaresWaveG {
+    0% {
+        background-color: #f29400;
+    }
+
+    100% {
+        background-color: rgb(255, 255, 255);
+    }
+}
+
+@-moz-keyframes bounce_squaresWaveG {
+    0% {
+        background-color: #f29400;
+    }
+
+    100% {
+        background-color: rgb(255, 255, 255);
+    }
+}

@@ -1,0 +1,20 @@
+/*
+ *
+ *	@module     	Advanced search (AmbJoliSearch)
+ *	@file 			jms_mella-1.7.css
+ *	@subject		Add support for Angar theme
+ *	@copyright  	Copyright (c) 2013-2020 Ambris Informatique SARL (http://www.ambris.com/)
+ *	@author     	Richard Stefan (@RicoStefan)
+ *	@license    	Commercial license
+ *	Support by mail: support@ambris.com
+ *
+ *	suggest (autocomplete) list style
+*/
+
+#jms_ajax_search #search-form.open {
+	z-index: 1000 !important;
+}
+
+.ui-menu.ui-jolisearch {
+	z-index: 100000;
+}

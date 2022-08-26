@@ -26,7 +26,7 @@ class Prettyurls extends Module
 	{
 		$this->name = 'prettyurls';
 		$this->tab = 'seo';
-		$this->version = '2.2.5';
+		$this->version = '2.2.7';
 		$this->author = 'FMM Modules';
 		$this->bootstrap = true;
 		$this->module_key = 'db5a06ecc8e806d8941ed9a91d6d3ad2';

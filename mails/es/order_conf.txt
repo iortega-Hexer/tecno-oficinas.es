@@ -1,3 +1,5 @@
+ 
+
 {shop_url}
 
 Hola {firstname} {lastname},
@@ -23,6 +25,8 @@ Transporte
 Transportista: {carrier}
 
 Pago: {payment}
+
+Recycled packaging: {recycled_packaging_label}
 
 Dirección de entrega
 

@@ -2,8 +2,8 @@
 <module>
     <name>pagesnotfound</name>
     <displayName><![CDATA[P&aacute;ginas no encontradas]]></displayName>
-    <version><![CDATA[2.0.0]]></version>
-    <description><![CDATA[A&ntilde;ade una pesta&ntilde;a al panel de Estad&iacute;sticas, mostrando las p&aacute;ginas solicitadas por tus visitantes que no se han encontrado.]]></description>
+    <version><![CDATA[2.0.2]]></version>
+    <description><![CDATA[Enrich your stats, display the pages requested by your visitors that could not be found.]]></description>
     <author><![CDATA[PrestaShop]]></author>
     <tab><![CDATA[analytics_stats]]></tab>
     <is_configurable>0</is_configurable>

@@ -4,7 +4,7 @@
 
 namespace Composer\Autoload;
 
-class ComposerStaticInitf2d36d546bc623be999a6b8e7799b17b
+class ComposerStaticInitc2fbda8645e5f7b373509c12ae6f3fa4
 {
     public static $classMap = array (
         'Ps_CustomerSignIn' => __DIR__ . '/../..' . '/ps_customersignin.php',
@@ -13,7 +13,7 @@ class ComposerStaticInitf2d36d546bc623be999a6b8e7799b17b
     public static function getInitializer(ClassLoader $loader)
     {
         return \Closure::bind(function () use ($loader) {
-            $loader->classMap = ComposerStaticInitf2d36d546bc623be999a6b8e7799b17b::$classMap;
+            $loader->classMap = ComposerStaticInitc2fbda8645e5f7b373509c12ae6f3fa4::$classMap;
 
         }, null, ClassLoader::class);
     }

@@ -1,6 +1,8 @@
+ 
+
 {shop_url}
 
-Hola {firstname} {lastname},
+Hola,
 
 Nuevo mensaje de aviso guardado
 

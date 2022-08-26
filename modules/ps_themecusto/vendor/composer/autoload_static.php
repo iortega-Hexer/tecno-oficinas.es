@@ -4,7 +4,7 @@
 
 namespace Composer\Autoload;
 
-class ComposerStaticInit4e1b4592763e755a55c810fa71a11d95
+class ComposerStaticInit854a62f3fd7ed2a8b92e91be6fa8b24e
 {
     public static $classMap = array (
         'AdminPsThemeCustoAdvancedController' => __DIR__ . '/../..' . '/controllers/admin/AdminPsThemeCustoAdvanced.php',
@@ -16,7 +16,7 @@ class ComposerStaticInit4e1b4592763e755a55c810fa71a11d95
     public static function getInitializer(ClassLoader $loader)
     {
         return \Closure::bind(function () use ($loader) {
-            $loader->classMap = ComposerStaticInit4e1b4592763e755a55c810fa71a11d95::$classMap;
+            $loader->classMap = ComposerStaticInit854a62f3fd7ed2a8b92e91be6fa8b24e::$classMap;
 
         }, null, ClassLoader::class);
     }

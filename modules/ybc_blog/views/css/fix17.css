@@ -8,3 +8,7 @@
 #footer_account_list > li .ss_icon_group {
  display:none;
 }
+#footer_account_list li {
+    width: 100%;
+    padding: 0;
+}

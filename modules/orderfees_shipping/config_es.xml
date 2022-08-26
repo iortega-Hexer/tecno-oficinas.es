@@ -2,7 +2,7 @@
 <module>
     <name>orderfees_shipping</name>
     <displayName><![CDATA[Costo de env&iacute;o Avanzado]]></displayName>
-    <version><![CDATA[1.9.5]]></version>
+    <version><![CDATA[1.10.3]]></version>
     <description><![CDATA[Gestione f&aacute;cilmente sus gastos de env&iacute;o.]]></description>
     <author><![CDATA[motionSeed]]></author>
     <tab><![CDATA[shipping_logistics]]></tab>

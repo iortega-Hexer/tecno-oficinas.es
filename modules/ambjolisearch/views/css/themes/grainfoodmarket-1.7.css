@@ -1,0 +1,30 @@
+/*
+ *
+ *	@module     	Advanced search (AmbJoliSearch)
+ *	@file 			grainfoodmarket-1.7.css
+ *	@subject		Add support for Angar theme
+ *	@copyright  	Copyright (c) 2013-2020 Ambris Informatique SARL (http://www.ambris.com/)
+ *	@author     	Richard Stefan (@RicoStefan)
+ *	@license    	Commercial license
+ *	Support by mail: support@ambris.com
+ *
+ *	suggest (autocomplete) list style
+*/
+
+
+.ui-jolisearch.ui-widget.ui-autocomplete {
+	overflow: hidden;
+	max-height: auto;
+}
+
+.ui-jolisearch.ui-menu .ui-menu-item {
+    width: 100% !important;
+}
+
+.ui-jolisearch .jolisearch-product .product-name {
+	margin-top: 0;
+}
+
+.ui-jolisearch.ui-menu .jolisearch-body {
+	padding-top: 5px;
+}

@@ -2,8 +2,8 @@
 <module>
     <name>statssearch</name>
     <displayName><![CDATA[B&uacute;squedas en la tienda]]></displayName>
-    <version><![CDATA[2.0.1]]></version>
-    <description><![CDATA[A&ntilde;ade una pesta&ntilde;a al Panel de control de Estad&iacute;sticas, mostrando qu&eacute; palabras clave han sido buscadas por los visitantes de tu tienda.]]></description>
+    <version><![CDATA[2.0.2]]></version>
+    <description><![CDATA[Enrich your stats, add a tab showing what keywords have been searched by your visitors.]]></description>
     <author><![CDATA[PrestaShop]]></author>
     <tab><![CDATA[analytics_stats]]></tab>
     <is_configurable>0</is_configurable>

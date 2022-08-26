@@ -1,5 +1,5 @@
 {*
-* 2007-2019 ETS-Soft
+* 2007-2022 ETS-Soft
 *
 * NOTICE OF LICENSE
 *
@@ -14,21 +14,19 @@
 * needs, please contact us for extra customization service at an affordable price
 *
 *  @author ETS-Soft <etssoft.jsc@gmail.com>
-*  @copyright  2007-2019 ETS-Soft
+*  @copyright  2007-2022 ETS-Soft
 *  @license    Valid for 1 website (or project) for each purchase of license
 *  International Registered Trademark & Property of ETS-Soft
 *}
 {extends file="page.tpl"}
-{block name="left_column"}
+{block name="content"}
+<div class="row">
     {if isset($blog_config.YBC_BLOG_SIDEBAR_POSITION) && $blog_config.YBC_BLOG_SIDEBAR_POSITION=='left'}
-    <div id="left-column" class="col-xs-12 col-sm-4 col-md-3">
-      {hook h="blogSidebar"}
-    </div>
+        <div id="left-column" class="col-xs-12 col-sm-4 col-md-3">
+          {hook h="blogSidebar"}
+        </div>
     {/if}
-{/block}
-{block name="content_wrapper"}
     <div id="content-wrapper" class="{if isset($blog_config.YBC_BLOG_SIDEBAR_POSITION) && $blog_config.YBC_BLOG_SIDEBAR_POSITION=='left'}left-column col-xs-12 col-sm-8 col-md-9{elseif isset($blog_config.YBC_BLOG_SIDEBAR_POSITION) && $blog_config.YBC_BLOG_SIDEBAR_POSITION=='right'}right-column col-xs-12 col-sm-8 col-md-9{/if}">
-      {block name="content"}
         <div class="ybc_blog_layout_{$blog_layout|escape:'html':'UTF-8'} ybc-blog-wrapper ybc-blog-wrapper-blog-list{if isset($blog_config.YBC_BLOG_AUTO_LOAD) &&$blog_config.YBC_BLOG_AUTO_LOAD} loadmore{/if}">
             {if $posts}
                 <h2 class="page-heading product-listing">{l s='All Comments' mod='ybc_blog'}</h2>
@@ -117,13 +115,11 @@
                 <p>{l s='No category found' mod='ybc_blog'}</p>
             {/if}
         </div>                
-      {/block}
     </div>
-{/block}
-{block name="right_column"}
-{if isset($blog_config.YBC_BLOG_SIDEBAR_POSITION) && $blog_config.YBC_BLOG_SIDEBAR_POSITION=='right'}
-    <div id="right-column" class="col-xs-12 col-sm-4 col-md-3">
-      {hook h="blogSidebar"}
-    </div>
-{/if}
+    {if isset($blog_config.YBC_BLOG_SIDEBAR_POSITION) && $blog_config.YBC_BLOG_SIDEBAR_POSITION=='right'}
+        <div id="right-column" class="col-xs-12 col-sm-4 col-md-3">
+          {hook h="blogSidebar"}
+        </div>
+    {/if}
+</div>
 {/block}

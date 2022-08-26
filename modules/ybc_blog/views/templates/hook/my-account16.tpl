@@ -1,5 +1,5 @@
 {*
-* 2007-2019 ETS-Soft
+* 2007-2022 ETS-Soft
 *
 * NOTICE OF LICENSE
 *
@@ -14,11 +14,12 @@
 * needs, please contact us for extra customization service at an affordable price
 *
 *  @author ETS-Soft <etssoft.jsc@gmail.com>
-*  @copyright  2007-2019 ETS-Soft
+*  @copyright  2007-2022 ETS-Soft
 *  @license    Valid for 1 website (or project) for each purchase of license
 *  International Registered Trademark & Property of ETS-Soft
 *}
 <!-- MODULE ybc_blog -->
+<link rel="stylesheet" href="{$link->getMediaLink("`$smarty.const._MODULE_DIR_`ybc_blog/views/css/fix17.css")|escape:'html':'UTF-8'}" type="text/css" media="all" />
 {if $author && !$suppened}
 <li class="lnk_ybc_blog">
 	<a href="{$link->getModuleLink('ybc_blog','managementblog',array(),true)|escape:'html':'UTF-8'}" title="{l s='Blog management' mod='ybc_blog'}">

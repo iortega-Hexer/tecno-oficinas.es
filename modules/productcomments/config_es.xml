@@ -2,7 +2,7 @@
 <module>
     <name>productcomments</name>
     <displayName><![CDATA[Comentarios sobre el producto]]></displayName>
-    <version><![CDATA[4.2.1]]></version>
+    <version><![CDATA[5.0.1]]></version>
     <description><![CDATA[Permitir a los usuarios publicar rese&ntilde;as y/o calificaciones en tus productos basadas en criterios espec&iacute;ficos.]]></description>
     <author><![CDATA[PrestaShop]]></author>
     <tab><![CDATA[front_office_features]]></tab>

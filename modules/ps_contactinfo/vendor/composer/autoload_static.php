@@ -4,7 +4,7 @@
 
 namespace Composer\Autoload;
 
-class ComposerStaticInit36a56954a79a0d3a1878a208791403f7
+class ComposerStaticInit27ad2d443f8a66d5ff5f52075bee800b
 {
     public static function getInitializer(ClassLoader $loader)
     {

@@ -1,6 +1,6 @@
 <?php
 /**
- * 2007-2019 ETS-Soft
+ * 2007-2022 ETS-Soft
  *
  * NOTICE OF LICENSE
  *
@@ -15,7 +15,7 @@
  * needs please contact us for extra customization service at an affordable price
  *
  *  @author ETS-Soft <etssoft.jsc@gmail.com>
- *  @copyright  2007-2019 ETS-Soft
+ *  @copyright  2007-2022 ETS-Soft
  *  @license    Valid for 1 website (or project) for each purchase of license
  *  International Registered Trademark & Property of ETS-Soft
  */
@@ -34,10 +34,9 @@ class Ybc_blogReportModuleFrontController extends ModuleFrontController
             $json['error'] = $this->module->l('This comment does not exist');
             die(Tools::jsonEncode($json));
          }
-         
          if(!isset($this->context->cookie->id_customer) || isset($this->context->cookie->id_customer) && !$this->context->cookie->id_customer)
          {
-            $json['error'] = $this->module->l('Please login to report this comment');
+            $json['error'] = $this->module->l('Please log in to report this comment');
             die(Tools::jsonEncode($json));
          }
          $context = Context::getContext();
@@ -80,7 +79,7 @@ class Ybc_blogReportModuleFrontController extends ModuleFrontController
                 $comment->id_post,
                 $comment->name
              );
-             if(Configuration::get('YBC_BLOG_ENABLE_MAIL_REPORTED_CUSTOMER'))
+             if(($subject = Ybc_blog_email_template_class::getSubjectByTemplate('reported_comment_customer')))
              {
                 $post = new Ybc_blog_post_class($comment->id_post,$this->context->language->id);
                 $template_mail=array(
@@ -99,7 +98,7 @@ class Ybc_blogReportModuleFrontController extends ModuleFrontController
                 Mail::Send(
                     $this->context->language->id, 
                     'reported_comment_customer',
-                    Mail::l('You has successfully reported a comment as abused'),
+                    $subject,
                     $template_mail,  
                     $customer->email, null, null, null, null, null, 
                     dirname(__FILE__).'/../../mails/', 
@@ -113,14 +112,8 @@ class Ybc_blogReportModuleFrontController extends ModuleFrontController
 	}
     public function sendNotification($id_comment, $subject, $comment, $rating, $postLink, $reporter, $remail,$id_post,$comment_author)
     {
-        if(!(int)Configuration::get('YBC_BLOG_ENABLE_MAIL_REPORT'))
-            return false;
         $post= new Ybc_blog_post_class($id_post,$this->context->language->id);
         $mailDir = dirname(__FILE__).'/../../mails/';
-        $lang = new Language((int)$this->context->language->id);
-        $mail_lang_id = (int)$this->context->language->id;
-        if(!is_dir($mailDir.$lang->iso_code))
-           $mail_lang_id = (int)Configuration::get('PS_LANG_DEFAULT'); 
         $template_mail =array(
             '{reporter}' => $reporter, 
             '{email}' => $remail,
@@ -146,16 +139,21 @@ class Ybc_blogReportModuleFrontController extends ModuleFrontController
         }
         if($author->email)
         {
-            $template_mail['{author_name}'] = $author->firstname.' '.$author->lastname;
-            $template_mail['{link_view_comment}'] = $link_view_comment;
-            Mail::Send(
-                $mail_lang_id, 
-                'report_comment', Mail::l('Comment is reported a abused', $this->context->language->id), 
-                $template_mail,  
-                trim($author->email), null, null, null, null, null, 
-                $mailDir, 
-                false, $this->context->shop->id
-            );
+            $mail_lang_id = $author->id_lang;
+            if($subject = Ybc_blog_email_template_class::getSubjectByTemplate('report_comment',$mail_lang_id))
+            {
+                $template_mail['{author_name}'] = $author->firstname.' '.$author->lastname;
+                $template_mail['{link_view_comment}'] = $link_view_comment;
+                Mail::Send(
+                    $mail_lang_id, 
+                    'report_comment', $subject, 
+                    $template_mail,  
+                    trim($author->email), null, null, null, null, null, 
+                    $mailDir, 
+                    false, $this->context->shop->id
+                );
+            }
+            
         }
         if(Configuration::get('YBC_BLOG_ALERT_EMAILS'))
         {
@@ -167,16 +165,25 @@ class Ybc_blogReportModuleFrontController extends ModuleFrontController
                 {
                     if(Validate::isEmail($email))
                     {
-                        $template_mail['{author_name}'] = Configuration::get('PS_SHOP_NAME');
-                        $template_mail['{link_view_comment}'] = $link_view_comment;
-                        Mail::Send(
-                            $mail_lang_id, 
-                            'report_comment', Mail::l('Comment is reported a abused', $this->context->language->id), 
-                            $template_mail,  
-                            trim($email), null, null, null, null, null, 
-                            $mailDir, 
-                            false, $this->context->shop->id
-                        );
+                        $employeeObj = new Employee();
+                        if(($employee = $employeeObj->getByEmail($email)) && ($lang = new Language($employee->id_lang)) && $lang->active)
+                            $mail_lang_id = $lang->id;
+                        else
+                            $mail_lang_id = Context::getContext()->language->id;
+                        if($subject = Ybc_blog_email_template_class::getSubjectByTemplate('report_comment',$mail_lang_id))
+                        {
+                            $template_mail['{author_name}'] = Configuration::get('PS_SHOP_NAME');
+                            $template_mail['{link_view_comment}'] = $link_view_comment;
+                            Mail::Send(
+                                $mail_lang_id, 
+                                'report_comment', 
+                                $subject, 
+                                $template_mail,  
+                                trim($email), null, null, null, null, null, 
+                                $mailDir, 
+                                false, $this->context->shop->id
+                            );
+                        }
                     }
                 }
             }

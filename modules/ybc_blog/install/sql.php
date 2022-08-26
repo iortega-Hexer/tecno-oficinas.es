@@ -1,6 +1,6 @@
 <?php
 /**
- * 2007-2019 ETS-Soft
+ * 2007-2022 ETS-Soft
  *
  * NOTICE OF LICENSE
  *
@@ -15,7 +15,7 @@
  * needs please contact us for extra customization service at an affordable price
  *
  *  @author ETS-Soft <etssoft.jsc@gmail.com>
- *  @copyright  2007-2019 ETS-Soft
+ *  @copyright  2007-2022 ETS-Soft
  *  @license    Valid for 1 website (or project) for each purchase of license
  *  International Registered Trademark & Property of ETS-Soft
  */
@@ -27,8 +27,6 @@ if (!defined('_PS_VERSION_'))
         CREATE TABLE IF NOT EXISTS `"._DB_PREFIX_."ybc_blog_category` (
           `id_category` int(10) unsigned NOT NULL AUTO_INCREMENT,
           `id_parent` INT(11) NOT NULL,
-          `image` varchar(500) NOT NULL,
-          `thumb` varchar(500) NOT NULL,
           `added_by` int(11) NOT NULL,
           `modified_by` int(11) NOT NULL,
           `enabled` tinyint(1) NOT NULL DEFAULT '1',
@@ -42,7 +40,7 @@ if (!defined('_PS_VERSION_'))
           `id_category` int(10) unsigned NOT NULL,
           `id_shop` int(11) NOT NULL,
           PRIMARY KEY (`id_category`,`id_shop`)
-        )";
+        ) ENGINE="._MYSQL_ENGINE_." DEFAULT CHARSET=UTF8";
     $sqls[] = "CREATE TABLE IF NOT EXISTS `"._DB_PREFIX_."ybc_blog_category_lang` (
       `id_category` int(11) NOT NULL,
       `id_lang` int(11) NOT NULL,
@@ -52,6 +50,8 @@ if (!defined('_PS_VERSION_'))
       `url_alias` varchar(700) NOT NULL,
       `meta_keywords` varchar(5000)  NOT NULL,
       `meta_description` text,
+      `image` varchar(500) NULL,
+      `thumb` varchar(500) NULL,
       PRIMARY KEY (`id_category`,`id_lang`)
     ) ENGINE="._MYSQL_ENGINE_." DEFAULT CHARSET=UTF8";
 $sqls[] = "CREATE TABLE IF NOT EXISTS `"._DB_PREFIX_."ybc_blog_comment` (
@@ -74,8 +74,6 @@ $sqls[] = "CREATE TABLE IF NOT EXISTS `"._DB_PREFIX_."ybc_blog_comment` (
 ) ENGINE="._MYSQL_ENGINE_." DEFAULT CHARSET=UTF8";
     $sqls[] = "CREATE TABLE IF NOT EXISTS `"._DB_PREFIX_."ybc_blog_gallery` (
   `id_gallery` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `image` varchar(1000) NOT NULL,
-  `thumb` varchar(1000) NOT NULL,
   `is_featured` tinyint(1) NOT NULL DEFAULT '1',
   `enabled` tinyint(1) NOT NULL DEFAULT '1',
   `sort_order` int(11) NOT NULL DEFAULT '1',
@@ -92,6 +90,8 @@ $sqls[] = "CREATE TABLE IF NOT EXISTS `"._DB_PREFIX_."ybc_blog_comment` (
   `id_lang` int(11) NOT NULL,
   `title` varchar(1000) NOT NULL,
   `description` text NOT NULL,
+  `image` varchar(1000) NULL,
+  `thumb` varchar(1000) NULL,
   PRIMARY KEY (`id_gallery`,`id_lang`)
   ) ENGINE="._MYSQL_ENGINE_." DEFAULT CHARSET=UTF8";
   $sqls[] = "CREATE TABLE IF NOT EXISTS `"._DB_PREFIX_."ybc_blog_post` (
@@ -99,8 +99,6 @@ $sqls[] = "CREATE TABLE IF NOT EXISTS `"._DB_PREFIX_."ybc_blog_comment` (
   `id_category_default` INT(11),
   `is_featured` tinyint(1) NOT NULL DEFAULT '0',
   `products` varchar(1000) NOT NULL,
-  `thumb` varchar(1000) NOT NULL,
-  `image` varchar(500) NOT NULL,
   `added_by` int(11) NOT NULL,
   `is_customer` INT(1) NOT NULL,
   `modified_by` int(11) NOT NULL,
@@ -135,11 +133,13 @@ $sqls[] = "CREATE TABLE IF NOT EXISTS `"._DB_PREFIX_."ybc_blog_comment` (
   `short_description` text,
   `meta_keywords` varchar(5000) NOT NULL,
   `meta_description` text,
+  `thumb` varchar(1000) NOT NULL,
+  `image` varchar(500) NOT NULL,
   PRIMARY KEY (`id_post`,`id_lang`)
 ) ENGINE="._MYSQL_ENGINE_." DEFAULT CHARSET=UTF8";
     $sqls[] = "CREATE TABLE IF NOT EXISTS `"._DB_PREFIX_."ybc_blog_slide` (
   `id_slide` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `image` varchar(1000) NOT NULL,
+  
   `enabled` tinyint(1) NOT NULL DEFAULT '1',
   `sort_order` int(10) NOT NULL DEFAULT '1',
   PRIMARY KEY (`id_slide`)
@@ -155,6 +155,7 @@ $sqls[] = "CREATE TABLE IF NOT EXISTS `"._DB_PREFIX_."ybc_blog_comment` (
   `id_lang` int(11) NOT NULL,
   `url` varchar(1000) NOT NULL,
   `caption` varchar(5000) NOT NULL,
+  `image` varchar(1000) NOT NULL,
   PRIMARY KEY (`id_slide`,`id_lang`)
 ) ENGINE="._MYSQL_ENGINE_." DEFAULT CHARSET=UTF8";
     $sqls[] = "CREATE TABLE IF NOT EXISTS `"._DB_PREFIX_."ybc_blog_tag` (
@@ -172,7 +173,7 @@ $sqls[] = "CREATE TABLE IF NOT EXISTS `"._DB_PREFIX_."ybc_blog_comment` (
     `is_customer` INT(1),
     `avata` VARCHAR(222) NOT NULL , 
     `status` INT(1) NOT NULL ,
-    `profile_employee` VARCHAR(222) NOT NULL , 
+    `profile_employee` TEXT NOT NULL , 
     PRIMARY KEY (`id_employee_post`)) ENGINE="._MYSQL_ENGINE_." DEFAULT CHARSET=UTF8";
     $sqls[] = "CREATE TABLE IF NOT EXISTS `"._DB_PREFIX_."ybc_blog_employee_lang` (
     `id_employee_post` int(11) NOT NULL,
@@ -222,6 +223,15 @@ $sqls[] = "CREATE TABLE IF NOT EXISTS `"._DB_PREFIX_."ybc_blog_comment` (
     `feedback` TEXT NOT NULL, 
     `dateadd` DATETIME NOT NULL ,
      PRIMARY KEY (`id_polls`)) ENGINE="._MYSQL_ENGINE_." DEFAULT CHARSET=UTF8";
+     $sqls[]=  'CREATE TABLE IF NOT EXISTS `'._DB_PREFIX_.'ybc_blog_email_template` ( 
+     `id_ybc_blog_email_template` INT(11) NOT NULL AUTO_INCREMENT , 
+     `active` INT(11) NOT NULL , 
+     `template` VARCHAR(300) NOT NULL , 
+     PRIMARY KEY (`id_ybc_blog_email_template`)) ENGINE= '._MYSQL_ENGINE_.' DEFAULT CHARSET=UTF8';
+     $sqls[] = 'CREATE TABLE IF NOT EXISTS `'._DB_PREFIX_.'ybc_blog_email_template_lang` ( 
+     `id_ybc_blog_email_template` INT(11) NOT NULL ,`id_lang` INT(11) NOT NULL , 
+     `subject` VARCHAR(1000) NOT NULL ,
+     PRIMARY KEY (`id_ybc_blog_email_template`, `id_lang`)) ENGINE= '._MYSQL_ENGINE_.' DEFAULT CHARSET=UTF8';
 if($sqls)
 {
     foreach($sqls as $sql)

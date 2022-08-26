@@ -68,11 +68,6 @@
 .ybc-block-comment-report:hover{
     color: [color_hover];
 }
-.nivo-caption {
-     background:[color]; 
-     opacity:0.6;
-}
-
 .form-polls-body button,
 .form_reply_comment input[type="submit"]{
     border: 1px solid [color];

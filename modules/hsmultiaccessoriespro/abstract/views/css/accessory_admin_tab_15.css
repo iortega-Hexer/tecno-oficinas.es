@@ -1,0 +1,94 @@
+#hsma-accessories h3{
+	text-transform: uppercase;
+}
+#hsma-accessories .icon-expand-alt {
+    background: url("../img/more.png") no-repeat scroll 0 2px !important;
+    padding: 0 20px 0 0;
+}
+#hsma-accessories .icon-collapse-alt {
+    background: url("../img/less.png") no-repeat scroll 0 2px;
+    padding: 0 20px 0 0;
+}
+.hsma_product_setting label{
+	width: 40%;
+}
+.hsma_product_setting .form-group{
+	margin: 10px 0;
+}
+#hsma-accessories .title{
+	padding: 5px;
+	font-size: 15px !important;
+}
+.default_quantity input, .minimum_quantity input{
+	padding: 8px 5px !important;
+	height: 14px !important;
+	width: 30px !important;
+}
+.content_group .form-group
+{
+	padding-bottom: 10px;
+}
+.hsma_accessory_group .autocomplete_group{
+	width: 100%;
+	padding: 10px;
+	box-sizing: border-box;
+}
+.hsma_accessory_group .table{
+	width: 100%;
+}
+.hsma_accessory_group .table tr th.name{
+	width: 25%;
+}
+.hsma_accessory_group .table tr th{
+	padding: 15px 0;
+}
+#hsma-accessories select
+{
+	padding: 7px;
+}
+input.edit_name{
+	padding: 7px !important;
+}
+#hsma-accessories .title .icon
+{
+	padding-right: 18px;
+}
+.table .margin-form{
+	padding-left: 0px !important;
+}
+.language_15{
+	color: #000;
+    float: left;
+    font-size: 12px;
+    padding-bottom: 10px;
+    width: 88%;
+	margin-right: 1%;
+}
+.language_15 input{
+	width: 100%;
+	box-sizing: border-box;
+}
+.hsma_accessory_group .translatable, .hsma_accessory_group .col-lg-2
+{
+	float: left;
+	padding-top: 10px;
+}
+
+.hsma_accessory_group .translatable{
+	width: 80% !important;
+}
+.hsma_accessory_group .col-lg-2{
+	width: 18%;
+}
+
+.content_group .dropdown_combination{
+	width: 97% !important;
+}
+.autocomplete_search_accessories{
+    width: 98%;
+    padding: 10px !important;
+}
+.autocomplete_search_product{
+    width: 30%;
+    padding: 10px !important;
+}

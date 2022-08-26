@@ -1,0 +1,17 @@
+/*
+ *
+ *	@module     	Advanced search (AmbJoliSearch)
+ *	@file 			at_movic-1.7.css
+ *	@subject		Add support for At Movic theme (Leo Theme with leoproductsearch module)
+ *	@copyright  	Copyright (c) 2013-2022 Ambris Informatique SARL (http://www.ambris.com/)
+ *	@author     	Richard Stefan (@RicoStefan)
+ *	@license    	Commercial license
+ *	Support by mail: support@ambris.com
+ *
+ *	suggest (autocomplete) list style
+*/
+
+body#module-ambjolisearch-jolisearch #left-column,
+body#module-ambjolisearch-jolisearch #content-wrapper {
+	width: 100%;
+}

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<module>
+    <name>hsmultiaccessoriespro</name>
+    <displayName><![CDATA[Accesorios M&uacute;ltiples Pro]]></displayName>
+    <version><![CDATA[4.5.0]]></version>
+    <description><![CDATA[Administrar accesorios de un producto en grupos y ofrecer la capacidad de pagar el producto principal y sus accesorios con 1 solo clic.]]></description>
+    <author><![CDATA[PrestaMonster]]></author>
+    <tab><![CDATA[front_office_features]]></tab>
+	<confirmUninstall><![CDATA[¿Desea desinstalar Accesorios Múltiples Pro?]]></confirmUninstall>
+    <is_configurable>1</is_configurable>
+    <need_instance>1</need_instance>
+	<limited_countries></limited_countries>
+</module>

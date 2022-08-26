@@ -268,7 +268,8 @@ class AdminOrderFeesShippingController extends ModuleAdminController
                         'depth' => 100,
                         'weight' => 100,
                         'volume' => 100,
-                        'shipping' => 100
+                        'shipping' => 100,
+                        'total_exclude_promo' => 100
                     );
 
                     $result = ShippingRule::parse($formula, $test_data);
@@ -283,13 +284,13 @@ class AdminOrderFeesShippingController extends ModuleAdminController
                 $post['formula'] = '';
             }
             
-            if (!$type || $type & ShippingRule::IS_FREE_SHIPPING) {
+            if (!$type) {
                 $post['tax_rules_group'] = 0;
                 $post['quantity_per_product'] = 0;
-                
-                if ($type & ShippingRule::IS_FREE_SHIPPING) {
-                    $post['type'] |= (int)Tools::getValue('free_shipping');
-                }
+            }
+            
+            if ($type & (ShippingRule::IS_FREE_SHIPPING + ShippingRule::IS_PERCENT + ShippingRule::IS_AMOUNT + ShippingRule::IS_FORMULA)) {
+                $post['type'] |= (int)Tools::getValue('apply_if');
             }
             
             if ($type & (ShippingRule::IS_PERCENT + ShippingRule::IS_AMOUNT + ShippingRule::IS_FORMULA)) {
@@ -1137,7 +1138,7 @@ class AdminOrderFeesShippingController extends ModuleAdminController
                 'zones' => $rule->restrictions('zone', true, false),
                 'states' => $rule->restrictions('state', true, false),
                 'cities' => $rule->restrictions('city', true, false),
-                'carriers' => $rule->restrictions('carrier', true, false),
+                'carriers' => $rule->restrictions('carrier', true, true),
                 'groups' => $rule->restrictions('group', false, true),
                 'shops' => $rule->restrictions('shop', false, false),
                 'shipping_rules' => $rule->restrictions('of_shipping_rule', false, false),

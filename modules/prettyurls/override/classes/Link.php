@@ -54,6 +54,16 @@ class Link extends LinkCore
 				$cat_array[] = $parent_cat['link_rewrite'];
 			}
 		}
+        $dispatcher = Dispatcher::getInstance();
+		if ($dispatcher->hasKeyword($rule, $id_lang, 'categories', $id_shop)) {
+			$cats = array();
+			foreach ($category->getParentsCategories() as $cat) {
+				if (!in_array($cat['id_category'], array(1, 2, $category->id))) {
+					$cats[] = $cat['link_rewrite'];//remove root, home and current category from the URL
+				}
+			}
+			$params['categories'] = implode('/', array_reverse($cats));
+		}
 		$r_url = $url.Dispatcher::getInstance()->createUrl($rule, $id_lang, $params, $this->allow, '', $id_shop);
 		return $r_url;
 	}
@@ -170,8 +180,7 @@ class Link extends LinkCore
 			}
 		}
 
-		if ($name == 'category')
-		{
+		if ($name == 'category') {
 			unset($vars['categories_rewrite']);
 			unset($vars['category_rewrite']);
 		}
@@ -411,26 +420,10 @@ class Link extends LinkCore
 			}
 		}
 		elseif ($controller == 'product' && isset($params['category_rewrite']) && !empty($params['category_rewrite'])) {
-			//$this->request_uri = $_SERVER['REQUEST_URI'];
-			//$uri_split = explode('/', $this->request_uri);
-			//$uri_split = array_filter($uri_split);
-			//$uri_split = end($uri_split);
-			//if (preg_match('/html/', $uri_split)) {
-			//	$uri_split = str_replace('.html', '', $uri_split);
-			//}
 			$_id = (int)$this->getProductExistance($params['category_rewrite']);
 			if ($_id > 0) {
 				$params['id_product'] = (int)$_id;
 			}
-			//elseif ($_id <= 0 && preg_match('/\?/', $this->request_uri)) {
-			//	$_uri_with_q = explode('?', $this->request_uri);
-			//	$_uri_with_q = explode('/', $_uri_with_q[0]);
-			//	$_uri_with_q = end($_uri_with_q);
-			//	$_id = (int)$this->getProductExistance($_uri_with_q);
-			//	if ($_id > 0) {
-			//		$params['id_product'] = (int)$_id;
-			//	}
-			//}
 		}
 		elseif ($controller == 'cms' && isset($params['cms_rewrite']) && empty($params['cms_rewrite'])) {
 			$this->request_uri = $_SERVER['REQUEST_URI'];

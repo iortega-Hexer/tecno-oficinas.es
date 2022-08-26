@@ -6,4 +6,5 @@ $vendorDir = dirname(dirname(__FILE__));
 $baseDir = dirname($vendorDir);
 
 return array(
+    'Ps_FeaturedProducts' => $baseDir . '/ps_featuredproducts.php',
 );

@@ -724,6 +724,10 @@ class OrderInvoiceCore extends ObjectModel
      */
     public function getRestPaid()
     {
+        if (!$this->number) {
+            return 0;
+        }
+
         return round($this->total_paid_tax_incl + $this->getSiblingTotal() - $this->getTotalPaid(), 2);
     }
 
@@ -768,6 +772,8 @@ class OrderInvoiceCore extends ObjectModel
      * Return total to paid of sibling invoices.
      *
      * @param int $mod TAX_EXCL, TAX_INCL, DETAIL
+     *
+     * @return float
      *
      * @since 1.5.0.14
      */

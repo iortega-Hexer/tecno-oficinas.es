@@ -1,5 +1,5 @@
 {*
-* 2007-2019 ETS-Soft
+* 2007-2022 ETS-Soft
 *
 * NOTICE OF LICENSE
 *
@@ -14,11 +14,12 @@
 * needs, please contact us for extra customization service at an affordable price
 *
 *  @author ETS-Soft <etssoft.jsc@gmail.com>
-*  @copyright  2007-2019 ETS-Soft
+*  @copyright  2007-2022 ETS-Soft
 *  @license    Valid for 1 website (or project) for each purchase of license
 *  International Registered Trademark & Property of ETS-Soft
 *}
 {extends file="helpers/form/form.tpl"}
+
 {block name="input"}
     {if $input.type == 'switch'}
     	<span class="switch prestashop-switch fixed-width-lg">
@@ -60,7 +61,71 @@
     					{/strip}
     				</div>
     			{/foreach} 
-            {/if} 
+            {/if}
+    {elseif $input.type == 'file_lang'}
+		{if $languages|count > 1}
+		  <div class="form-group">
+		{/if}
+			{foreach from=$languages item=language}
+				{if $languages|count > 1}
+					<div class="translatable-field lang-{$language.id_lang|intval}" {if $language.id_lang != $defaultFormLanguage}style="display:none"{/if}>
+				{/if}
+					<div class="col-lg-9">
+						<div class="dummyfile input-group sass">
+							<input id="{$input.name|escape:'html':'UTF-8'}_{$language.id_lang|intval}" type="file" name="{$input.name|escape:'html':'UTF-8'}_{$language.id_lang|intval}" class="hide-file-upload" />
+							<span class="input-group-addon"><i class="icon-file"></i></span>
+							<input id="{$input.name|escape:'html':'UTF-8'}_{$language.id_lang|intval}-name" type="text" class="disabled" name="filename" readonly />
+							<span class="input-group-btn">
+								<button id="{$input.name|escape:'html':'UTF-8'}_{$language.id_lang|intval}-selectbutton" type="button" name="submitAddAttachments" class="btn btn-default">
+									<i class="icon-folder-open"></i> {l s='Choose a file' d='Admin.Actions'}
+								</button>
+							</span>
+						</div>
+                        {if isset($fields_value[$input.name]) && $fields_value[$input.name] && $fields_value[$input.name][$language.id_lang]}
+                            <label class="control-label col-lg-3 uploaded_image_label" style="font-style: italic;">{l s='Uploaded image: ' mod='ybc_blog'}</label>
+                            <div class="col-lg-9 uploaded_img_wrapper">
+                        		<a  class="ybc_fancy" href="{if $input.name=='thumb'}{$image_baseurl_thumb|escape:'html':'UTF-8'}{else}{$image_baseurl|escape:'html':'UTF-8'}{/if}{$fields_value[$input.name][$language.id_lang]|escape:'html':'UTF-8'}"><img title="{l s='Click to see full size image' mod='ybc_blog'}" style="display: inline-block; max-width: 200px;" src="{if $input.name=='thumb'}{$image_baseurl_thumb|escape:'html':'UTF-8'}{else}{$image_baseurl|escape:'html':'UTF-8'}{/if}{$fields_value[$input.name][$language.id_lang]|escape:'html':'UTF-8'}" /></a>
+                                {if $input.name=='thumb' &&  isset($thumb_del_link) && $thumb_del_link && !(isset($input.required) && $input.required)}
+                                    <a class="delete_url"  style="display: inline-block; text-decoration: none!important;" href="{$thumb_del_link|escape:'html':'UTF-8'}&id_lang={$language.id_lang|intval}"><span style="color: #666"><i style="font-size: 20px;" class="process-icon-delete"></i></span></a>
+                                {/if}
+                                {if $input.name=='image' &&  isset($img_del_link) && $img_del_link && !(isset($input.required) && $input.required)}
+                                    <a class="delete_url"  style="display: inline-block; text-decoration: none!important;" href="{$img_del_link|escape:'html':'UTF-8'}&id_lang={$language.id_lang|intval}"><span style="color: #666"><i style="font-size: 20px;" class="process-icon-delete"></i></span></a>
+                                {/if}
+                            </div>
+						{/if}
+					</div>
+				{if $languages|count > 1}
+					<div class="col-lg-2">
+						<button type="button" class="btn btn-default dropdown-toggle" tabindex="-1" data-toggle="dropdown">
+							{$language.iso_code|escape:'html':'UTF-8'}
+							<span class="caret"></span>
+						</button>
+						<ul class="dropdown-menu">
+							{foreach from=$languages item=lang}
+							<li><a href="javascript:hideOtherLanguage({$lang.id_lang|intval});" tabindex="-1">{$lang.name|escape:'html':'UTF-8'}</a></li>
+							{/foreach}
+						</ul>
+					</div>
+				{/if}
+				{if $languages|count > 1}
+					</div>
+				{/if}
+				<script>
+				$(document).ready(function(){
+					$("#{$input.name|escape:'html':'UTF-8'}_{$language.id_lang|intval}-selectbutton").click(function(e){
+						$("#{$input.name|escape:'html':'UTF-8'}_{$language.id_lang|intval}").trigger('click');
+					});
+					$("#{$input.name|escape:'html':'UTF-8'}_{$language.id_lang|intval}").change(function(e){
+						var val = $(this).val();
+						var file = val.split(/[\\/]/);
+						$("#{$input.name|escape:'html':'UTF-8'}_{$language.id_lang|intval}-name").val(file[file.length-1]);
+					});
+				});
+			</script>
+			{/foreach}
+		{if $languages|count > 1}
+		  </div>
+		{/if}
     {else}
         {$smarty.block.parent}               
     {/if}            
@@ -121,7 +186,7 @@
         {/if}
         {if $input.type == 'blog_categories'}
             <div class="col-lg-9">
-                <ul style="float: left; padding: 0; margin-top: 5px;;width: 30%;">
+                <ul style="float: left; padding: 0; margin-top: 5px;">
                     {$input.html_content nofilter}
                 </ul>
                 {if isset($input.desc) && $input.desc}
@@ -326,6 +391,8 @@
     {/if}
     {if $input.name=='YBC_BLOG_SHOW_LATEST_BLOCK_HOME' || $input.name=='YBC_BLOG_SHOW_POPULAR_BLOCK_HOME' || $input.name=='YBC_BLOG_SHOW_FEATURED_BLOCK_HOME' || $input.name=="YBC_BLOG_SHOW_CATEGORY_BLOCK_HOME" || $input.name=="YBC_BLOG_SHOW_GALLERY_BLOCK_HOME" ||  $input.name=="YBC_BLOG_SHOW_LATEST_NEWS_BLOCK" ||$input.name=='YBC_BLOG_SHOW_FEATURED_BLOCK' || $input.name=='YBC_BLOG_SHOW_POPULAR_POST_BLOCK' || $input.name=='YBC_BLOG_SHOW_GALLERY_BLOCK' || $input.name=='YBC_BLOG_SHOW_ARCHIVES_BLOCK' || $input.name=='YBC_BLOG_SHOW_CATEGORIES_BLOCK' || $input.name=='YBC_BLOG_SHOW_SEARCH_BLOCK'|| $input.name=='YBC_BLOG_SHOW_TAGS_BLOCK' || $input.name=='YBC_BLOG_SHOW_COMMENT_BLOCK' || $input.name=='YBC_BLOG_SHOW_AUTHOR_BLOCK' || $input.name=='YBC_BLOG_ENABLE_RSS_SIDEBAR' || $input.name=='YBC_BLOG_SHOW_HTML_BOX'}
         <div class="ybc-form-group-sidebar{if isset($input.form_group_class)} {$input.form_group_class|escape:'html':'UTF-8'}{/if}">
+            <div class="ets_table">
+            <div class="ets_table-cell">
             <div class="ybc-form-group-sidebar-wapper">
             <span class="close-setting-sidebar">{l s='Close' mod='ybc_blog'}</span>
             <div class="setting-title" ><i class="icon-AdminAdmin"></i>{l s='Setting' mod='ybc_blog'}</div>
@@ -334,7 +401,7 @@
         <p><strong>{l s='Send email to Administrator and Authors: ' mod='ybc_blog'}</strong></p>
     {/if}
     {if $input.name=='YBC_BLOG_ENABLE_MAIL_NEW_COMMENT'}
-        <p><strong>{l s='Send email to User/Customer:' mod='ybc_blog'}</strong></p>
+        <p><strong>{l s='Send email to Users/Customers:' mod='ybc_blog'}</strong></p>
     {/if}
     {if $input.type=='image'}
         <div class="form-group">
@@ -396,6 +463,8 @@
             </div>
         </div>
         </div>
+        </div>
+        </div>
     {/if}
 {/block}
 {block name="label"}
@@ -420,14 +489,4 @@
 			{/if}
 		</label>
 	{/if}
-{/block}link_module_blog
-{block name="description"}
-    {if $input.name=='YBC_BLOG_CAPTCHA_TYPE'}
-        <p class="help-block" style="margin-bottom: 0px;">
-            <span  class="help_custom google" id="captcha_type_google"><a target="_blank" href="{$link_module_blog|escape:'html':'UTF-8'}/recaptcha_v2.pdf">{l s='How to get Site key and Secret key for reCAPTCHA – v2' mod='ybc_blog'}</a></span>
-            <span class="help_custom google3" id="captcha_type_google3"><a target="_blank" href="{$link_module_blog|escape:'html':'UTF-8'}/recaptcha_v3.pdf">{l s='How to get Site key and Secret key for reCAPTCHA – v3' mod='ybc_blog'}</a></span>
-        </p>
-    {else}
-        {$smarty.block.parent}
-    {/if}
 {/block}

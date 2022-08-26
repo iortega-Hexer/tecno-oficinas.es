@@ -39,7 +39,7 @@ use PrestaShop\Module\AutoUpgrade\UpgradeTools\Translator;
 class UpgradeButtonBlock
 {
     /**
-     * @var \Twig_Environment
+     * @var Twig_Environment|\Twig\Environment
      */
     private $twig;
 
@@ -81,14 +81,14 @@ class UpgradeButtonBlock
     /**
      * UpgradeButtonBlock constructor.
      *
-     * @param Twig_Environment $twig
+     * @param Twig_Environment|\Twig\Environment $twig
      * @param Translator $translator
      * @param UpgradeConfiguration $config
      * @param Upgrader $upgrader
      * @param UpgradeSelfCheck $selfCheck
      */
     public function __construct(
-        Twig_Environment $twig,
+        $twig,
         Translator $translator,
         UpgradeConfiguration $config,
         Upgrader $upgrader,
@@ -153,6 +153,7 @@ class UpgradeButtonBlock
         }
 
         $dir = glob($this->downloadPath . DIRECTORY_SEPARATOR . '*.zip');
+        $xml = glob($this->downloadPath . DIRECTORY_SEPARATOR . '*.xml');
 
         $data = array(
             'versionCompare' => $versionCompare,
@@ -174,11 +175,14 @@ class UpgradeButtonBlock
                 'allowMajor' => $this->config->get('private_allow_major'),
             ),
             'archiveFiles' => $dir,
+            'xmlFiles' => $xml,
             'archiveFileName' => $this->config->get('archive.filename'),
+            'xmlFileName' => $this->config->get('archive.xml'),
             'archiveVersionNumber' => $this->config->get('archive.version_num'),
             'downloadPath' => $this->downloadPath . DIRECTORY_SEPARATOR,
             'directoryVersionNumber' => $this->config->get('directory.version_num'),
             'manualMode' => $this->manualMode,
+            'phpVersion' => PHP_VERSION,
         );
 
         return $this->twig->render('@ModuleAutoUpgrade/block/upgradeButtonBlock.twig', $data);

@@ -1,6 +1,6 @@
 <?php
 /**
- * 2007-2019 ETS-Soft
+ * 2007-2022 ETS-Soft
  *
  * NOTICE OF LICENSE
  *
@@ -15,7 +15,7 @@
  * needs please contact us for extra customization service at an affordable price
  *
  *  @author ETS-Soft <etssoft.jsc@gmail.com>
- *  @copyright  2007-2019 ETS-Soft
+ *  @copyright  2007-2022 ETS-Soft
  *  @license    Valid for 1 website (or project) for each purchase of license
  *  International Registered Trademark & Property of ETS-Soft
  */
@@ -45,6 +45,21 @@ class Ybc_blogGalleryModuleFrontController extends ModuleFrontController
             Tools::redirect($this->module->getLink('gallery'));
         }
 	}
+    public function getAlternativeLangsUrl()
+    {
+        $alternativeLangs = array();
+        $languages = Language::getLanguages(true, $this->context->shop->id);
+
+        if ($languages < 2) {
+            // No need to display alternative lang if there is only one enabled
+            return $alternativeLangs;
+        }
+
+        foreach ($languages as $lang) {
+            $alternativeLangs[$lang['language_code']] = $this->module->getLanguageLink($lang['id_lang']);
+        }
+        return $alternativeLangs;
+    }
 	public function initContent()
 	{
         parent::initContent();
@@ -61,7 +76,7 @@ class Ybc_blogGalleryModuleFrontController extends ModuleFrontController
                 'path' => $module->getBreadCrumb(),
                 'blog_layout' => Tools::strtolower(Configuration::get('YBC_BLOG_LAYOUT')),                 
                 'breadcrumb' => $module->is17 ? $module->getBreadCrumb() : false,
-                'image_folder' => $module->blogDir.'views/img/',
+                'image_folder' => _PS_YBC_BLOG_IMG_,
                 
             )
         );
@@ -76,7 +91,9 @@ class Ybc_blogGalleryModuleFrontController extends ModuleFrontController
         $sort = ' g.sort_order asc, g.id_gallery asc, ';
         $module = new Ybc_blog();
         //Paggination
-        $page = (int)Tools::getValue('page') && (int)Tools::getValue('page') > 0 ? (int)Tools::getValue('page') : 1;
+        $page = (int)Tools::getValue('page');
+        if($page<1)
+            $page =1;
         $totalRecords = (int)$module->countGalleriesWithFilter($filter);
         $paggination = new Ybc_blog_paggination_class();            
         $paggination->total = $totalRecords;
@@ -95,12 +112,12 @@ class Ybc_blogGalleryModuleFrontController extends ModuleFrontController
             foreach($galleries as &$gallery)
             {
                 if($gallery['thumb'])
-                    $gallery['thumb'] =  $module->blogDir.'views/img/gallery/thumb/'.$gallery['thumb'];   
+                    $gallery['thumb'] =  $this->context->link->getMediaLink(_PS_YBC_BLOG_IMG_.'gallery/thumb/'.$gallery['thumb']);   
                 else
-                     $gallery['thumb']=$module->blogDir.'views/img/gallery/'.$gallery['image']; 
+                     $gallery['thumb']= $this->context->link->getMediaLink(_PS_YBC_BLOG_IMG_.'gallery/'.$gallery['image']); 
                 if($gallery['image'])
                 {                       
-                    $gallery['image'] =  $module->blogDir.'views/img/gallery/'.$gallery['image'];    
+                    $gallery['image'] =  $this->context->link->getMediaLink(_PS_YBC_BLOG_IMG_.'gallery/'.$gallery['image']);    
                 }                     
             }                
         }        

@@ -2,8 +2,8 @@
 <module>
     <name>ps_customeraccountlinks</name>
     <displayName><![CDATA[Bloque Mi cuenta]]></displayName>
-    <version><![CDATA[3.1.0]]></version>
-    <description><![CDATA[Muestra un bloque con v&iacute;nculos relativos a la cuenta del usuario.]]></description>
+    <version><![CDATA[3.1.1]]></version>
+    <description><![CDATA[Enriquece tus estad&iacute;sticas, a&ntilde;adiendo una pesta&ntilde;a de progreso de registro para analizar el comportamiento de tus visitantes. ]]></description>
     <author><![CDATA[PrestaShop]]></author>
     <tab><![CDATA[]]></tab>
     <is_configurable>0</is_configurable>

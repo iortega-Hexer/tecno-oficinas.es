@@ -2,8 +2,8 @@
 <module>
     <name>ps_customersignin</name>
     <displayName><![CDATA[Enlace de inicio de sesi&oacute;n para clientes]]></displayName>
-    <version><![CDATA[2.0.3]]></version>
-    <description><![CDATA[A&ntilde;ade un bloque que muestra informaci&oacute;n sobre el cliente.]]></description>
+    <version><![CDATA[2.0.4]]></version>
+    <description><![CDATA[Haz que tus clientes se sientan como en casa en tu tienda, &iexcl;inv&iacute;talos a registrarse!]]></description>
     <author><![CDATA[PrestaShop]]></author>
     <tab><![CDATA[]]></tab>
     <is_configurable>0</is_configurable>

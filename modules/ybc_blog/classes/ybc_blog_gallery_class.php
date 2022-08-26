@@ -1,6 +1,6 @@
 <?php
 /**
- * 2007-2019 ETS-Soft
+ * 2007-2022 ETS-Soft
  *
  * NOTICE OF LICENSE
  *
@@ -15,7 +15,7 @@
  * needs please contact us for extra customization service at an affordable price
  *
  *  @author ETS-Soft <etssoft.jsc@gmail.com>
- *  @copyright  2007-2019 ETS-Soft
+ *  @copyright  2007-2022 ETS-Soft
  *  @license    Valid for 1 website (or project) for each purchase of license
  *  International Registered Trademark & Property of ETS-Soft
  */
@@ -39,10 +39,10 @@ class Ybc_blog_gallery_class extends ObjectModel
 		'fields' => array(
 			'enabled' => array('type' => self::TYPE_BOOL, 'validate' => 'isBool'),
             'sort_order' => array('type' => self::TYPE_INT),
-            'image' =>	array('type' => self::TYPE_STRING, 'validate' => 'isCleanHtml', 'size' => 500),
-            'thumb' =>	array('type' => self::TYPE_STRING, 'validate' => 'isCleanHtml', 'size' => 500),
             'is_featured' => array('type' => self::TYPE_BOOL, 'validate' => 'isBool'),            
             // Lang fields
+            'image' =>	array('type' => self::TYPE_STRING, 'validate' => 'isCleanHtml', 'size' => 500,'lang'=>true),
+            'thumb' =>	array('type' => self::TYPE_STRING, 'validate' => 'isCleanHtml', 'size' => 500,'lang'=>true),
             'title' =>	array('type' => self::TYPE_HTML, 'lang' => true, 'validate' => 'isCleanHtml', 'size' => 900000),            
             'description' =>	array('type' => self::TYPE_HTML, 'lang' => true, 'validate' => 'isCleanHtml', 'size' => 900000),
         )
@@ -79,18 +79,42 @@ class Ybc_blog_gallery_class extends ObjectModel
     public function duplicate()
     {
         $this->id = null; 
-        $oldImage= $this->image;
-        $oldThumb = $this->thumb;
+        $oldImages= $this->image;
+        $oldThumbs = $this->thumb;
         if($this->image)
-            $this->image = time().pathinfo($this->image, PATHINFO_BASENAME);
+        {
+            foreach($this->image as $id_lang=>$image)
+            {
+                if($image)
+                    $this->image[$id_lang] = time().pathinfo($image, PATHINFO_BASENAME);
+            }
+        }
         if($this->thumb)
-            $this->thumb= time().pathinfo($this->thumb, PATHINFO_BASENAME);
+        {
+            foreach($this->thumb as $id_lang=>$thumb)
+            {
+                if($thumb)
+                    $this->thumb[$id_lang]= time().pathinfo($thumb, PATHINFO_BASENAME);
+            }
+        }    
         if($this->add())
         {
             if($this->image)
-                @copy(dirname(__FILE__).'/../views/img/gallery/'.$oldImage,dirname(__FILE__).'/../views/img/gallery/'.$this->image);
+            {
+                foreach($this->image as $id_lang=>$image)
+                {
+                    if($image)
+                        @copy(_PS_YBC_BLOG_IMG_DIR_.'gallery/'.$oldImages[$id_lang],_PS_YBC_BLOG_IMG_DIR_.'gallery/'.$image);
+                }
+            }
             if($this->thumb)
-                @copy(dirname(__FILE__).'/../views/img/gallery/thumb/'.$oldThumb,dirname(__FILE__).'/../views/img/gallery/thumb/'.$this->thumb);
+            {
+                foreach($this->thumb as $id_lang=>$thumb)
+                {
+                    if($thumb)
+                        @copy(_PS_YBC_BLOG_IMG_DIR_.'gallery/thumb/'.$oldThumbs[$id_lang],_PS_YBC_BLOG_IMG_DIR_.'gallery/thumb/'.$thumb);
+                }
+            }
             return $this->id;
         }
         return false;        

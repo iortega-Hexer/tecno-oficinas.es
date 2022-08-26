@@ -81,9 +81,17 @@ class UpdateConfig extends AbstractTask
 
                 return false;
             }
+            $xmlFile = $configurationData['archive_xml'];
+            if (!empty($xmlFile) && !file_exists($this->container->getProperty(UpgradeContainer::DOWNLOAD_PATH) . DIRECTORY_SEPARATOR . $xmlFile)) {
+                $this->error = true;
+                $this->logger->info($this->translator->trans('File %s does not exist. Unable to select that channel', array($xmlFile), 'Modules.Autoupgrade.Admin'));
+
+                return false;
+            }
             $config['channel'] = 'archive';
             $config['archive.filename'] = $configurationData['archive_prestashop'];
             $config['archive.version_num'] = $configurationData['archive_num'];
+            $config['archive.xml'] = $configurationData['archive_xml'];
             // $config['archive_name'] = $request['archive_name'];
             $this->logger->info($this->translator->trans('Upgrade process will use archive.', array(), 'Modules.Autoupgrade.Admin'));
         }
@@ -100,6 +108,9 @@ class UpdateConfig extends AbstractTask
         }
         if (isset($configurationData['skip_backup'])) {
             $config['skip_backup'] = $configurationData['skip_backup'];
+        }
+        if (isset($configurationData['PS_AUTOUP_CHANGE_DEFAULT_THEME'])) {
+            $config['PS_AUTOUP_CHANGE_DEFAULT_THEME'] = $configurationData['PS_AUTOUP_CHANGE_DEFAULT_THEME'];
         }
 
         if (!$this->writeConfig($config)) {

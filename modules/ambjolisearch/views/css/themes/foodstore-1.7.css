@@ -1,0 +1,10 @@
+
+.jolisearch-on #_desktop_search_widget .bonsearch_box {
+	visibility: visible;
+    transform: translateY(-5px);
+    opacity: 1;
+}
+
+body.jolisearch-on .ui-autocomplete.ui-jolisearch {
+    display: inherit !important;
+}

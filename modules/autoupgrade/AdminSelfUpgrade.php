@@ -72,6 +72,7 @@ class AdminSelfUpgrade extends AdminController
     public $keepImages;
     public $updateDefaultTheme;
     public $changeToDefaultTheme;
+    public $updateRTLFiles;
     public $keepMails;
     public $manualMode;
     public $deactivateCustomModule;
@@ -123,12 +124,46 @@ class AdminSelfUpgrade extends AdminController
         self::$currentIndex = $_SERVER['SCRIPT_NAME'] . (($controller = Tools14::getValue('controller')) ? '?controller=' . $controller : '');
 
         if (defined('_PS_ADMIN_DIR_')) {
+            // Check that the 1-click upgrade working directory is existing or create it
+            if (!file_exists($this->autoupgradePath) && !@mkdir($this->autoupgradePath)) {
+                $this->_errors[] = $this->trans('Unable to create the directory "%s"', array($this->autoupgradePath), 'Modules.Autoupgrade.Admin');
+                return;
+            }
+
+            // Make sure that the 1-click upgrade working directory is writeable
+            if (!is_writable($this->autoupgradePath)) {
+                $this->_errors[] = $this->trans('Unable to write in the directory "%s"', array($this->autoupgradePath), 'Modules.Autoupgrade.Admin');
+                return;
+            }
+
+            // If a previous version of ajax-upgradetab.php exists, delete it
+            if (file_exists($this->autoupgradePath . DIRECTORY_SEPARATOR . 'ajax-upgradetab.php')) {
+                @unlink($this->autoupgradePath . DIRECTORY_SEPARATOR . 'ajax-upgradetab.php');
+            }
+
             $file_tab = @filemtime($this->autoupgradePath . DIRECTORY_SEPARATOR . 'ajax-upgradetab.php');
             $file = @filemtime(_PS_ROOT_DIR_ . DIRECTORY_SEPARATOR . 'modules' . DIRECTORY_SEPARATOR . $this->autoupgradeDir . DIRECTORY_SEPARATOR . 'ajax-upgradetab.php');
 
             if ($file_tab < $file) {
                 @copy(_PS_ROOT_DIR_ . DIRECTORY_SEPARATOR . 'modules' . DIRECTORY_SEPARATOR . $this->autoupgradeDir . DIRECTORY_SEPARATOR . 'ajax-upgradetab.php',
                     $this->autoupgradePath . DIRECTORY_SEPARATOR . 'ajax-upgradetab.php');
+            }
+
+            // Make sure that the XML config directory exists
+            if (!file_exists(_PS_ROOT_DIR_ . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'xml') &&
+                !@mkdir(_PS_ROOT_DIR_ . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'xml', 0775)) {
+                $this->_errors[] = $this->trans('Unable to create the directory "%s"', array(_PS_ROOT_DIR_ . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'xml'), 'Modules.Autoupgrade.Admin');
+                return;
+            } else {
+                @chmod(_PS_ROOT_DIR_ . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'xml', 0775);
+            }
+
+            // Create a dummy index.php file in the XML config directory to avoid directory listing
+            if (!file_exists(_PS_ROOT_DIR_ . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'xml' . DIRECTORY_SEPARATOR . 'index.php') &&
+                (file_exists(_PS_ROOT_DIR_ . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'index.php') &&
+                 !@copy(_PS_ROOT_DIR_ . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'index.php', _PS_ROOT_DIR_ . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'xml' . DIRECTORY_SEPARATOR . 'index.php'))) {
+                $this->_errors[] = $this->trans('Unable to create the directory "%s"', array(_PS_ROOT_DIR_ . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'xml'), 'Modules.Autoupgrade.Admin');
+                return;
             }
         }
 
@@ -172,6 +207,10 @@ class AdminSelfUpgrade extends AdminController
             'PS_AUTOUP_CHANGE_DEFAULT_THEME' => array(
                 'title' => $this->trans('Switch to the default theme', array(), 'Modules.Autoupgrade.Admin'), 'cast' => 'intval', 'validation' => 'isBool', 'defaultValue' => '0',
                 'type' => 'bool', 'desc' => $this->trans('This will change your theme: your shop will then use the default theme of the version of PrestaShop you are upgrading to.', array(), 'Modules.Autoupgrade.Admin'),
+            ),
+            'PS_AUTOUP_UPDATE_RTL_FILES' => array(
+                'title' => $this->trans('Regenerate RTL stylesheet', array(), 'Modules.Autoupgrade.Admin'), 'cast' => 'intval', 'validation' => 'isBool', 'defaultValue' => '1',
+                'type' => 'bool', 'desc' => $this->trans('If enabled, any RTL-specific files that you might have added to all your themes might be deleted by the created stylesheet.', array(), 'Modules.Autoupgrade.Admin'),
             ),
             'PS_AUTOUP_KEEP_MAILS' => array(
                 'title' => $this->trans('Keep the customized email templates', array(), 'Modules.Autoupgrade.Admin'), 'cast' => 'intval', 'validation' => 'isBool',
@@ -243,6 +282,7 @@ class AdminSelfUpgrade extends AdminController
         $this->keepImages = $this->upgradeContainer->getUpgradeConfiguration()->shouldBackupImages();
         $this->updateDefaultTheme = $this->upgradeContainer->getUpgradeConfiguration()->get('PS_AUTOUP_UPDATE_DEFAULT_THEME');
         $this->changeToDefaultTheme = $this->upgradeContainer->getUpgradeConfiguration()->get('PS_AUTOUP_CHANGE_DEFAULT_THEME');
+        $this->updateRTLFiles = $this->upgradeContainer->getUpgradeConfiguration()->get('PS_AUTOUP_UPDATE_RTL_FILES');
         $this->keepMails = $this->upgradeContainer->getUpgradeConfiguration()->get('PS_AUTOUP_KEEP_MAILS');
         $this->deactivateCustomModule = $this->upgradeContainer->getUpgradeConfiguration()->get('PS_AUTOUP_CUSTOM_MOD_DESACT');
     }
@@ -341,6 +381,7 @@ class AdminSelfUpgrade extends AdminController
         $configuration_keys = array(
             'PS_AUTOUP_UPDATE_DEFAULT_THEME' => 1,
             'PS_AUTOUP_CHANGE_DEFAULT_THEME' => 0,
+            'PS_AUTOUP_UPDATE_RTL_FILES' => 1,
             'PS_AUTOUP_KEEP_MAILS' => 0,
             'PS_AUTOUP_CUSTOM_MOD_DESACT' => 1,
             'PS_AUTOUP_PERFORMANCE' => 1,

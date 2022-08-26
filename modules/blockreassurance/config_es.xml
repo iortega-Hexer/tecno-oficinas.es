@@ -2,8 +2,8 @@
 <module>
     <name>blockreassurance</name>
     <displayName><![CDATA[Confianza y seguridad del cliente]]></displayName>
-    <version><![CDATA[5.0.0]]></version>
-    <description><![CDATA[Comun&iacute;cate con tus clientes y tranquil&iacute;celos resaltando tus servicios: pagos seguros, env&iacute;os gratuitos, devoluciones, etc.]]></description>
+    <version><![CDATA[5.1.1]]></version>
+    <description><![CDATA[Connect with your visitors and reassure them about secure payment, free shipping or returns.]]></description>
     <author><![CDATA[PrestaShop]]></author>
     <tab><![CDATA[seo]]></tab>
 	<confirmUninstall><![CDATA[¿Estás seguro que quieres desinstalar este módulo?]]></confirmUninstall>

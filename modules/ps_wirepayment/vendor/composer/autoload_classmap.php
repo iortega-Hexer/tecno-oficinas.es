@@ -6,4 +6,5 @@ $vendorDir = dirname(dirname(__FILE__));
 $baseDir = dirname($vendorDir);
 
 return array(
+    'Ps_Wirepayment' => $baseDir . '/ps_wirepayment.php',
 );

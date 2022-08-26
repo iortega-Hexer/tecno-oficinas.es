@@ -1,0 +1,16 @@
+/*
+ *
+ *	@module     	Advanced search (AmbJoliSearch)
+ *	@file 			angartheme-1.7.css
+ *	@subject		Add support for Angar theme
+ *	@copyright  	Copyright (c) 2013-2022 Ambris Informatique SARL (http://www.ambris.com/)
+ *	@author     	Richard Stefan (@RicoStefan)
+ *	@license    	Commercial license
+ *	Support by mail: support@ambris.com
+ *
+ *	suggest (autocomplete) list style
+*/
+
+ul.ui-autocomplete.ui-corner-all.ui-jolisearch.centered-list {
+    max-width: 98vw;
+}

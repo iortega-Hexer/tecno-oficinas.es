@@ -1,6 +1,6 @@
 <?php
 /**
- * 2007-2019 ETS-Soft
+ * 2007-2022 ETS-Soft
  *
  * NOTICE OF LICENSE
  *
@@ -15,7 +15,7 @@
  * needs please contact us for extra customization service at an affordable price
  *
  *  @author ETS-Soft <etssoft.jsc@gmail.com>
- *  @copyright  2007-2019 ETS-Soft
+ *  @copyright  2007-2022 ETS-Soft
  *  @license    Valid for 1 website (or project) for each purchase of license
  *  International Registered Trademark & Property of ETS-Soft
  */
@@ -127,9 +127,10 @@ class Ybc_blog_paggination_class {
 	}
     public function replacePage($page)
     {
+        $controller = Tools::getValue('controller');
         if($page > 1)
             return str_replace('_page_', $page, $this->url);
-        elseif($this->friendly && $this->alias && Tools::getValue('controller') != 'AdminModules')
+        elseif($this->friendly && $this->alias && $controller != 'AdminModules')
             return str_replace('/_page_', '', $this->url);
         else
             return str_replace('_page_', $page, $this->url);            

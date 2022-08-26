@@ -1,5 +1,5 @@
 {*
-* 2007-2019 ETS-Soft
+* 2007-2022 ETS-Soft
 *
 * NOTICE OF LICENSE
 *
@@ -14,7 +14,7 @@
 * needs, please contact us for extra customization service at an affordable price
 *
 *  @author ETS-Soft <etssoft.jsc@gmail.com>
-*  @copyright  2007-2019 ETS-Soft
+*  @copyright  2007-2022 ETS-Soft
 *  @license    Valid for 1 website (or project) for each purchase of license
 *  International Registered Trademark & Property of ETS-Soft
 *}
@@ -27,7 +27,7 @@
                     <a class="{if $active == $tab.id || ($tab.id=='ybc_tab_comment' && $active=='ybc_tab_comment_reply') || ($tab.id=='ybc_tab_employees' && ($active=='ybc_tab_customer' || $active=='ybc_tab_author')) }active{/if} list-group-item" href="{$tab.url|escape:'html':'UTF-8'}" id="{$tab.id|escape:'html':'UTF-8'}">{if isset($tab.icon)}<i class="{$tab.icon|escape:'html':'UTF-8'}"></i> {/if}{$tab.label|escape:'html':'UTF-8'}{if isset($tab.total_result) && $tab.total_result} ({$tab.total_result|intval}){/if}</a>
                     {else}
                         <div class="li_othermodules">
-                            <a class="link_othermodules" href="{$tab.url|escape:'html':'UTF-8'}">
+                            <a class="{if isset($tab.hasRefs) && $tab.hasRefs}refs_othermodules{else}link_othermodules{/if}" href="{$tab.url|escape:'html':'UTF-8'}" {if isset($tab.hasRefs) && $tab.hasRefs}target="_blank"{/if}>
                                 <span class="tab-title">{$tab.label|escape:'html':'UTF-8'}</span>
                                 <span class="tab-sub-title">{$tab.subtitle|escape:'html':'UTF-8'}</span>
                             </a>

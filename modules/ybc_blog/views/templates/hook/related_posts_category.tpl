@@ -1,5 +1,5 @@
 {*
-* 2007-2019 ETS-Soft
+* 2007-2022 ETS-Soft
 *
 * NOTICE OF LICENSE
 *
@@ -14,7 +14,7 @@
 * needs, please contact us for extra customization service at an affordable price
 *
 *  @author ETS-Soft <etssoft.jsc@gmail.com>
-*  @copyright  2007-2019 ETS-Soft
+*  @copyright  2007-2022 ETS-Soft
 *  @license    Valid for 1 website (or project) for each purchase of license
 *  International Registered Trademark & Property of ETS-Soft
 *}
@@ -23,7 +23,7 @@ var number_category_posts_per_row ={$blog_config.YBC_BLOG_RELATED_CATEGORY_ROW|i
 </script>
 {if $posts}
     {if !isset($date_format) || isset($date_format) && !$date_format}{assign var='date_format' value='F jS Y'}{/if}
-    <div class="block ybc_block_related {$blog_config.YBC_BLOG_RTL_CLASS|escape:'html':'UTF-8'} {if isset($page) && $page}page_{$page|escape:'html':'UTF-8'}{else}page_blog{/if} {if isset($blog_config.YBC_BLOG_CATEGORY_POST_TYPE) && $blog_config.YBC_BLOG_CATEGORY_POST_TYPE=='default' || count($posts)<=1} ybc_block_default{else} ybc_block_slider{/if}">
+    <div class="block ybc_block_related_category_page ybc_block_related {$blog_config.YBC_BLOG_RTL_CLASS|escape:'html':'UTF-8'} {if isset($page) && $page}page_{$page|escape:'html':'UTF-8'}{else}page_blog{/if} {if isset($blog_config.YBC_BLOG_CATEGORY_POST_TYPE) && $blog_config.YBC_BLOG_CATEGORY_POST_TYPE=='default' || count($posts)<=1} ybc_block_default{else} ybc_block_slider{/if}">
         <h4 class="title_blog title_block">{l s='Related posts' mod='ybc_blog'}</h4>
         {assign var='product_row' value=$blog_config.YBC_BLOG_RELATED_CATEGORY_ROW|intval}
         <ul class="block_content {if count($posts)>1 && $blog_config.YBC_BLOG_CATEGORY_POST_TYPE!='default'}owl-carousel{/if}">

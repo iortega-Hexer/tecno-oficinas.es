@@ -1,5 +1,5 @@
 {*
-* 2007-2019 ETS-Soft
+* 2007-2022 ETS-Soft
 *
 * NOTICE OF LICENSE
 *
@@ -14,15 +14,19 @@
 * needs, please contact us for extra customization service at an affordable price
 *
 *  @author ETS-Soft <etssoft.jsc@gmail.com>
-*  @copyright  2007-2019 ETS-Soft
+*  @copyright  2007-2022 ETS-Soft
 *  @license    Valid for 1 website (or project) for each purchase of license
 *  International Registered Trademark & Property of ETS-Soft
 *}
 <script type="text/javascript">
-var text_update_position='{l s='Successful update' mod='ybc_blog'}';
+var text_update_position='{l s='Successfully updated' mod='ybc_blog'}';
 </script>
 <div class="panel ybc-blog-panel{if isset($class)} {$class|escape:'html':'UTF-8'}{/if}">
-    <div class="panel-heading">{$title nofilter}
+    <div class="panel-heading">
+        {if isset($icon) && $icon}
+            <i class="icon {$icon|escape:'html':'UTF-8'}"></i>
+        {/if}
+        {$title nofilter}
         {if isset($totalRecords) && $totalRecords>0}<span class="badge">{$totalRecords|intval}</span>{/if}
         <span class="panel-heading-action">
             {if !isset($show_add_new) || isset($show_add_new) && $show_add_new}            
@@ -101,6 +105,13 @@ var text_update_position='{l s='Successful update' mod='ybc_blog'}';
                                                 <label for="{$index|escape:'html':'UTF-8'}_min"><input type="text" placeholder="{l s='Min' mod='ybc_blog'}" name="{$index|escape:'html':'UTF-8'}_min" value="{$field.active.min|escape:'html':'UTF-8'}" /></label>
                                                 <label for="{$index|escape:'html':'UTF-8'}_max"><input type="text" placeholder="{l s='Max' mod='ybc_blog'}" name="{$index|escape:'html':'UTF-8'}_max" value="{$field.active.max|escape:'html':'UTF-8'}" /></label>
                                             {/if}
+                                        {elseif ( $field.type == 'text' && isset($index) && $index == 'input_box') }
+                                            <div class="md-checkbox">
+                                                <label>
+                                                  <input id="bulk_action_select_all" onclick="$('table').find('td input:checkbox').prop('checked', $(this).prop('checked')); ybc_blog_updateBulkMenu();" value="" type="checkbox" />
+                                                  <i class="md-checkbox-control"></i>
+                                                </label>
+                                            </div>
                                         {else}
                                            {l s=' -- ' mod='ybc_blog'}
                                         {/if}
@@ -110,7 +121,7 @@ var text_update_position='{l s='Successful update' mod='ybc_blog'}';
                                     <th class="actions">
                                         <span class="pull-right">
                                             <input type="hidden" name="post_filter" value="yes" />
-                                            {if $show_reset}<a  class="btn btn-warning"  href="{$currentIndex|escape:'html':'UTF-8'}&list=true"><i class="icon-eraser"></i> {l s='Reset' mod='ybc_blog'}</a> &nbsp;{/if}
+                                            {if $show_reset}<a  class="btn btn-warning"  href="{$currentIndex|escape:'html':'UTF-8'}&list=true"><i class="icon-eraser"></i> {l s='Reset' mod='ybc_blog'}</a>{/if}
                                             <button class="btn btn-default" name="ybc_submit_{$name|escape:'html':'UTF-8'}" id="ybc_submit_{$name|escape:'html':'UTF-8'}" type="submit">
             									<i class="icon-search"></i> {l s='Filter' mod='ybc_blog'}
             								</button>
@@ -145,18 +156,22 @@ var text_update_position='{l s='Successful update' mod='ybc_blog'}';
                                                 {l s=' -- ' mod='ybc_blog'}
                                             {/if}
                                         {elseif $field.type != 'active'}
-                                            {if isset($field.update_position) && $field.update_position}
-                                                <div class="dragGroup">
-                                                <span class="positions">
-                                            {/if}
-                                            {if isset($row.$key) && !is_array($row.$key)}{if isset($field.strip_tag) && !$field.strip_tag}{$row.$key nofilter}{else}{$row.$key|strip_tags:'UTF-8'|truncate:120:'...'|escape:'html':'UTF-8'}{/if}{/if}
-                                            {if isset($row.$key) && is_array($row.$key) && isset($row.$key.image_field) && $row.$key.image_field}
-                                                <a class="ybc_fancy" href="{$row.$key.img_url|escape:'html':'UTF-8'}"><img style="{if isset($row.$key.height) && $row.$key.height}max-height: {$row.$key.height|intval}px;{/if}{if isset($row.$key.width) && $row.$key.width}max-width: {$row.$key.width|intval}px;{/if}" src="{$row.$key.img_url|escape:'html':'UTF-8'}" /></a>
-                                            {/if} 
-                                            {if isset($field.update_position) && $field.update_position}
-                                                </div>
-                                                </div>
-                                            {/if}                                       
+                                            {if $key=='input_box'}
+                                                <input type="checkbox" name="bulk_{$name|escape:'html':'UTF-8'}[{$row.$identifier|escape:'html':'UTF-8'}]" value="1"  />
+                                            {else}
+                                                {if isset($field.update_position) && $field.update_position}
+                                                    <div class="dragGroup">
+                                                    <span class="positions">
+                                                {/if}
+                                                {if isset($row.$key) && !is_array($row.$key)}{if isset($field.strip_tag) && !$field.strip_tag}{$row.$key nofilter}{else}{$row.$key|strip_tags:'UTF-8'|truncate:120:'...'|escape:'html':'UTF-8'}{/if}{/if}
+                                                {if isset($row.$key) && is_array($row.$key) && isset($row.$key.image_field) && $row.$key.image_field}
+                                                    <a class="ybc_fancy" href="{$row.$key.img_url|escape:'html':'UTF-8'}"><img style="{if isset($row.$key.height) && $row.$key.height}max-height: {$row.$key.height|intval}px;{/if}{if isset($row.$key.width) && $row.$key.width}max-width: {$row.$key.width|intval}px;{/if}" src="{$row.$key.img_url|escape:'html':'UTF-8'}" /></a>
+                                                {/if} 
+                                                {if isset($field.update_position) && $field.update_position}
+                                                    </div>
+                                                    </div>
+                                                {/if}  
+                                            {/if}                                     
                                         {else}
                                             {if $name=='ybc_post'}                                            
                                                 {if isset($row.$key) && $row.$key}
@@ -252,11 +267,15 @@ var text_update_position='{l s='Successful update' mod='ybc_blog'}';
                                                         {else}
                                                             <a class="edit btn btn-default" href="{$currentIndex|escape:'html':'UTF-8'}&{$identifier|escape:'html':'UTF-8'}={$row.$identifier|escape:'html':'UTF-8'}"><i class="icon-pencil"></i> {l s='Edit' mod='ybc_blog'}</a>
                                                         {/if}
+                                                    {if in_array('delete',$actions) || (isset($row.view_url) && $row.view_url) || (isset($row.view_post_url) && $row.view_post_url)||(isset($row.delete_post_url) && $row.delete_post_url)}
                                                         <button data-toggle="dropdown" class="btn btn-default dropdown-toggle">
                                     						<i class="icon-caret-down"></i>&nbsp;
                                     					</button>
-                                                    {if in_array('delete',$actions) || (isset($row.view_url) && $row.view_url) || (isset($row.view_post_url) && $row.view_post_url)||(isset($row.delete_post_url) && $row.delete_post_url)}
                                                         <ul class="dropdown-menu">
+                                                            {if in_array('approve',$actions) && !$row.approved}
+                                                                <li><a onclick="return confirm('{l s='Do you want to approve this item?' mod='ybc_blog'}');" href="{$currentIndex|escape:'html':'UTF-8'}&{$identifier|escape:'html':'UTF-8'}={$row.$identifier|escape:'html':'UTF-8'}&approve=yes"><i class="icon-check"></i> {l s='Approve' mod='ybc_blog'}</a></li>
+                                                                <li class="divider"></li>
+                                                            {/if}
                                                             {if isset($row.child_view_url) && $row.child_view_url}
                                                                 <li><a class="edit" href="{$currentIndex|escape:'html':'UTF-8'}&{$identifier|escape:'html':'UTF-8'}={$row.$identifier|escape:'html':'UTF-8'}"><i class="icon-pencil"></i> {l s='Edit' mod='ybc_blog'}</a></li>
                                                                 <li class="divider"></li>
@@ -287,7 +306,7 @@ var text_update_position='{l s='Successful update' mod='ybc_blog'}';
                                                             <li><a class="send_mail_form" href="{$currentIndex|escape:'html':'UTF-8'}&{$identifier|escape:'html':'UTF-8'}={$row.$identifier|escape:'html':'UTF-8'}&sendmailform=yes"><i class="icon-email"></i> {l s='Send email' mod='ybc_blog'}</a></li>
                                                             <li class="divider"></li>
                                                             {if isset($row.id_user) && $row.id_user}
-                                                                <li><a href="{$link_customer|escape:'html':'UTF-8'}&id_customer={$row.id_user|intval}"><i class="icon-user"></i> {l s='View customer' mod='ybc_blog'}</a></li>
+                                                                <li><a href="{$row.link_customer|escape:'html':'UTF-8'}"><i class="icon-user"></i> {l s='View customer' mod='ybc_blog'}</a></li>
                                                                 <li class="divider"></li>
                                                             {/if} 
                                                         </ul>
@@ -301,6 +320,33 @@ var text_update_position='{l s='Successful update' mod='ybc_blog'}';
                     </tbody>
                     {/if}
                 </table>
+                {if isset($show_bulk_action) && $show_bulk_action}
+                    <div id="catalog-actions" class="col order-first">
+                        <div class="row">
+                            <div class="col">
+                                <div class="d-inline-block hide">
+                                    <div class="btn-group dropdown bulk-catalog">
+                                        <button id="product_bulk_menu" class="btn btn-outline-secondary dropdown-toggle" data-toggle="dropdown" aria-expanded="true" style="color:black;">
+                                            {l s='Bulk actions' mod='ybc_blog'}
+                                            <i class="icon-caret-up"></i>
+                                        </button>
+                                        <div class="dropdown-menu" x-placement="bottom-start" style="position: absolute; transform: translate3d(0px, 35px, 0px); top: 0px; left: 0px; will-change: transform;">
+                                            <div class="dropdown-divider"></div>
+                                            <button class="dropdown-item" name="submitBulkEnabled" type="submit" style="border:none;background:none" onclick="return confirm('{l s='Do you want to enable selected item?' mod='ybc_blog' js=1}');">
+                                                <i class="icon-check" aria-hidden="true"></i>
+                                                {l s='Enable selection' mod='ybc_blog'}
+                                            </button>
+                                            <button class="dropdown-item" name="submitBulkDiasabled" type="submit" style="border:none;background:none" onclick="return confirm('{l s='Do you want to disable selected item?' mod='ybc_blog' js=1}');">
+                                                <i class="icon-remove" aria-hidden="true"></i>
+                                                {l s='Disable selection' mod='ybc_blog'}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {/if}
                 {if !$field_values}
                     {l s='No items found' mod='ybc_blog'}
                 {/if}
@@ -310,7 +356,7 @@ var text_update_position='{l s='Successful update' mod='ybc_blog'}';
                         <option value="mark_as_approved">{l s='Approved' mod='ybc_blog'}</option>
                         <option value="mark_as_unapproved">{l s='Unapproved' mod='ybc_blog'}</option>
                         <option value="mark_as_read">{l s='Mark as read' mod='ybc_blog'}</option>
-                        <option value="mark_as_unread">{l s='Mark as  unread' mod='ybc_blog'}</option>
+                        <option value="mark_as_unread">{l s='Mark as unread' mod='ybc_blog'}</option>
                         <option value="delete_selected">{l s='Delete selected' mod='ybc_blog'}</option>
                     </select>
                 {/if}
@@ -330,3 +376,20 @@ var text_update_position='{l s='Successful update' mod='ybc_blog'}';
         </div>
     </div>
 {/if}
+<script type="text/javascript">
+    function ybc_blog_updateBulkMenu()
+    {
+        $('tbody input[type="checkbox"]').parent().removeClass('checked');
+        $('tbody input[type="checkbox"]:checked').parent().addClass('checked');
+        if($('tbody input[type="checkbox"]:checked').length) {
+            $('#product_bulk_menu').removeAttr('disabled').parents('.d-inline-block').removeClass('hide');
+        } else {
+            $('#product_bulk_menu').attr('disabled','disabled').parents('.d-inline-block').addClass('hide');
+        }
+    }
+    $(document).ready(function(){
+       $(document).on('click','tbody input[type="checkbox"]',function(){
+            ybc_blog_updateBulkMenu();
+        }); 
+    });
+</script>

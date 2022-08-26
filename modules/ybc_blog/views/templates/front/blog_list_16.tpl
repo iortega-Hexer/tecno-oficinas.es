@@ -1,5 +1,5 @@
 {*
-* 2007-2019 ETS-Soft
+* 2007-2022 ETS-Soft
 *
 * NOTICE OF LICENSE
 *
@@ -14,7 +14,7 @@
 * needs, please contact us for extra customization service at an affordable price
 *
 *  @author ETS-Soft <etssoft.jsc@gmail.com>
-*  @copyright  2007-2019 ETS-Soft
+*  @copyright  2007-2022 ETS-Soft
 *  @license    Valid for 1 website (or project) for each purchase of license
 *  International Registered Trademark & Property of ETS-Soft
 *}
@@ -27,7 +27,7 @@
             <div class="blog-category {if $blog_category.image}has-blog-image{/if}">
                 {if $blog_category.image}
                     <div class="ybc_item_img{if isset($blog_config.YBC_BLOG_LAZY_LOAD)&& $blog_config.YBC_BLOG_LAZY_LOAD} ybc_item_img_ladyload{/if}">
-                        <img src="{if isset($blog_config.YBC_BLOG_LAZY_LOAD) && $blog_config.YBC_BLOG_LAZY_LOAD}#{else}{$blog_dir|escape:'html':'UTF-8'}views/img/category/{$blog_category.image|escape:'html':'UTF-8'}{/if}" alt="{$blog_category.title|escape:'html':'UTF-8'}" title="{$blog_category.title|escape:'html':'UTF-8'}" {if isset($blog_config.YBC_BLOG_LAZY_LOAD)&& $blog_config.YBC_BLOG_LAZY_LOAD} data-original="{$blog_dir|escape:'html':'UTF-8'}views/img/category/{$blog_category.image|escape:'html':'UTF-8'}" class="lazyload"{/if} />
+                        <img src="{if isset($blog_config.YBC_BLOG_LAZY_LOAD) && $blog_config.YBC_BLOG_LAZY_LOAD}#{else} {$link->getMediaLink("`$smarty.const._PS_YBC_BLOG_IMG_`category/`$blog_category.image|escape:'htmlall':'UTF-8'`")}{/if}" alt="{$blog_category.title|escape:'html':'UTF-8'}" title="{$blog_category.title|escape:'html':'UTF-8'}" {if isset($blog_config.YBC_BLOG_LAZY_LOAD)&& $blog_config.YBC_BLOG_LAZY_LOAD} data-original="{$link->getMediaLink("`$smarty.const._PS_YBC_BLOG_IMG_`category/`$blog_category.image|escape:'htmlall':'UTF-8'`")}" class="lazyload"{/if} />
                         {if isset($blog_config.YBC_BLOG_LAZY_LOAD)&& $blog_config.YBC_BLOG_LAZY_LOAD}
                         <div class="loader_lady_custom"></div>
                         {/if}
@@ -59,7 +59,7 @@
                 <div class="ybc-block-author">
                     {if $author.avata}
                         <div class="avata_img">
-                            <img class="avata" src="{$blog_dir|escape:'html':'UTF-8'}views/img/avata/{$author.avata|escape:'html':'UTF-8'}"/>
+                            <img class="avata" src="{$link->getMediaLink("`$smarty.const._PS_YBC_BLOG_IMG_`avata/`$author.avata|escape:'htmlall':'UTF-8'`")}"/>
                         </div>
                     {/if}
                     <div class="ybc-des-and-author">
@@ -70,7 +70,7 @@
                         </div>
                         {if isset($author.description)&&$author.description}
                             <div class="ybc-author-description">
-                                {$author.description nofilter}
+                                {$author.description|nl2br nofilter}
                             </div>
                         {/if}
                     </div>
@@ -92,7 +92,32 @@
     {/if}
     
     {if !($blog_category && (!isset($blog_category.enabled) || isset($blog_category.enabled) && !$blog_category.enabled)) && ($blog_category || $blog_tag || $blog_search || $author || $is_main_page || $blog_latest || $blog_featured || $blog_popular || $month || $year)}
-        {if isset($blog_posts)}
+        {if isset($blog_posts) && $blog_posts}
+            <div>
+                <div id="js-post-list-top" class="row post-selection">
+                    <div class="col-md-6 hidden-sm-down total-products">&nbsp;</div>
+                    <div class="col-md-6">
+                        <span class="col-sm-3 col-md-3 hidden-sm-down sort-by">{l s='Sort by:' mod='ybc_blog'}</span>
+                        <div class="col-sm-9 col-xs-8 col-md-9 products-sort-order dropdown">
+                            <select class="select" name="ybc_sort_by_posts">
+                                <option value="id_post" selected="selected">{l s='Latest post' mod='ybc_blog'}</option>
+                                <option value="sort_order">{l s='Sort order' mod='ybc_blog'}</option>
+                                <option value="click_number">{l s='Popular post' mod='ybc_blog'}</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="ets_blog_loading sort">
+                    <span id="squaresWaveG">
+                        <span id="squaresWaveG_1" class="squaresWaveG"></span>
+                        <span id="squaresWaveG_2" class="squaresWaveG"></span>
+                        <span id="squaresWaveG_3" class="squaresWaveG"></span>
+                        <span id="squaresWaveG_4" class="squaresWaveG"></span>
+                        <span id="squaresWaveG_5" class="squaresWaveG"></span>
+                    </span>
+                </div>
+                <div class="clearfix"></div>
+            </div>
             <ul class="ybc-blog-list row {if $is_main_page}blog-main-page{/if}">
                 {assign var='first_post' value=true}
                 {foreach from=$blog_posts item='post'}            
@@ -101,14 +126,14 @@
                             {if $is_main_page && $first_post && ($blog_layout == 'large_list' || $blog_layout == 'large_grid')}
                                 {if $post.image}
                                     <a class="ybc_item_img{if isset($blog_config.YBC_BLOG_LAZY_LOAD)&& $blog_config.YBC_BLOG_LAZY_LOAD} ybc_item_img_ladyload{/if}" href="{$post.link|escape:'html':'UTF-8'}">
-                                        <img title="{$post.title|escape:'html':'UTF-8'}" src="{if isset($blog_config.YBC_BLOG_LAZY_LOAD)&& $blog_config.YBC_BLOG_LAZY_LOAD}{$image_folder}bg-grey.png{else}{$post.image|escape:'html':'UTF-8'}{/if}" alt="{$post.title|escape:'html':'UTF-8'}" {if isset($blog_config.YBC_BLOG_LAZY_LOAD)&& $blog_config.YBC_BLOG_LAZY_LOAD} data-original="{$post.image|escape:'html':'UTF-8'}" class="lazyload"{/if} />
+                                        <img title="{$post.title|escape:'html':'UTF-8'}" src="{if isset($blog_config.YBC_BLOG_LAZY_LOAD)&& $blog_config.YBC_BLOG_LAZY_LOAD}{$link->getMediaLink("`$smarty.const._MODULE_DIR_`ybc_blog/views/img/bg-grey.png")|escape:'html':'UTF-8'}{else}{$post.image|escape:'html':'UTF-8'}{/if}" alt="{$post.title|escape:'html':'UTF-8'}" {if isset($blog_config.YBC_BLOG_LAZY_LOAD)&& $blog_config.YBC_BLOG_LAZY_LOAD} data-original="{$post.image|escape:'html':'UTF-8'}" class="lazyload"{/if} />
                                         {if isset($blog_config.YBC_BLOG_LAZY_LOAD)&& $blog_config.YBC_BLOG_LAZY_LOAD}
                                         <div class="loader_lady_custom"></div>
                                         {/if}
                                     </a>                              
                                 {elseif $post.thumb}
                                     <a class="ybc_item_img{if isset($blog_config.YBC_BLOG_LAZY_LOAD)&& $blog_config.YBC_BLOG_LAZY_LOAD} ybc_item_img_ladyload{/if}" href="{$post.link|escape:'html':'UTF-8'}">
-                                        <img title="{$post.title|escape:'html':'UTF-8'}" src="{if isset($blog_config.YBC_BLOG_LAZY_LOAD)&& $blog_config.YBC_BLOG_LAZY_LOAD}{$image_folder}bg-grey.png{else}{$post.thumb|escape:'html':'UTF-8'}{/if}" alt="{$post.title|escape:'html':'UTF-8'}" {if isset($blog_config.YBC_BLOG_LAZY_LOAD)&& $blog_config.YBC_BLOG_LAZY_LOAD} data-original="{$post.thumb|escape:'html':'UTF-8'}" class="lazyload"{/if} />
+                                        <img title="{$post.title|escape:'html':'UTF-8'}" src="{if isset($blog_config.YBC_BLOG_LAZY_LOAD)&& $blog_config.YBC_BLOG_LAZY_LOAD}{$link->getMediaLink("`$smarty.const._MODULE_DIR_`ybc_blog/views/img/bg-grey.png")|escape:'html':'UTF-8'}{else}{$post.thumb|escape:'html':'UTF-8'}{/if}" alt="{$post.title|escape:'html':'UTF-8'}" {if isset($blog_config.YBC_BLOG_LAZY_LOAD)&& $blog_config.YBC_BLOG_LAZY_LOAD} data-original="{$post.thumb|escape:'html':'UTF-8'}" class="lazyload"{/if} />
                                         {if isset($blog_config.YBC_BLOG_LAZY_LOAD)&& $blog_config.YBC_BLOG_LAZY_LOAD}
                                         <div class="loader_lady_custom"></div>
                                         {/if}
@@ -117,7 +142,7 @@
                                 {assign var='first_post' value=false}
                             {elseif $post.thumb}
                                 <a class="ybc_item_img{if isset($blog_config.YBC_BLOG_LAZY_LOAD)&& $blog_config.YBC_BLOG_LAZY_LOAD} ybc_item_img_ladyload{/if}" href="{$post.link|escape:'html':'UTF-8'}">
-                                    <img title="{$post.title|escape:'html':'UTF-8'}" src="{if isset($blog_config.YBC_BLOG_LAZY_LOAD)&& $blog_config.YBC_BLOG_LAZY_LOAD}{$image_folder}bg-grey.png{else}{$post.thumb|escape:'html':'UTF-8'}{/if}" alt="{$post.title|escape:'html':'UTF-8'}" {if isset($blog_config.YBC_BLOG_LAZY_LOAD)&& $blog_config.YBC_BLOG_LAZY_LOAD} data-original="{$post.thumb|escape:'html':'UTF-8'}" class="lazyload"{/if} />
+                                    <img title="{$post.title|escape:'html':'UTF-8'}" src="{if isset($blog_config.YBC_BLOG_LAZY_LOAD)&& $blog_config.YBC_BLOG_LAZY_LOAD}{$link->getMediaLink("`$smarty.const._MODULE_DIR_`ybc_blog/views/img/bg-grey.png")|escape:'html':'UTF-8'}{else}{$post.thumb|escape:'html':'UTF-8'}{/if}" alt="{$post.title|escape:'html':'UTF-8'}" {if isset($blog_config.YBC_BLOG_LAZY_LOAD)&& $blog_config.YBC_BLOG_LAZY_LOAD} data-original="{$post.thumb|escape:'html':'UTF-8'}" class="lazyload"{/if} />
                                     {if isset($blog_config.YBC_BLOG_LAZY_LOAD)&& $blog_config.YBC_BLOG_LAZY_LOAD}
                                         <div class="loader_lady_custom"></div>
                                     {/if}

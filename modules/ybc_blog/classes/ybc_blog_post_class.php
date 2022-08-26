@@ -1,6 +1,6 @@
 <?php
 /**
- * 2007-2019 ETS-Soft
+ * 2007-2022 ETS-Soft
  *
  * NOTICE OF LICENSE
  *
@@ -15,7 +15,7 @@
  * needs please contact us for extra customization service at an affordable price
  *
  *  @author ETS-Soft <etssoft.jsc@gmail.com>
- *  @copyright  2007-2019 ETS-Soft
+ *  @copyright  2007-2022 ETS-Soft
  *  @license    Valid for 1 website (or project) for each purchase of license
  *  International Registered Trademark & Property of ETS-Soft
  */
@@ -62,12 +62,12 @@ class Ybc_blog_post_class extends ObjectModel
             'is_customer' => array('type' => self::TYPE_INT, 'validate' => 'isunsignedInt'),
             'modified_by' => array('type' => self::TYPE_INT, 'validate' => 'isunsignedInt'),
             'products' =>	array('type' => self::TYPE_STRING, 'validate' => 'isCleanHtml', 'size' => 500),
-            'image' =>	array('type' => self::TYPE_STRING, 'validate' => 'isCleanHtml', 'size' => 500),            
-            'thumb' =>	array('type' => self::TYPE_STRING, 'validate' => 'isCleanHtml', 'size' => 500),
             'datetime_added' =>	array('type' => self::TYPE_STRING, 'validate' => 'isCleanHtml', 'size' => 500),
             'datetime_modified' =>	array('type' => self::TYPE_STRING, 'validate' => 'isCleanHtml', 'size' => 500),
             'datetime_active' =>array('type' => self::TYPE_STRING, 'validate' => 'isCleanHtml', 'size' => 500,'allow_null'=>true),
             // Lang fields
+            'image' =>	array('type' => self::TYPE_STRING, 'validate' => 'isCleanHtml', 'size' => 500,'lang'=>true),            
+            'thumb' =>	array('type' => self::TYPE_STRING, 'validate' => 'isCleanHtml', 'size' => 500,'lang'=>true),
             'url_alias' =>	array('type' => self::TYPE_STRING, 'validate' => 'isCleanHtml', 'lang' => true,'size' => 500,),
             'meta_description' => array('type' => self::TYPE_STRING, 'lang' => true,'validate' => 'isCleanHtml', 'size' => 700),
             'meta_keywords' => array('type' => self::TYPE_STRING, 'lang' => true,'validate' => 'isCleanHtml', 'size' => 700),            
@@ -96,18 +96,43 @@ class Ybc_blog_post_class extends ObjectModel
     public function duplicate()
     {
         $this->id = null; 
-        $oldImage= $this->image;
-        $oldthumb = $this->thumb;
+        $oldImages= $this->image;
+        $oldthumbs = $this->thumb;
         if($this->image)
-            $this->image = time().pathinfo($this->image, PATHINFO_BASENAME);
+        {
+            foreach($this->image as $id_lang => $image)
+            {
+                if($image)
+                    $this->image[$id_lang] = time().pathinfo($image, PATHINFO_BASENAME);
+            }
+        }
         if($this->thumb)
-            $this->thumb = time().pathinfo($this->thumb, PATHINFO_BASENAME);
+        {
+            foreach($this->thumb as $id_lang=>$thumb)
+            {
+                if($thumb)
+                    $this->thumb[$id_lang] = time().pathinfo($thumb, PATHINFO_BASENAME);
+            }
+        }
         if($this->add())
         {
             if($this->image)
-                @copy(dirname(__FILE__).'/../views/img/post/'.$oldImage,dirname(__FILE__).'/../views/img/post/'.$this->image);
+            {
+                foreach($this->image as $id_lang=>$image)
+                {
+                    if($image)
+                        @copy(_PS_YBC_BLOG_IMG_DIR_.'post/'.$oldImages[$id_lang],_PS_YBC_BLOG_IMG_DIR_.'post/'.$image);
+                }
+            }
             if($this->thumb)
-                @copy(dirname(__FILE__).'/../views/img/post/thumb/'.$oldthumb,dirname(__FILE__).'/../views/img/post/thumb/'.$this->thumb);
+            {
+                foreach($this->thumb as $id_lang=>$thumb)
+                {
+                    if($thumb)
+                        @copy(_PS_YBC_BLOG_IMG_DIR_.'post/thumb/'.$oldthumbs[$id_lang],_PS_YBC_BLOG_IMG_DIR_.'post/thumb/'.$thumb);
+                }
+                
+            }
             return $this->id;
         }
         return false;        

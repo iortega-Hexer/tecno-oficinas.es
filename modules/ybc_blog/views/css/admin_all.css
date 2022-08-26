@@ -1,3 +1,4 @@
+@import url('https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css');
 #subtab-AdminYbcBlogPost i,
 #subtab-AdminYbcBlogCategory i,
 #subtab-AdminYbcBlogComment i,
@@ -21,6 +22,10 @@
     font-size: 0;
     position: relative;
     width: 16px;
+    line-height: 1;
+    height: 16px;
+    display: inline-block;
+    vertical-align: middle;
 }
 #subtab-AdminYbcBlogPolls i.icon-polls:before{
     content: "\f087";
@@ -31,18 +36,18 @@
     content: "\f044";
 }
 #subtab-AdminYbcBlogComment .count_messages {
-  background-color: red;
-  border-radius: 50%;
-  color: #fff;
-  display: inline-block;
-  font-size: 9px;
-  height: 18px;
-  line-height: 18px;
-  margin-left: 3px;
-  padding: 0 !important;
-  text-align: center;
-  vertical-align: middle;
-  width: 18px;
+    background-color: red;
+    border-radius: 20px;
+    color: #fff;
+    display: inline-block;
+    font-size: 9px;
+    height: 18px;
+    line-height: 18px;
+    margin-left: 3px;
+    padding: 0 3px!important;
+    text-align: center;
+    vertical-align: middle;
+    min-width: 18px;
 }
 #subtab-AdminYbcBlogCategorypage i.icon-categorypage:before {
     content: "\f009";

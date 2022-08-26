@@ -1,5 +1,5 @@
 {*
-* 2007-2019 ETS-Soft
+* 2007-2022 ETS-Soft
 *
 * NOTICE OF LICENSE
 *
@@ -14,7 +14,7 @@
 * needs, please contact us for extra customization service at an affordable price
 *
 *  @author ETS-Soft <etssoft.jsc@gmail.com>
-*  @copyright  2007-2019 ETS-Soft
+*  @copyright  2007-2022 ETS-Soft
 *  @license    Valid for 1 website (or project) for each purchase of license
 *  International Registered Trademark & Property of ETS-Soft
 *}
@@ -45,7 +45,7 @@
                                 </div>
                                 <div class="ybc-blog-latest-toolbar">                                         
                                     {if $allow_rating && $post.rating}  
-                                        <div itemprop="aggregateRating" title="{l s='Average rating' mod='ybc_blog'}" class="ybc_blog_review">
+                                        <div title="{l s='Average rating' mod='ybc_blog'}" class="ybc_blog_review">
                                             {assign var='everage_rating' value=$post.rating}
                                             {for $i = 1 to $everage_rating}
                                                 {if $i <= $everage_rating}
@@ -59,9 +59,7 @@
                                                     <div class="star"></div>
                                                 {/for}
                                             {/if}
-                                            <meta itemprop="worstRating" content="0"/>
-                                            (<span class="ybc-blog-rating-value"  itemprop="ratingValue">{$post.rating|intval}</span>)
-                                            <meta itemprop="bestRating" content="5"/>                                                
+                                            (<span class="ybc-blog-rating-value">{$post.rating|intval}</span>)                                           
                                         </div>
                                     {/if}
                                 </div>

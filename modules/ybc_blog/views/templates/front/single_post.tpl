@@ -1,5 +1,5 @@
 {*
-* 2007-2019 ETS-Soft
+* 2007-2022 ETS-Soft
 *
 * NOTICE OF LICENSE
 *
@@ -14,7 +14,7 @@
 * needs, please contact us for extra customization service at an affordable price
 *
 *  @author ETS-Soft <etssoft.jsc@gmail.com>
-*  @copyright  2007-2019 ETS-Soft
+*  @copyright  2007-2022 ETS-Soft
 *  @license    Valid for 1 website (or project) for each purchase of license
 *  International Registered Trademark & Property of ETS-Soft
 *}
@@ -33,16 +33,14 @@
     </div>
 {/if}
 {/block}
-{block name="content_wrapper"}
-{block name="left_column"}
+{block name="content"}
+<div class="row">
     {if isset($blog_config.YBC_BLOG_SIDEBAR_POSITION) && $blog_config.YBC_BLOG_SIDEBAR_POSITION=='left'}
         <div id="left-column" class="col-xs-12 col-sm-4 col-md-3">
           {hook h="blogSidebar"}
         </div>
-    {/if}
-{/block}      
+    {/if}  
 <div id="content-wrapper" class="{if isset($blog_config.YBC_BLOG_SIDEBAR_POSITION) && $blog_config.YBC_BLOG_SIDEBAR_POSITION=='left'}left-column col-xs-12 col-sm-8 col-md-9{elseif isset($blog_config.YBC_BLOG_SIDEBAR_POSITION) && $blog_config.YBC_BLOG_SIDEBAR_POSITION=='right'}right-column col-xs-12 col-sm-8 col-md-9{/if}">
-  {block name="content"}
     {if $blog_config.YBC_BLOG_CAPTCHA_TYPE=='google3'}
         <script src="https://www.google.com/recaptcha/api.js?render={$blog_config.YBC_BLOG_CAPTCHA_SITE_KEY3|escape:'html':'UTF-8'}"></script>
     {/if}
@@ -57,45 +55,38 @@
             prettyAutoPlay = false;
             var number_product_related_per_row ={$blog_config.YBC_BLOG_RELATED_PRODUCT_ROW|intval};
             var number_post_related_per_row ={$blog_config.YBC_BLOG_RELATED_POST_ROW|intval};
+            var YBC_BLOG_LABEL_TABLE_OF_CONTENT ='{if isset($blog_config.YBC_BLOG_LABEL_TABLE_OF_CONTENT) && $blog_config.YBC_BLOG_LABEL_TABLE_OF_CONTENT}{$blog_config.YBC_BLOG_LABEL_TABLE_OF_CONTENT|escape:'html':'UTF-8'}{else}{l s='Table of contents' mod='ybc_blog' js=1}{/if}'
         </script>
         {if $blog_post.enabled==-1}
             <div class="alert alert-warning">
                 {l s='Your post is in preview process, it will be published once our moderator approve it' mod='ybc_blog'}
             </div>
         {/if}
-        <div class="ybc_blog_layout_{$blog_layout|escape:'html':'UTF-8'} ybc-blog-wrapper-detail" itemscope itemType="http://schema.org/{if $blog_config.YBC_BLOG_DISPLAY_SNIPPET}Product{else}BlogPosting{/if}">
-            {if $blog_config.YBC_BLOG_DISPLAY_SNIPPET}
-                <span itemprop="name">{$blog_post.title|escape:'html':'UTF-8'}</span>
-            {/if}
-            {if isset($blog_post.employee) && $blog_post.employee}
-                <meta {if !$blog_config.YBC_BLOG_DISPLAY_SNIPPET}itemprop="author"{/if} content="{if $blog_post.employee.name}{$blog_post.employee.name|escape:'html':'UTF-8'}{else}{ucfirst($blog_post.employee.firstname)|escape:'html':'UTF-8'} {ucfirst($blog_post.employee.lastname)|escape:'html':'UTF-8'}{/if}"/>
-            {/if} 
-            {if !$blog_config.YBC_BLOG_DISPLAY_SNIPPET}
-                <div itemprop="publisher" itemtype="http://schema.org/Organization" itemscope="" style="display: none;">
-                    <meta itemprop="name" content="{Configuration::get('PS_SHOP_NAME')|escape:'html':'UTF-8'}" />
-                    {if Configuration::get('PS_LOGO')}
-                        <div itemprop="logo" itemscope itemtype="http://schema.org/ImageObject">
-                            <meta itemprop="url" content="{$blog_config.YBC_BLOG_SHOP_URI|escape:'html':'UTF-8'}img/{Configuration::get('PS_LOGO')|escape:'html':'UTF-8'}" />
-                            <meta itemprop="width" content="200px" />
-                            <meta itemprop="height" content="100px" />
-                        </div>
-                    {/if}
-                </div>  
-            {/if}
+        <div class="ybc_blog_layout_{$blog_layout|escape:'html':'UTF-8'} ybc-blog-wrapper-detail" itemscope itemType="http://schema.org/newsarticle">
+            <div itemprop="publisher" itemtype="http://schema.org/Organization" itemscope="">
+                <meta itemprop="name" content="{Configuration::get('PS_SHOP_NAME')|escape:'html':'UTF-8'}" />
+                {if Configuration::get('PS_LOGO')}
+                    <div itemprop="logo" itemscope itemtype="http://schema.org/ImageObject">
+                        <meta itemprop="url" content="{$blog_config.YBC_BLOG_SHOP_URI|escape:'html':'UTF-8'}img/{Configuration::get('PS_LOGO')|escape:'html':'UTF-8'}" />
+                        <meta itemprop="width" content="200px" />
+                        <meta itemprop="height" content="100px" />
+                    </div>
+                {/if}
+            </div> 
             {if $blog_post.image}
                 <div class="ybc_blog_img_wrapper" itemprop="image" itemscope itemtype="http://schema.org/ImageObject">
                     {if $enable_slideshow}<a href="{$blog_post.image|escape:'html':'UTF-8'}" class="prettyPhoto">{/if}
                     <div class="ybc_image-single{if isset($blog_config.YBC_BLOG_LAZY_LOAD)&& $blog_config.YBC_BLOG_LAZY_LOAD} ybc_item_img_ladyload{/if}">                            
-                        <img title="{$blog_post.title|escape:'html':'UTF-8'}" src="{if isset($blog_config.YBC_BLOG_LAZY_LOAD) && $blog_config.YBC_BLOG_LAZY_LOAD}{$image_folder|escape:'html':'UTF-8'}bg-grey.png{else}{$blog_post.image|escape:'html':'UTF-8'}{/if}" alt="{$blog_post.title|escape:'html':'UTF-8'}" itemprop="url" {if isset($blog_config.YBC_BLOG_LAZY_LOAD)&& $blog_config.YBC_BLOG_LAZY_LOAD} data-original="{$blog_post.image|escape:'html':'UTF-8'}" class="lazyload"{/if}/>
+                        <img title="{$blog_post.title|escape:'html':'UTF-8'}" src="{if isset($blog_config.YBC_BLOG_LAZY_LOAD) && $blog_config.YBC_BLOG_LAZY_LOAD}{$link->getMediaLink("`$smarty.const._MODULE_DIR_`ybc_blog/views/img/bg-grey.png")|escape:'html':'UTF-8'}{else}{$blog_post.image|escape:'html':'UTF-8'}{/if}" alt="{$blog_post.title|escape:'html':'UTF-8'}" itemprop="url" {if isset($blog_config.YBC_BLOG_LAZY_LOAD)&& $blog_config.YBC_BLOG_LAZY_LOAD} data-original="{$blog_post.image|escape:'html':'UTF-8'}" class="lazyload"{/if}/>
                     </div>
                     <meta itemprop="width" content="600px" />
                     <meta itemprop="height" content="300px" />
                     {if $enable_slideshow}</a>{/if}
                 </div>                        
              {/if}
-             <div class="ybc-blog-wrapper-content">
+             <div class="ybc-blog-wrapper-content{if isset($blog_config.YBC_BLOG_SIDEBAR_POSITION) && $blog_config.YBC_BLOG_SIDEBAR_POSITION=='left'} content-right{else} content-left{/if}" >
             {if $blog_post}
-                <h1 class="page-heading product-listing" itemprop="mainEntityOfPage"><span  class="title_cat"{if !$blog_config.YBC_BLOG_DISPLAY_SNIPPET} itemprop="headline"{/if}>{$blog_post.title|escape:'html':'UTF-8'}</span></h1>
+                <h1 class="page-heading product-listing" itemprop="mainEntityOfPage"><span  class="title_cat" itemprop="headline">{$blog_post.title|escape:'html':'UTF-8'}</span></h1>
                 <div class="post-details">
                     <div class="blog-extra">
                         <div class="ybc-blog-latest-toolbar">
@@ -116,10 +107,10 @@
                                 </span>  
                             {/if}
                             {if $allow_rating && $everage_rating}                      
-                                <div class="blog_rating_wrapper" {if $blog_config.YBC_BLOG_DISPLAY_SNIPPET} itemprop="aggregateRating" itemscope itemtype="http://schema.org/AggregateRating"{/if}>                            
+                                <div class="blog_rating_wrapper">                            
                                     {if $total_review}
                                         <span title="{l s='Comments' mod='ybc_blog'}" class="blog_rating_reviews">
-                                             <span class="total_views" {if $blog_config.YBC_BLOG_DISPLAY_SNIPPET}itemprop="reviewCount"{/if}>{$total_review|intval}</span>
+                                             <span class="total_views">{$total_review|intval}</span>
                                              <span>
                                                 {if $total_review != 1}
                                                     {l s='Comments' mod='ybc_blog'}
@@ -142,16 +133,7 @@
                                                 <div class="star"></div>
                                             {/for}
                                         {/if}
-                                        {if $blog_config.YBC_BLOG_DISPLAY_SNIPPET}
-                                            <meta itemprop="worstRating" content="0"/>
-                                        {/if}
-                                        <span class="ybc-blog-rating-value" {if $blog_config.YBC_BLOG_DISPLAY_SNIPPET} itemprop="ratingValue"{/if}>({$everage_rating|escape:'html':'UTF-8'})</span>
-                                        {if $blog_config.YBC_BLOG_DISPLAY_SNIPPET}
-                                            <meta itemprop="bestRating" content="5"/>
-                                            <span itemprop="itemReviewed" itemscope itemtype="http://schema.org/Thing" style="display:none;">
-                                                <span itemprop="name">{$blog_post.title|escape:'html':'UTF-8'}</span>
-                                            </span> 
-                                        {/if}                                                
+                                        <span class="ybc-blog-rating-value">({$everage_rating|escape:'html':'UTF-8'})</span>                                               
                                     </div>
                                 </div>
                             {/if}  
@@ -160,17 +142,15 @@
                                 <span class="post-date">
                                     <span class="be-label">{l s='Posted on' mod='ybc_blog'}: </span>
                                     <span>{date($date_format,strtotime($blog_post.datetime_added))|escape:'html':'UTF-8'}</span>
-                                    {if !$blog_config.YBC_BLOG_DISPLAY_SNIPPET}
-                                        <meta itemprop="datePublished" content="{date('Y-m-d',strtotime($blog_post.datetime_added))|escape:'html':'UTF-8'}" />
-                                        <meta itemprop="dateModified" content="{date('Y-m-d',strtotime($blog_post.datetime_modified))|escape:'html':'UTF-8'}" />
-                                    {/if}
+                                    <meta itemprop="datePublished" content="{date('Y-m-d',strtotime($blog_post.datetime_added))|escape:'html':'UTF-8'}" />
+                                    <meta itemprop="dateModified" content="{date('Y-m-d',strtotime($blog_post.datetime_modified))|escape:'html':'UTF-8'}" />
                                 </span>
                             {/if}
                             {if $show_author && isset($blog_post.employee) &&  $blog_post.employee}
-                                <div class="author-block">
+                                <div class="author-block" itemprop="author" itemscope itemtype="http://schema.org/Person">
                                     <span class="post-author-label">{l s='By ' mod='ybc_blog'}</span>
-                                    <a href="{$blog_post.author_link|escape:'html':'UTF-8'}">
-                                        <span class="post-author-name">
+                                    <a itemprop="url" href="{$blog_post.author_link|escape:'html':'UTF-8'}">
+                                        <span class="post-author-name" itemprop="name">
                                             {if isset($blog_post.employee.name) && $blog_post.employee.name}
                                                 {ucfirst($blog_post.employee.name)|escape:'html':'UTF-8'}
                                             {else}
@@ -219,12 +199,14 @@
                         {/if}          
                     </div>               
                     </div>                           
-                    <div class="blog_description{if $enable_slideshow} popup_image{/if}"{if $blog_config.YBC_BLOG_DISPLAY_SNIPPET} itemprop="description"{/if}>
+                    <div class="blog_description{if $enable_slideshow} popup_image{/if} {if isset($blog_config.YBC_BLOG_ALLOW_TABLE_OF_CONTENT)&& $blog_config.YBC_BLOG_ALLOW_TABLE_OF_CONTENT} ybc_create_table_content{/if}">
+                        <div class="ets_begin_heading_table">&nbsp;</div>
                         {if $blog_post.description}
                             {$blog_post.description nofilter}
                         {else}
                             {$blog_post.short_description nofilter}
                         {/if}
+                        <div class="ets_end_heading_table">&nbsp;</div>
                     </div>
                     {if $blog_config.YBC_BLOG_ENABLE_POLLS && $allowPolls}
                         <form>
@@ -276,9 +258,11 @@
                                             {/if}
                                         {/if}
                                     {/if}
-                                    <input type="hidden" value="1" name="polls_submit"/>
-                                    <button type="submit" name="polls_submit">{l s='Submit' mod='ybc_blog'}</button>
-                                    <button type="button" name="polls_cancel" style="margin-right: 10px;">{l s='Cancel' mod='ybc_blog'}</button>
+                                    <div class="form_action_footer">
+                                        <input type="hidden" value="1" name="polls_submit"/>
+                                        <button type="submit" name="polls_submit">{l s='Submit' mod='ybc_blog'}</button>
+                                        <button type="button" name="polls_cancel" style="margin-right: 10px;">{l s='Cancel' mod='ybc_blog'}</button>
+                                    </div>
                                     <div class="clearfix"></div>
                                 </div>
                             </div>
@@ -319,7 +303,7 @@
                         <div class="ybc-block-author ybc-block-author-avata {if $blog_post.employee.avata} ybc-block-author-avata{/if}">
                             {if $blog_post.employee.avata}
                                 <div class="avata_img">
-                                    <img class="avata" src="{$blog_dir|escape:'html':'UTF-8'}views/img/avata/{$blog_post.employee.avata|escape:'html':'UTF-8'}"/>
+                                    <img class="avata" src="{$link->getMediaLink("`$smarty.const._PS_YBC_BLOG_IMG_`avata/`$blog_post.employee.avata|escape:'htmlall':'UTF-8'`")}"/>
                                 </div>
                                 
                             {/if}
@@ -338,7 +322,7 @@
                         </div>
                     {/if}
                     {if $display_related_products && $blog_post.products}
-                        <div id="ybc-blog-related-products" class="">
+                        <div id="ybc-blog-related-products" class="" >
                             <h4 class="title_blog">
                                 {if count($blog_post.products) > 1}{l s='Related products ' mod='ybc_blog'}
                                 {else}{l s='Related product' mod='ybc_blog'}{/if}
@@ -349,10 +333,10 @@
                                     {assign var='product_row' value=$blog_config.YBC_BLOG_RELATED_PRODUCT_ROW|intval}
                                     {foreach from=$blog_post.products item='product'}
                                         <li class="ajax_block_product col-xs-12 col-sm-4 col-lg-{12/$product_row|intval}">
-                                            <div class="product-container">
+                                            <div class="product-container" itemprop="offers" itemscop itemtype="https://schema.org/Offer">
                                                 <div class="left-block">
                                                     <a class="ybc_item_img{if isset($blog_config.YBC_BLOG_LAZY_LOAD)&& $blog_config.YBC_BLOG_LAZY_LOAD} ybc_item_img_ladyload{/if}" href="{$product.link|escape:'html':'UTF-8'}">
-                                                        <img src="{if isset($blog_config.YBC_BLOG_LAZY_LOAD) && $blog_config.YBC_BLOG_LAZY_LOAD}{$image_folder|escape:'html':'UTF-8'}bg-grey.png{else}{$product.img_url|escape:'html':'UTF-8'}{/if}" alt="{$product.name|escape:'html':'UTF-8'}" {if isset($blog_config.YBC_BLOG_LAZY_LOAD)&& $blog_config.YBC_BLOG_LAZY_LOAD} data-original="{$product.img_url|escape:'html':'UTF-8'}" data-src="{$product.img_url|escape:'html':'UTF-8'}" class="lazyload"{/if} />
+                                                        <img src="{if isset($blog_config.YBC_BLOG_LAZY_LOAD) && $blog_config.YBC_BLOG_LAZY_LOAD}{$link->getMediaLink("`$smarty.const._MODULE_DIR_`ybc_blog/views/img/bg-grey.png")|escape:'html':'UTF-8'}{else}{$product.img_url|escape:'html':'UTF-8'}{/if}" alt="{$product.name|escape:'html':'UTF-8'}" {if isset($blog_config.YBC_BLOG_LAZY_LOAD)&& $blog_config.YBC_BLOG_LAZY_LOAD} data-original="{$product.img_url|escape:'html':'UTF-8'}" data-src="{$product.img_url|escape:'html':'UTF-8'}" class="lazyload"{/if} />
                                                         {if isset($blog_config.YBC_BLOG_LAZY_LOAD)&& $blog_config.YBC_BLOG_LAZY_LOAD}
                                                             <div class="loader_lady_custom"></div>
                                                         {/if}
@@ -365,7 +349,7 @@
                                                             {if $product.price!=$product.old_price}
                                                                 <span class="bp-price-old old-price"><span class="bp-price-old-label">{l s='Old price: ' mod='ybc_blog'}</span><span class="bp-price-old-display">{$product.old_price|escape:'html':'UTF-8'}</span></span>
                                                             {/if}
-                                                            <span class="bp-price price product-price"><span class="bp-price-label">{l s='Price:  ' mod='ybc_blog'}</span><span class="bp-price-display">{$product.price|escape:'html':'UTF-8'}</span></span>
+                                                            <span class="bp-price price product-price"><span class="bp-price-label">{l s='Price:  ' mod='ybc_blog'}</span><span class="bp-price-display" itemprop="price" content="{$product.price|escape:'html':'UTF-8'}">{$product.price|escape:'html':'UTF-8'}</span></span>
                                                             {if $product.price!=$product.old_price}
                                                                 <span class="bp-percent price-percent-reduction"><span class="bp-percent-label">{l s='Discount: ' mod='ybc_blog'}</span><span class="bp-percent-display">{$product.discount_percent|escape:'html':'UTF-8'}{l s='%' mod='ybc_blog'}</span></span>
                                                                 <span class="bp-save"><span class="bp-save-label">{l s='Save up: ' mod='ybc_blog'}</span><span class="bp-save-display">-{$product.discount_amount|escape:'html':'UTF-8'}</span></span>
@@ -388,17 +372,10 @@
                     <div class="ybc-blog-wrapper-comment"> 
                         {if $allowComments}
                             {if $allowComments==2}
-                                {literal}
-                                    <script>(function(d, s, id) {
-                                      var js, fjs = d.getElementsByTagName(s)[0];
-                                      if (d.getElementById(id)) return;
-                                      js = d.createElement(s); js.id = id;
-                                      js.src = "//connect.facebook.net/en_GB/sdk.js#xfbml=1&version=v2.3";
-                                      fjs.parentNode.insertBefore(js, fjs);
-                                    }(document, 'script', 'facebook-jssdk'));</script>
-                                {/literal}
+                                <div id="fb-root"></div>
+                                <script async defer crossorigin="anonymous" src="https://connect.facebook.net/{$langLocale|escape:'html':'UTF-8'}/sdk.js#xfbml=1&version=v8.0" nonce="xHtLYTmH"></script>
                                 <h4 class="title_blog">{l s='Facebook comment' mod='ybc_blog'}</h4>
-                                <div class="fb-comments" data-href="{$post_url|escape:'html':'UTF-8'}" data-numposts="5" data-width="full"></div>
+                                <div class="fb-comments" data-width="760" data-href="{$post_url|escape:'html':'UTF-8'}" data-numposts="5" data-width=""></div>
                             {else} 
                             <div class="ybc_comment_form_blog">
                                 <h4 class="title_blog">{l s='Leave a comment' mod='ybc_blog'}</h4>
@@ -426,83 +403,86 @@
                                                 <label for="bc-comment">{l s='Comment ' mod='ybc_blog'}</label>
                                                 <textarea   class="form-control" name="comment" id="bc-comment">{if isset($comment)}{$comment|escape:'html':'UTF-8'}{elseif isset($comment_edit->comment)&& !$justAdded}{$comment_edit->comment|escape:'html':'UTF-8'}{/if}</textarea>
                                             </div>
-                                            <div class="blog-comment-row flex_space_between">
-                                            {if $allow_rating || $use_capcha}
-                                                <div class="blog-rate-capcha">
-                                                    {if $allow_rating}                            
-                                                        <div class="blog-rate-post">
-                                                            <label>{l s='Rating: ' mod='ybc_blog'}</label>
-                                                            <div class="blog_rating_box">
-                                                                {if $default_rating > 0 && $default_rating <5}
-                                                                    <input id="blog_rating" type="hidden" name="rating" value="{$default_rating|intval}" />
-                                                                    {for $i = 1 to $default_rating}
-                                                                        <div rel="{$i|intval}" class="star star_on blog_rating_star blog_rating_star_{$i|intval}"></div>
-                                                                    {/for}
-                                                                    {for $i = $default_rating + 1 to 5}
-                                                                        <div rel="{$i|intval}" class="star blog_rating_star blog_rating_star_{$i|intval}"></div>
-                                                                    {/for}
-                                                                {else}
-                                                                    <input id="blog_rating" type="hidden" name="rating" value="5" />
-                                                                    {for $i = 1 to 5}
-                                                                        <div rel="{$i|intval}" class="star star_on blog_rating_star blog_rating_star_{$i|intval}"></div>
-                                                                    {/for}
+                                            <div class="blog-comment-row flex_space_between flex-bottom">
+                                                {if $allow_rating || $use_capcha}
+                                                    <div class="blog-rate-capcha">
+                                                        {if $allow_rating}                            
+                                                            <div class="blog-rate-post">
+                                                                <label>{l s='Rating: ' mod='ybc_blog'}</label>
+                                                                <div class="blog_rating_box">
+                                                                    {if $default_rating > 0 && $default_rating <5}
+                                                                        <input id="blog_rating" type="hidden" name="rating" value="{$default_rating|intval}" />
+                                                                        {for $i = 1 to $default_rating}
+                                                                            <div rel="{$i|intval}" class="star star_on blog_rating_star blog_rating_star_{$i|intval}"></div>
+                                                                        {/for}
+                                                                        {for $i = $default_rating + 1 to 5}
+                                                                            <div rel="{$i|intval}" class="star blog_rating_star blog_rating_star_{$i|intval}"></div>
+                                                                        {/for}
+                                                                    {else}
+                                                                        <input id="blog_rating" type="hidden" name="rating" value="5" />
+                                                                        {for $i = 1 to 5}
+                                                                            <div rel="{$i|intval}" class="star star_on blog_rating_star blog_rating_star_{$i|intval}"></div>
+                                                                        {/for}
+                                                                    {/if}
+                                                                </div>
+                                                            </div>
+                                                        {/if}
+                                                        {if $use_capcha}
+                                                            {if $blog_config.YBC_BLOG_CAPTCHA_TYPE!=='google' && $blog_config.YBC_BLOG_CAPTCHA_TYPE!=='google3'}
+                                                                <div class="blog-capcha">
+                                                                    <label for="bc-capcha">{l s='Security code: ' mod='ybc_blog'}</label>
+                                                                    <span class="bc-capcha-wrapper">
+                                                                        <img rel="{$blog_random_code|escape:'html':'UTF-8'}" class="ybc-captcha-img-data" id="ybc-blog-capcha-img" src="{$capcha_image|escape:'html':'UTF-8'}" alt="{l s='Security code' mod='ybc_blog'}" />
+                                                                        <input class="form-control" name="capcha_code" type="text" id="bc-capcha" value="" />
+                                                                        <span id="ybc-blog-capcha-refesh" title="{l s='Refresh code' mod='ybc_blog'}">{*l s='Refresh code'*}</span>
+                                                                    </span>
+                                                                </div>
+                                                            {else}
+                                                                {if $blog_config.YBC_BLOG_CAPTCHA_TYPE=='google'}
+                                                                    <script src="https://www.google.com/recaptcha/api.js?onload=ybc_comment_lonloadCallback&render=explicit" async defer></script>
+                                                                    <div id="ybc_blog_comment_g_recaptcha" class="ybc_blog_g_recaptcha" ></div>
                                                                 {/if}
-                                                            </div>
-                                                        </div>
-                                                    {/if}
-                                                    {if $use_capcha}
-                                                        {if $blog_config.YBC_BLOG_CAPTCHA_TYPE!=='google' && $blog_config.YBC_BLOG_CAPTCHA_TYPE!=='google3'}
-                                                            <div class="blog-capcha">
-                                                                <label for="bc-capcha">{l s='Security code: ' mod='ybc_blog'}</label>
-                                                                <span class="bc-capcha-wrapper">
-                                                                    <img rel="{$blog_random_code|escape:'html':'UTF-8'}" class="ybc-captcha-img-data" id="ybc-blog-capcha-img" src="{$capcha_image|escape:'html':'UTF-8'}" alt="{l s='Security code' mod='ybc_blog'}" />
-                                                                    <input class="form-control" name="capcha_code" type="text" id="bc-capcha" value="" />
-                                                                    <span id="ybc-blog-capcha-refesh" title="{l s='Refresh code' mod='ybc_blog'}">{*l s='Refresh code'*}</span>
-                                                                </span>
-                                                            </div>
-                                                        {else}
-                                                            {if $blog_config.YBC_BLOG_CAPTCHA_TYPE=='google'}
-                                                                <script src="https://www.google.com/recaptcha/api.js?onload=ybc_comment_lonloadCallback&render=explicit" async defer></script>
-                                                                <div id="ybc_blog_comment_g_recaptcha" class="ybc_blog_g_recaptcha" ></div>
-                                                            {/if}
-                                                            {if $blog_config.YBC_BLOG_CAPTCHA_TYPE=='google3'}
-                                                                <input type="hidden" id="ybc_blog_comment_g_recaptcha" name="g-recaptcha-response" />
-                                                                <script type="text/javascript">
-                                                                    ybc_comment_lonloadCallback();
-                                                                </script>
+                                                                {if $blog_config.YBC_BLOG_CAPTCHA_TYPE=='google3'}
+                                                                    <input type="hidden" id="ybc_blog_comment_g_recaptcha" name="g-recaptcha-response" />
+                                                                    <script type="text/javascript">
+                                                                        ybc_comment_lonloadCallback();
+                                                                    </script>
+                                                                {/if}
                                                             {/if}
                                                         {/if}
-                                                    {/if}
-                                                </div>
-                                            {/if}   
+                                                    </div>
+                                                {/if}   
+                                                <div class="blog-submit-form">                                                    
+                                                    {if !Configuration::get('YBC_BLOG_DISPLAY_GDPR_NOTIFICATION')}
+                                                        <div class="blog-submit">
+                                                            <input class="button" type="submit" value="{l s='Submit Comment' mod='ybc_blog'}" name="bcsubmit" />
+                                                        </div>
+                                                    {/if}   
+                                                </div>            
+                                                {if $blog_errors && is_array($blog_errors) && !isset($replyCommentsave)}
+                                                    <div class="alert alert-danger ybc_alert-danger">
+                                                        <button class="close" type="button" data-dismiss="alert">×</button>
+                                                        <ul>
+                                                            {foreach from=$blog_errors item='error'}
+                                                                <li>{$error|escape:'html':'UTF-8'}</li>
+                                                            {/foreach}
+                                                        </ul>
+                                                    </div>
+                                                {/if}                                            
                                             </div> 
-                                            {if Configuration::get('YBC_BLOG_DISPLAY_GDPR_NOTIFICATION')}
-                                                <div class="blog-comment-row">
-                                                    <label for="check_gpdr">
-                                                        <input id="check_gpdr" type="checkbox" type="check_gpdr" value="1"/>&nbsp;{$text_gdpr|escape:'html':'UTF-8'}
-                                                        <a href="{if Configuration::get('YBC_BLOG_TEXT_GDPR_NOTIFICATION_URL_MORE',$id_lang)}{Configuration::get('YBC_BLOG_TEXT_GDPR_NOTIFICATION_URL_MORE',$id_lang)|escape:'html':'UTF-8'}{else}#{/if}">{if Configuration::get('YBC_BLOG_TEXT_GDPR_NOTIFICATION_TEXT_MORE',$id_lang)}{Configuration::get('YBC_BLOG_TEXT_GDPR_NOTIFICATION_TEXT_MORE',$id_lang)|escape:'html':'UTF-8'}{else}{l s='View more detail here' mod='ybc_blog'}{/if}</a>
-                                                    </label>
-                                                    <div class="blog-submit">
-                                                        <input class="button" type="submit" disabled="disabled" value="{l s='Submit Comment' mod='ybc_blog'}" name="bcsubmit" />
-                                                    </div>
+                                            <div class="blog-comment-row">                                            
+                                                <div class="blog-submit-form">
+                                                    {if Configuration::get('YBC_BLOG_DISPLAY_GDPR_NOTIFICATION')}
+                                                        <label for="check_gpdr">
+                                                            <input id="check_gpdr" type="checkbox" type="check_gpdr" value="1"/>&nbsp;{$text_gdpr|escape:'html':'UTF-8'}
+                                                            <a href="{if Configuration::get('YBC_BLOG_TEXT_GDPR_NOTIFICATION_URL_MORE',$id_lang)}{Configuration::get('YBC_BLOG_TEXT_GDPR_NOTIFICATION_URL_MORE',$id_lang)|escape:'html':'UTF-8'}{else}#{/if}">{if Configuration::get('YBC_BLOG_TEXT_GDPR_NOTIFICATION_TEXT_MORE',$id_lang)}{Configuration::get('YBC_BLOG_TEXT_GDPR_NOTIFICATION_TEXT_MORE',$id_lang)|escape:'html':'UTF-8'}{else}{l s='View more details here' mod='ybc_blog'}{/if}</a>
+                                                        </label>
+                                                        <div class="blog-submit">
+                                                            <input class="button" type="submit" disabled="disabled" value="{l s='Submit Comment' mod='ybc_blog'}" name="bcsubmit" />
+                                                        </div>
+                                                    {/if}   
                                                 </div>  
-                                            {else}
-                                                <div class="blog-comment-row">
-                                                    <div class="blog-submit">
-                                                        <input class="button" type="submit" value="{l s='Submit Comment' mod='ybc_blog'}" name="bcsubmit" />
-                                                    </div>
-                                                </div> 
-                                            {/if}               
-                                            {if $blog_errors && is_array($blog_errors) && !isset($replyCommentsave)}
-                                                <div class="alert alert-danger ybc_alert-danger">
-                                                    <button class="close" type="button" data-dismiss="alert">×</button>
-                                                    <ul>
-                                                        {foreach from=$blog_errors item='error'}
-                                                            <li>{$error|escape:'html':'UTF-8'}</li>
-                                                        {/foreach}
-                                                    </ul>
-                                                </div>
-                                            {/if}
+                                            </div>                                            
                                             {if $blog_success && !$replyCommentsaveok}
                                                 <p class="alert alert-success ybc_alert-success">
                                                 <button class="close" type="button" data-dismiss="alert">×</button>    
@@ -511,7 +491,7 @@
                                             {/if}
                                         </form>
                                     {else}
-                                        <p class="alert alert-warning">{l s='Login to post comments' mod='ybc_blog'}</p>
+                                        <p class="alert alert-warning">{l s='Log in to post comments' mod='ybc_blog'}</p>
                                     {/if}
                                 </div> 
                             </div>
@@ -524,15 +504,10 @@
                                                 {*<meta itemprop="author" content="{ucfirst($comment.name)|escape:'html':'UTF-8'}"/>*}                                                                
                                                 <div class="ybc-blog-detail-comment">
                                                     <h5 class="comment-subject">{$comment.subject|escape:'html':'UTF-8'}</h5>
-                                                    {if $comment.name}<span class="comment-by">{l s='By : ' mod='ybc_blog'}<b>{ucfirst($comment.name)|escape:'html':'UTF-8'}</b></span>{/if}
+                                                    {if $comment.name}<span class="comment-by">{l s='By: ' mod='ybc_blog'}<b>{ucfirst($comment.name)|escape:'html':'UTF-8'}</b></span>{/if}
                                                     <span class="comment-time"><span>{l s='On' mod='ybc_blog'} </span>{date($date_format,strtotime($comment.datetime_added))|escape:'html':'UTF-8'}</span>
                                                     {if $allow_rating && $comment.rating > 0}
-                                                        <div class="comment-rating" {*itemprop="reviewRating" itemscope itemtype="http://schema.org/Rating"*}>
-                                                            {*<meta itemprop="worstRating" content="0"/>
-                                                            <meta itemprop="ratingValue" content="{number_format((float)$comment.rating, 1, '.', '')|escape:'html':'UTF-8'}"/>
-                                                            <meta itemprop="bestRating" content="5"/>
-                                                            <meta itemprop="itemReviewed" content="{$blog_post.title|escape:'html':'UTF-8'}"/>
-                                                            *} 
+                                                        <div class="comment-rating" >
                                                             <span>{l s='Rating: ' mod='ybc_blog'}</span>
                                                             <div class="ybc_blog_review">
                                                                 {for $i = 1 to $comment.rating}
@@ -568,7 +543,7 @@
                                                         {foreach $comment.replies item='reply'}
                                                             <p class="comment-reply">
                                                                 <span class="ybc-blog-replied-by">
-                                                                    {l s='Replied by : ' mod='ybc_blog'}
+                                                                    {l s='Replied by: ' mod='ybc_blog'}
                                                                     <span class="ybc-blog-replied-by-name">
                                                                         {ucfirst($reply.name)|escape:'html':'UTF-8'}
                                                                     </span>              
@@ -644,7 +619,7 @@
                                     <li class="ybc-blog-related-posts-list-li col-xs-12 col-sm-4 col-lg-{12/$post_row|intval} thumbnail-container">
                                         {if $rpost.thumb}
                                             <a class="ybc_item_img{if isset($blog_config.YBC_BLOG_LAZY_LOAD)&& $blog_config.YBC_BLOG_LAZY_LOAD} ybc_item_img_ladyload{/if}" href="{$rpost.link|escape:'html':'UTF-8'}">
-                                                <img src="{if isset($blog_config.YBC_BLOG_LAZY_LOAD)&& $blog_config.YBC_BLOG_LAZY_LOAD}{$image_folder|escape:'html':'UTF-8'}bg-grey.png{else}{$rpost.thumb|escape:'html':'UTF-8'}{/if}" alt="{$rpost.title|escape:'html':'UTF-8'}" {if isset($blog_config.YBC_BLOG_LAZY_LOAD)&& $blog_config.YBC_BLOG_LAZY_LOAD} data-original="{$rpost.thumb|escape:'html':'UTF-8'}" class="lazyload"{/if} />
+                                                <img src="{if isset($blog_config.YBC_BLOG_LAZY_LOAD)&& $blog_config.YBC_BLOG_LAZY_LOAD}{$link->getMediaLink("`$smarty.const._MODULE_DIR_`ybc_blog/views/img/bg-grey.png")|escape:'html':'UTF-8'}{else}{$rpost.thumb|escape:'html':'UTF-8'}{/if}" alt="{$rpost.title|escape:'html':'UTF-8'}" {if isset($blog_config.YBC_BLOG_LAZY_LOAD)&& $blog_config.YBC_BLOG_LAZY_LOAD} data-original="{$rpost.thumb|escape:'html':'UTF-8'}" class="lazyload"{/if} />
                                                 {if isset($blog_config.YBC_BLOG_LAZY_LOAD)&& $blog_config.YBC_BLOG_LAZY_LOAD}
                                                     <div class="loader_lady_custom"></div>
                                                 {/if}
@@ -720,13 +695,12 @@
     {else}
         <p class="alert alert-warning">{l s='This blog post is not available' mod='ybc_blog'}</p>
     {/if}
-  {/block}
 </div>
-{/block}
-{block name="right_column"}
+
 {if isset($blog_config.YBC_BLOG_SIDEBAR_POSITION) && $blog_config.YBC_BLOG_SIDEBAR_POSITION=='right'}
     <div id="right-column" class="col-xs-12 col-sm-4 col-md-3">
       {hook h="blogSidebar"}
     </div>
 {/if}
+</div>
 {/block}

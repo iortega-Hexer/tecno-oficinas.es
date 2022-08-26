@@ -15,7 +15,7 @@
  * @license   Nicodème Cyril
  * @package   modules
  * @since     2014-04-15
- * @version   2.7.8
+ * @version   2.7.9
  */
 
 if (!defined('_PS_VERSION_')) {
@@ -39,7 +39,7 @@ class PowerfulFormGenerator extends Module
     {
         $this->name = 'powerfulformgenerator';
         $this->tab = 'content_management';
-        $this->version = '2.7.8';
+        $this->version = '2.7.9';
         $this->author = 'Cyril Nicodeme';
         $this->need_instance = 0;
         $this->module_key = '4a42249dce8de8e336494fd07a6e501f';

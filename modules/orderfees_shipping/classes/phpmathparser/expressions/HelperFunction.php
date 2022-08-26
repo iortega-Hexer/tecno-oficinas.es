@@ -15,11 +15,15 @@ class HelperFunction extends Operator
 {
     const ARG_SEPARATOR = ';';
     
-    protected $precedence = 10;
+    public static $fns = array();
     
+    protected $precedence = 10;
+
     public static function isFunction($value)
     {
-        return method_exists(__CLASS__, $value);
+        $function = \Tools::strtolower($value);
+        
+        return isset(self::$fns[$function]) || method_exists(__CLASS__, $function);
     }
     
     public function hasArg($stack)
@@ -47,7 +51,7 @@ class HelperFunction extends Operator
         
         $function = \Tools::strtolower($this->value);
         
-        $result = new Number(call_user_func_array(array(__CLASS__, $function), $args));
+        $result = new Number(call_user_func_array(isset(self::$fns[$function]) ? self::$fns[$function] : array(__CLASS__, $function), $args));
         
         return $result->operate($stack);
     }

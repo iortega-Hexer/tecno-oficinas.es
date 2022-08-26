@@ -4,11 +4,16 @@
 
 namespace Composer\Autoload;
 
-class ComposerStaticInit27c6de8c584fb41441950d45f4f3e3c9
+class ComposerStaticInit5022fc80e7a5f8bd1e2daeabd334bfe2
 {
+    public static $classMap = array (
+        'Ps_Banner' => __DIR__ . '/../..' . '/ps_banner.php',
+    );
+
     public static function getInitializer(ClassLoader $loader)
     {
         return \Closure::bind(function () use ($loader) {
+            $loader->classMap = ComposerStaticInit5022fc80e7a5f8bd1e2daeabd334bfe2::$classMap;
 
         }, null, ClassLoader::class);
     }

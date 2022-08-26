@@ -4,7 +4,7 @@
 
 namespace Composer\Autoload;
 
-class ComposerStaticInit30b6dc3a5810d215d66c4d468282baaf
+class ComposerStaticInit6645d64907e89077b0cb5c1e8c7d4cec
 {
     public static $classMap = array (
         'Ps_Crossselling' => __DIR__ . '/../..' . '/ps_crossselling.php',
@@ -13,7 +13,7 @@ class ComposerStaticInit30b6dc3a5810d215d66c4d468282baaf
     public static function getInitializer(ClassLoader $loader)
     {
         return \Closure::bind(function () use ($loader) {
-            $loader->classMap = ComposerStaticInit30b6dc3a5810d215d66c4d468282baaf::$classMap;
+            $loader->classMap = ComposerStaticInit6645d64907e89077b0cb5c1e8c7d4cec::$classMap;
 
         }, null, ClassLoader::class);
     }

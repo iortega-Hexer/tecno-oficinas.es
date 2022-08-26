@@ -1705,7 +1705,7 @@
 
             if (_.options.accessibility === true) {
                 _.initADA();
-
+                
                 if (_.options.focusOnChange) {
                     var $currentSlide = $(_.$slides.get(_.currentSlide));
                     $currentSlide.attr('tabindex', 0).focus();

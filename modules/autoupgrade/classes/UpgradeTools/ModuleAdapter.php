@@ -52,6 +52,8 @@ class ModuleAdapter
     // Cached instance
     private $moduleDataUpdater;
 
+    private $commandBus;
+
     public function __construct($db, $translator, $modulesPath, $tempPath, $upgradeVersion, ZipAction $zipAction, SymfonyAdapter $symfonyAdapter)
     {
         $this->db = $db;
@@ -81,6 +83,23 @@ class ModuleAdapter
     }
 
     /**
+     * Available only since 1.7.6.0 Can't be called on PS 1.6.
+     *
+     * @return PrestaShop\PrestaShop\Core\CommandBus\TacticianCommandBusAdapter
+     */
+    public function getCommandBus()
+    {
+        if (null === $this->commandBus) {
+            $this->commandBus = $this->symfonyAdapter
+                ->initAppKernel()
+                ->getContainer()
+                ->get('prestashop.core.command_bus');
+        }
+
+        return $this->commandBus;
+    }
+
+    /**
      * Upgrade action, disabling all modules not made by PrestaShop.
      *
      * It seems the 1.6 version of is the safest, as it does not actually load the modules.
@@ -89,7 +108,7 @@ class ModuleAdapter
      */
     public function disableNonNativeModules($pathToUpgradeScripts)
     {
-        require_once $pathToUpgradeScripts . 'deactivate_custom_modules.php';
+        require_once $pathToUpgradeScripts . 'php/deactivate_custom_modules.php';
         deactivate_custom_modules();
     }
 
@@ -109,7 +128,6 @@ class ModuleAdapter
             throw (new UpgradeException($this->translator->trans('[ERROR] %dir% does not exist or is not a directory.', array('%dir%' => $dir), 'Modules.Autoupgrade.Admin')))
                 ->addQuickInfo($this->translator->trans('[ERROR] %s does not exist or is not a directory.', array($dir), 'Modules.Autoupgrade.Admin'))
                 ->setSeverity(UpgradeException::SEVERITY_ERROR);
-//            $this->next_desc = $this->trans('Nothing has been extracted. It seems the unzip step has been skipped.', array(), 'Modules.Autoupgrade.Admin');
         }
 
         foreach (scandir($dir) as $module_name) {
@@ -190,7 +208,7 @@ class ModuleAdapter
 
             // Only 1.7 step
             if (version_compare($this->upgradeVersion, '1.7.0.0', '>=')
-                && !$this->getModuleDataUpdater()->upgrade($name)) {
+                && !$this->doUpgradeModule($name)) {
                 throw (new UpgradeException('<strong>' . $this->translator->trans('[WARNING] Error when trying to upgrade module %s.', array($name), 'Modules.Autoupgrade.Admin') . '</strong>'))
                     ->setSeverity(UpgradeException::SEVERITY_WARNING)
                     ->setQuickInfos(\Module::getInstanceByName($name)->getErrors());
@@ -198,5 +216,29 @@ class ModuleAdapter
 
             return;
         }
+    }
+
+    /**
+     * @param string $name
+     *
+     * @return bool
+     */
+    private function doUpgradeModule($name)
+    {
+        $version = \Db::getInstance()->getValue(
+            'SELECT version FROM `' . _DB_PREFIX_ . 'module` WHERE name = "' . $name . '"'
+        );
+        $module = \Module::getInstanceByName($name);
+        $module->installed = !empty($version);
+        $module->database_version = $version ?: 0;
+
+        if (\Module::initUpgradeModule($module)) {
+            $module->runUpgradeModule();
+            \Module::upgradeModuleVersion($name, $module->version);
+
+            return !count($module->getErrors());
+        }
+
+        return true;
     }
 }
