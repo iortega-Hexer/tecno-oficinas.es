@@ -153,6 +153,10 @@
                       {include file='catalog/_partials/product-discounts.tpl'}
                     {/block}
 
+                     <div class="rigth-column-product">
+                      {hook h='displayRightColumnProduct'}      
+                    </div>
+
                     {block name='product_add_to_cart'}
                       {include file='catalog/_partials/product-add-to-cart.tpl'}
                     {/block}
@@ -168,7 +172,7 @@
 
               </div>
             {/if}
-        </div>
+        </div>        
       </div>
     </div>
     <div class="row">
@@ -256,6 +260,23 @@
             </div>
           {/block}
     </div>
+    
+    {block name='product_consulta'}
+      {if $product.grouped_features['Consultar']['value'] == 'si'}
+        <div class="formulario-consulta" id="consulta-precio">
+          <div class="cabecera-formulario">
+            <div class="tit">
+              {l s='Puedes resolver tus dudas aquí' d='Shop.Theme.Catalog'}
+            </div>
+            <div class="tit subtit">
+              {l s='Escríbenos, seguro que te podremos ayudar' d='Shop.Theme.Catalog'}
+            </div>
+          </div>
+          {hook h='displayPowerfulForm' mod='powerfulformgenerator' id=1}
+        </div>
+      {/if}
+    {/block}
+
     {block name='product_accessories'}
       {if $accessories}
         <section class="product-accessories clearfix">
